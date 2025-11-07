@@ -8,8 +8,6 @@ if (empty($_SESSION)) {
     $_SESSION['user_permissions'] = ['read_data', 'delete_customer'];
     $_SESSION['user_group'] = 'admin';
 }
-
-
 $menuData = [
     [
         'id' => 'dashboard',
@@ -164,6 +162,5 @@ if (empty($_SESSION)) {
     $_SESSION['user_permissions'] = ['read_data', 'delete_customer'];
     $_SESSION['user_group'] = 'admin';
 }
-
-renderMenuOptions($menuData, 0, $collapse)
+renderMenuOptions($menuData, $collapse)
     ?>

@@ -2,7 +2,7 @@
 // app/Controllers/DashboardController.php
 class DashboardController {
     public function index() {
-        return view('welcome.index', ['title' => 'Welcome','collapse' => true]);
+        return view('welcome.index', ['title' => 'Welcome','collapse' => false]);
     }
     public function dashboard() {
        return view('admin.index', ['title' => 'Dashboard']);

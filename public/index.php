@@ -19,8 +19,6 @@ if (file_exists($envFile)) {
 // define('BASE_URL', rtrim(getenv('APP_URL') ?: 'https://a2.dnipos.com/', '/'));
 define('BASE_URL', rtrim(getenv('APP_URL') ?: 'http://localhost/NIT/exam/', '/'));
 define('SKIP_ROOT', (bool)getenv('IS_CPANEL') ?'': 'public/');
-define('PROJECT_NAME', 'Online Exam');
-define('VERSION', '1.0.0');
 // Load router
 require_once __DIR__ . '/../core/Autoloader.php';
 require_once __DIR__ . '/../core/View.php'; 

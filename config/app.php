@@ -1,6 +1,7 @@
 <?php
 // config/app.php
 // Use getenv('KEY') for env vars
+$y =  date('Y');
 return [
     'name' => getenv('APP_NAME') ?: 'Online Exam',
     'version' => getenv('APP_VERSION') ?: '1.0.0',
@@ -11,5 +12,7 @@ return [
     'locale' => 'en',
     'collapse'=>true,
     'logo'=> 'assets/img/logo.png',
-    
+    'powered-url' => 'https://northernithub.com/',
+    'powered-text' => 'Powered by: NorthernHub',
+    'copyright' => 'Copyright '. $y .' NorthernHub. All rights reserved.',
 ];

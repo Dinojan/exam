@@ -85,7 +85,7 @@ function isActiveMenuItem($item, $current)
     return false;
 }
 
-function renderMenuOptions($menu, $level = 0, $collapse)
+function renderMenuOptions($menu, $collapse, $level = 0)
 {
     $current = currentNav();
     ?>

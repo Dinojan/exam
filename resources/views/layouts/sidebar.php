@@ -1,11 +1,10 @@
-<?php $collapse = $collapse ?: config('app.collapse');?>
 <aside>
     <div id="sidebar"
-        class="group h-screen bg-[#0003] border-[#fff6] border-r backdrop-blur transition-all duration-200 fixed md:sticky z-50 top-0 left-0 overflow-x-hidden md:hover:w-60 {{ $collapse ? 'w-0 md:w-16' : 'w-60'}}">
+        class="group h-screen bg-[#0003] border-[#fff6] border-r backdrop-blur transition-all duration-200 fixed md:sticky z-[1000000] top-0 left-0 overflow-x-hidden md:hover:w-60 {{ $collapse ? 'w-0 md:w-16' : 'w-60'}}">
         <button id="menu-close" class="md:hidden rounded-full text-white absolute top-1 right-1 w-5 h-5 text-xs">
             <i class="fa-solid fa-xmark"></i>
         </button>
-        <div id="logo-container" class="flex flex-row items-center gap-4 text-white p-2 border-b border-[#fff6]">
+        <div id="logo-container" class="flex flex-row items-center gap-4 text-white p-2 border-b border-[#fff6] group-hover:justify-start {{ $collapse ? 'justify-center' : '' }}">
             <a href="{{ $base_url}}" class="text-3xl border-2 border-white rounded-full overflow-hidden">
                 <?php if (file_exists(config('app.logo'))):?>
                     <img src="{{ asset(config('app.logo')) }}" alt="Logo">
@@ -16,7 +15,7 @@
             <a href="{{ $base_url}}" id="logo-name"
                 class="flex flex-col items-start justify-between transition-all duration-300 group-hover:block {{ $collapse ? 'hidden' : 'block' }}">
                 <p>{{ config('app.name') }} </p>
-                <p class="text-xs">v.{{ config('app.version') }}</p>
+                <p class="text-xs">V.{{ config('app.version') }}</p>
             </a>
         </div>
         <div id="menu-container"

@@ -1,5 +1,4 @@
 @extends('app')
-
 @section('content')
     <h1>Welcome to My MVC App!</h1>
     <p>This is a simple, empty project setup with advanced routing inspired by Laravel.</p>
