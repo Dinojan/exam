@@ -17,41 +17,42 @@ class View
     }
 
     public function render($viewPath, $data = [])
-{
-    if (!file_exists($viewPath)) {
-        die("<pre>❌ View not found: $viewPath</pre>");
+    {
+        if (!file_exists($viewPath)) {
+            die("<pre>❌ View not found: $viewPath</pre>");
+        }
+
+        // For debugging only (optional)
+        // echo "<pre>✅ Rendering view: $viewPath</pre>";
+
+        $this->data = array_merge($this->data, $data);
+        $source = file_get_contents($viewPath);
+
+        // Compile all Blade-like directives
+        $compiled = $this->compileDirectives($source);
+
+        // Evaluate the view
+        extract($this->data);
+        
+        ob_start();
+        eval ('?>' . $compiled);
+        $content = ob_get_clean();
+
+        // If this view extends a layout, render it
+        if (!empty($this->layout)) {
+            $layout = $this->layout;
+            $this->layout = null;
+
+            // Pass along compiled sections
+            $layoutView = new self($this->data);
+            $layoutView->sections = $this->sections;
+
+            return $layoutView->render($layout, $this->data);
+        }
+
+        // Return final HTML
+        return $content;
     }
-
-    // For debugging only (optional)
-    // echo "<pre>✅ Rendering view: $viewPath</pre>";
-
-    $this->data = array_merge($this->data, $data);
-    $source = file_get_contents($viewPath);
-
-    // Compile all Blade-like directives
-    $compiled = $this->compileDirectives($source);
-
-    // Evaluate the view
-    extract($this->data);
-    ob_start();
-    eval('?>' . $compiled);
-    $content = ob_get_clean();
-
-    // If this view extends a layout, render it
-    if (!empty($this->layout)) {
-        $layout = $this->layout;
-        $this->layout = null;
-
-        // Pass along compiled sections
-        $layoutView = new self($this->data);
-        $layoutView->sections = $this->sections;
-
-        return $layoutView->render($layout, $this->data);
-    }
-
-    // Return final HTML
-    return $content;
-}
 
 
 
@@ -79,14 +80,14 @@ class View
 
     // 1. @extends
     private function compileExtends($source)
-{
-    if (preg_match('/@extends\([\'"]([^\'"]+)[\'"]\)/', $source, $matches)) {
-        $layout = $matches[1];
-        $source = str_replace($matches[0], '', $source); // remove directive
-        $this->layout = __DIR__ . "/../resources/views/" . str_replace('.', '/', $layout) . ".php";
+    {
+        if (preg_match('/@extends\([\'"]([^\'"]+)[\'"]\)/', $source, $matches)) {
+            $layout = $matches[1];
+            $source = str_replace($matches[0], '', $source); // remove directive
+            $this->layout = __DIR__ . "/../resources/views/" . str_replace('.', '/', $layout) . ".php";
+        }
+        return $source;
     }
-    return $source;
-}
 
 
 
@@ -128,10 +129,14 @@ class View
 
     // 4. {{ }} (escaped echo)
     private function compileEcho($source)
-{
-    $source = preg_replace('/\{\{\s*(.+?)\s*\}\}/', '<?php echo $this->e($1); ?>', $source);
-    return $source;
-}
+    {
+        // Handle ternary and colon correctly by using non-greedy capture and s flag
+        return preg_replace_callback('/\{\{\s*(.*?)\s*\}\}/s', function ($matches) {
+            $expression = trim($matches[1]);
+            return "<?php echo htmlspecialchars(($expression), ENT_QUOTES, 'UTF-8', false); ?>";
+        }, $source);
+    }
+
 
 
     // 5. {!! !!} (unescaped)
