@@ -1,10 +1,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'DEMO APP' }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        header { background: #f4f4f4; padding: 10px; margin-bottom: 20px; }
-        main { max-width: 800px; }
-    </style>
+    <title>Document</title>
+    <!-- STYLESHEET -->
+    <link rel="stylesheet" href="resources/assets/css/theme.min.css">
+    <!-- FONT AWESOME 7.0.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script type="module">
+        var baseUrl = '<?php echo BASE_URL ?>';
+    </script>
 </head>
