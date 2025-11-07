@@ -1,9 +1,9 @@
-@php
-    session_start();
-    if (!isset($_SESSION['user'])) {
-        header("Location: /login");
-    }
-@endphp
+<?php
+    // session_start();
+    // if (!isset($_SESSION['user'])) {
+    //     header("Location: /NIT/exam/login?redirect=" . BASE_URL . currentNav());
+    // }
+?>
 
 <nav id="navbar"
     class="sticky top-0 flex flex-row items-center justify-between pl-1 pr-1 py-2 bg-[#0003] border-[#fff6] md:rounded-br-2xl backdrop-blur transition-all duration-200 max-h-10 w-full z-[999999]">

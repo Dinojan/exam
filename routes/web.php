@@ -2,6 +2,7 @@
 // routes/web.php
 // Basic routes (string format: Controller@method)
 Router::get('/', 'DashboardController@index', 'home');
+Router::get('/login', 'AuthController@login', 'login');
 Router::get('/dashboard', 'DashboardController@dashboard', 'dashboard');
 Router::get('/profile/{id}', 'DashboardController@profile', 'profile.show');
 // Resource example (assumes PostController exists or create it)
