@@ -5,7 +5,7 @@ class DashboardController {
         return view('welcome.index', ['title' => 'Welcome','collapse' => false]);
     }
     public function dashboard() {
-       return view('admin.index', ['title' => 'Dashboard']);
+       return view('admin.index', ['title' => 'Dashboard','collapse' => false]);
     }
     public function profile($id) {
         $title = 'Profile';
