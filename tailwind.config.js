@@ -2,7 +2,7 @@
 module.exports = {
   content: [
     "./resources/views/**/*.php",
-    "./public/**/*.js",
+    "./resources/**/*.js",
     "./**/*.php",
     "./**/*.css",
   ],

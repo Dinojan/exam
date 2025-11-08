@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailwind Toast Notifications with Position-based Animations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .toast-card {
+            position: fixed;
+            z-index: 10000000;
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            max-width: 36rem;
+            min-width: 20rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        /* Right positions - animate from right */
+        .toast-right,
+        .toast-top-right,
+        .toast-bottom-right {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .toast-right.show,
+        .toast-top-right.show,
+        .toast-bottom-right.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Left positions - animate from left */
+        .toast-left,
+        .toast-top-left,
+        .toast-bottom-left {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .toast-left.show,
+        .toast-top-left.show,
+        .toast-bottom-left.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Top center - animate from top */
+        .toast-top {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .toast-top.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Bottom center - animate from bottom */
+        .toast-bottom {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        .toast-bottom.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Position styles */
+        .toast-top {
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%) !important;
+        }
+
+        .toast-top.show {
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        .toast-bottom {
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%) !important;
+        }
+
+        .toast-bottom.show {
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        .toast-left {
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%) translateX(-100%) !important;
+        }
+
+        .toast-left.show {
+            transform: translateY(-50%) translateX(0) !important;
+        }
+
+        .toast-right {
+            top: 50%;
+            right: 1rem;
+            transform: translateY(-50%) translateX(100%) !important;
+        }
+
+        .toast-right.show {
+            transform: translateY(-50%) translateX(0) !important;
+        }
+
+        .toast-top-right {
+            top: 1rem;
+            right: 1rem;
+            transform: translateX(100%) !important;
+        }
+
+        .toast-top-right.show {
+            transform: translateX(0) !important;
+        }
+
+        .toast-top-left {
+            top: 1rem;
+            left: 1rem;
+            transform: translateX(-100%) !important;
+        }
+
+        .toast-top-left.show {
+            transform: translateX(0) !important;
+        }
+
+        .toast-bottom-right {
+            bottom: 1rem;
+            right: 1rem;
+            transform: translateX(100%) !important;
+        }
+
+        .toast-bottom-right.show {
+            transform: translateX(0) !important;
+        }
+
+        .toast-bottom-left {
+            bottom: 1rem;
+            left: 1rem;
+            transform: translateX(-100%) !important;
+        }
+
+        .toast-bottom-left.show {
+            transform: translateX(0) !important;
+        }
+
+        .toast-close {
+            position: absolute;
+            top: 0.5rem;
+        }
+
+        .toast-success {
+            background-color: #f0fdf4;
+            color: #166534;
+            border-left: 4px solid #22c55e;
+        }
+
+        .toast-error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast-info {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast-warning {
+            background-color: #fefce8;
+            color: #854d0e;
+            border-left: 4px solid #eab308;
+        }
+
+        .toast-dark {
+            background-color: #1f2937;
+            color: #f9fafb;
+            border-left: 4px solid #4b5563;
+        }
+
+        .toast-light {
+            background-color: #f9fafb;
+            color: #374151;
+            border-left: 4px solid #d1d5db;
+        }
+
+        .toast-icon {
+            margin-right: 1rem;
+            font-size: 2.5rem;
+        }
+
+        .toast-success .toast-icon {
+            color: #166534;
+        }
+
+        .toast-error .toast-icon {
+            color: #991b1b;
+        }
+
+        .toast-info .toast-icon {
+            color: #1e40af;
+        }
+
+        .toast-warning .toast-icon {
+            color: #854d0e;
+        }
+
+        .toast-dark .toast-icon {
+            color: #f9fafb;
+        }
+
+        .toast-light .toast-icon {
+            color: #374151;
+        }
+
+        .toast-title {
+            font-weight: bold;
+        }
+
+        .toast-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 0.5rem 0.5rem;
+            overflow: hidden;
+        }
+
+        .toast-progress-bar {
+            height: 100%;
+            width: 100%;
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .toast-success .toast-progress-bar {
+            background-color: #22c55e;
+        }
+
+        .toast-error .toast-progress-bar {
+            background-color: #ef4444;
+        }
+
+        .toast-info .toast-progress-bar {
+            background-color: #3b82f6;
+        }
+
+        .toast-warning .toast-progress-bar {
+            background-color: #eab308;
+        }
+
+        .toast-dark .toast-progress-bar {
+            background-color: #4b5563;
+        }
+
+        .toast-light .toast-progress-bar {
+            background-color: #d1d5db;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Toast Notifications with Position-based Animations</h1>
+        <p class="text-gray-600 text-center mb-8">Each toast animates in and out based on its position</p>
+
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Position-based Toast Examples</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button id="success-toast"
+                    class="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-check-circle"></i>
+                    Top-Right Toast
+                </button>
+
+                <button id="error-toast"
+                    class="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-times-circle"></i>
+                    Top-Left Toast
+                </button>
+
+                <button id="info-toast"
+                    class="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-info-circle"></i>
+                    Bottom-Right Toast
+                </button>
+
+                <button id="warning-toast"
+                    class="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Bottom-Left Toast
+                </button>
+
+                <button id="dark-toast"
+                    class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-moon"></i>
+                    Left Side Toast
+                </button>
+
+                <button id="light-toast"
+                    class="flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-sun"></i>
+                    Right Side Toast
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button id="top-center-toast"
+                    class="flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-arrow-up"></i>
+                    Top Center Toast
+                </button>
+
+                <button id="bottom-center-toast"
+                    class="flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-arrow-down"></i>
+                    Bottom Center Toast
+                </button>
+            </div>
+            
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Test Auto-Stacking with Animations</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button id="stack-top-right" class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-colors">
+                        Stack Top-Right
+                    </button>
+                    <button id="stack-bottom-left" class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-colors">
+                        Stack Bottom-Left
+                    </button>
+                    <button id="stack-top-left" class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-colors">
+                        Stack Top-Left
+                    </button>
+                    <button id="stack-bottom-right" class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-colors">
+                        Stack Bottom-Right
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Animation Implementation</h2>
+            <p class="text-gray-600 mb-4">Each position now has its own animation direction:</p>
+            <ul class="list-disc pl-5 text-gray-600 mb-4 space-y-2">
+                <li><strong>Right positions</strong> - Slide in from right, slide out to right</li>
+                <li><strong>Left positions</strong> - Slide in from left, slide out to left</li>
+                <li><strong>Top center</strong> - Slide down from top, slide up to top</li>
+                <li><strong>Bottom center</strong> - Slide up from bottom, slide down to bottom</li>
+                <li><strong>Auto-stacking</strong> - Multiple toasts stack with proper animations</li>
+                <li><strong>Smooth transitions</strong> - All animations use CSS transitions</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Toast configuration
+        const toastConfig = {
+            success: {
+                title: 'Success!',
+                message: 'Your action was completed successfully.',
+                icon: 'fa-check-circle'
+            },
+            error: {
+                title: 'Error!',
+                message: 'Something went wrong. Please try again.',
+                icon: 'fa-times-circle'
+            },
+            info: {
+                title: 'Information',
+                message: 'Here is some important information for you.',
+                icon: 'fa-info-circle'
+            },
+            warning: {
+                title: 'Warning!',
+                message: 'This action requires your attention.',
+                icon: 'fa-exclamation-triangle'
+            },
+            dark: {
+                title: 'Dark Theme',
+                message: 'This is a toast with dark styling.',
+                icon: 'fa-moon'
+            },
+            light: {
+                title: 'Light Theme',
+                message: 'This is a toast with light styling.',
+                icon: 'fa-sun'
+            },
+            topCenter: {
+                title: 'Top Center',
+                message: 'This toast appears at the top center.',
+                icon: 'fa-arrow-up'
+            },
+            bottomCenter: {
+                title: 'Bottom Center',
+                message: 'This toast appears at the bottom center.',
+                icon: 'fa-arrow-down'
+            }
+        };
+
+        // Track active toasts by position
+        const activeToasts = {
+            'top-right': [],
+            'top-left': [],
+            'bottom-right': [],
+            'bottom-left': [],
+            'top': [],
+            'bottom': [],
+            'left': [],
+            'right': []
+        };
+
+        // Get appropriate icon for toast type
+        function getIcon(type) {
+            return `<i class="fas ${toastConfig[type].icon}"></i>`;
+        }
+
+        // Calculate offset for stacking toasts
+        function calculateToastOffset(position, toast) {
+            const toastHeight = toast.offsetHeight;
+            const margin = 10; // Space between toasts
+            const existingToasts = activeToasts[position];
+            
+            if (existingToasts.length === 0) {
+                return 0;
+            }
+            
+            // Calculate offset based on previous toasts
+            return existingToasts.reduce((total, current) => {
+                return total + current.element.offsetHeight + margin;
+            }, 0);
+        }
+
+        // Apply position offset to toast
+        function applyPositionOffset(toast, position, offset) {
+            const isVertical = position.includes('top') || position.includes('bottom');
+            const isHorizontal = position.includes('left') || position.includes('right');
+            
+            if (isVertical && !position.includes('center')) {
+                // For top/bottom positions, adjust top or bottom property
+                if (position.includes('top')) {
+                    toast.style.top = `calc(1rem + ${offset}px)`;
+                } else {
+                    toast.style.bottom = `calc(1rem + ${offset}px)`;
+                }
+            } else if (isHorizontal) {
+                // For left/right positions, adjust top property
+                toast.style.top = `calc(50% - ${toast.offsetHeight/2}px + ${offset}px)`;
+            } else if (position === 'top') {
+                // For top center
+                toast.style.top = `calc(1rem + ${offset}px)`;
+            } else if (position === 'bottom') {
+                // For bottom center
+                toast.style.bottom = `calc(1rem + ${offset}px)`;
+            }
+        }
+
+        // Adjust positions of remaining toasts after one is dismissed
+        function adjustToastPositions(position) {
+            const toasts = activeToasts[position];
+            
+            toasts.forEach((toastObj, index) => {
+                // Calculate new offset for this toast
+                let newOffset = 0;
+                for (let i = 0; i < index; i++) {
+                    newOffset += toasts[i].element.offsetHeight + 10; // 10px margin
+                }
+                
+                // Apply new position
+                applyPositionOffset(toastObj.element, position, newOffset);
+                toastObj.offset = newOffset;
+            });
+        }
+
+        // Get animation properties based on position
+        function getAnimationProperties(position) {
+            const animations = {
+                'top-right': { show: 'translateX(0)', hide: 'translateX(100%)' },
+                'bottom-right': { show: 'translateX(0)', hide: 'translateX(100%)' },
+                'top-left': { show: 'translateX(0)', hide: 'translateX(-100%)' },
+                'bottom-left': { show: 'translateX(0)', hide: 'translateX(-100%)' },
+                'right': { show: 'translateY(-50%) translateX(0)', hide: 'translateY(-50%) translateX(100%)' },
+                'left': { show: 'translateY(-50%) translateX(0)', hide: 'translateY(-50%) translateX(-100%)' },
+                'top': { show: 'translateX(-50%) translateY(0)', hide: 'translateX(-50%) translateY(-100%)' },
+                'bottom': { show: 'translateX(-50%) translateY(0)', hide: 'translateX(-50%) translateY(100%)' }
+            };
+            
+            return animations[position] || animations['top-right'];
+        }
+
+        // Show toast function with position-based animations
+        function Toast(type, title, message, position = 'top-right', toastTime = 5) {
+            // Create toast element
+            const toast = document.createElement('div');            
+            toast.className = `toast-card toast-${type} toast-${position}`;
+
+            // Set toast content
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    ${getIcon(type)}
+                </div>
+                <div class="flex flex-col gap-1 flex-grow">
+                    <h1 class="toast-title">${title}</h1>
+                    <p>${message}</p>
+                </div>
+                <div class="toast-close">
+                    <i class="fas fa-times"></i>
+                </div>
+                <div class="toast-progress">
+                    <div class="toast-progress-bar"></div>
+                </div>
+            `;
+
+            // Add to container
+            document.body.appendChild(toast);
+
+            // Calculate position offset for stacking
+            const offset = calculateToastOffset(position, toast);
+            applyPositionOffset(toast, position, offset);
+            
+            // Add to active toasts tracking
+            activeToasts[position].push({ element: toast, offset: offset });
+
+            // Animate in
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Set up auto dismiss
+            const dismissTimeout = setTimeout(() => dismissToast(toast, position), toastTime * 1000);
+
+            // Set up progress bar animation
+             setTimeout(() => {
+                const progressBar = toast.querySelector('.toast-progress-bar');
+                if (progressBar) {
+                    progressBar.style.transform = 'scaleX(0)';
+                    progressBar.style.transition = `transform ${toastTime}s linear`;
+                }
+            }, 10);
+
+            // Set up close button
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                clearTimeout(dismissTimeout);
+                dismissToast(toast, position);
+            });
+
+            return toast;
+        }
+
+        // Dismiss toast function with position-based animations
+        function dismissToast(toast, position) {
+            // Remove show class to trigger exit animation
+            toast.classList.remove('show');
+            
+            // Remove from active toasts
+            const index = activeToasts[position].findIndex(t => t.element === toast);
+            if (index !== -1) {
+                activeToasts[position].splice(index, 1);
+            }
+            
+            // Adjust positions of remaining toasts after animation completes
+            setTimeout(() => {
+                adjustToastPositions(position);
+            }, 300);
+            
+            // Remove from DOM after animation
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }
+
+        // Set up button event listeners
+        document.getElementById('success-toast').addEventListener('click', () => {
+            Toast('success', toastConfig.success.title, toastConfig.success.message, 'top-right');
+        });
+
+        document.getElementById('error-toast').addEventListener('click', () => {
+            Toast('error', toastConfig.error.title, toastConfig.error.message, 'top-left');
+        });
+
+        document.getElementById('info-toast').addEventListener('click', () => {
+            Toast('info', toastConfig.info.title, toastConfig.info.message, 'bottom-right');
+        });
+
+        document.getElementById('warning-toast').addEventListener('click', () => {
+            Toast('warning', toastConfig.warning.title, toastConfig.warning.message, 'bottom-left');
+        });
+
+        document.getElementById('dark-toast').addEventListener('click', () => {
+            Toast('dark', toastConfig.dark.title, toastConfig.dark.message, 'left');
+        });
+
+        document.getElementById('light-toast').addEventListener('click', () => {
+            Toast('light', toastConfig.light.title, toastConfig.light.message, 'right');
+        });
+
+        document.getElementById('top-center-toast').addEventListener('click', () => {
+            Toast('info', toastConfig.topCenter.title, toastConfig.topCenter.message, 'top');
+        });
+
+        document.getElementById('bottom-center-toast').addEventListener('click', () => {
+            Toast('info', toastConfig.bottomCenter.title, toastConfig.bottomCenter.message, 'bottom');
+        });
+
+        // Stacking test buttons
+        document.getElementById('stack-top-right').addEventListener('click', () => {
+            const types = ['success', 'error', 'info', 'warning', 'dark', 'light'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            Toast(randomType, `Stacked ${randomType}`, `This toast is stacked in top-right position`, 'top-right');
+        });
+
+        document.getElementById('stack-bottom-left').addEventListener('click', () => {
+            const types = ['success', 'error', 'info', 'warning', 'dark', 'light'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            Toast(randomType, `Stacked ${randomType}`, `This toast is stacked in bottom-left position`, 'bottom-left');
+        });
+
+        document.getElementById('stack-top-left').addEventListener('click', () => {
+            const types = ['success', 'error', 'info', 'warning', 'dark', 'light'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            Toast(randomType, `Stacked ${randomType}`, `This toast is stacked in top-left position`, 'top-left');
+        });
+
+        document.getElementById('stack-bottom-right').addEventListener('click', () => {
+            const types = ['success', 'error', 'info', 'warning', 'dark', 'light'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            Toast(randomType, `Stacked ${randomType}`, `This toast is stacked in bottom-right position`, 'bottom-right');
+        });
+
+        // Show a welcome toast on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                Toast('info', 'Welcome!', 'Each toast now animates based on its position. Try different positions to see the animations!', 'top-right');
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html>
+
+
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast Notifications with Position-based Stacking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .toast-card {
+            position: fixed;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            max-width: 36rem;
+            min-width: 20rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+
+        /* Toast container for hover effect */
+        .toast-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .toast-container:hover .toast-card {
+            transform: none !important;
+            opacity: 1 !important;
+            z-index: 10000 !important;
+            scale: 1 !important;
+        }
+
+        /* Right positions - animate from right */
+        .toast-right,
+        .toast-top-right,
+        .toast-bottom-right {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .toast-right.show,
+        .toast-top-right.show,
+        .toast-bottom-right.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Left positions - animate from left */
+        .toast-left,
+        .toast-top-left,
+        .toast-bottom-left {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+
+        .toast-left.show,
+        .toast-top-left.show,
+        .toast-bottom-left.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Top center - animate from top */
+        .toast-top {
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+
+        .toast-top.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Bottom center - animate from bottom */
+        .toast-bottom {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+
+        .toast-bottom.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Position styles */
+        .toast-top {
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%) !important;
+        }
+
+        .toast-top.show {
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        .toast-bottom {
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%) !important;
+        }
+
+        .toast-bottom.show {
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        .toast-left {
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%) translateX(-100%) !important;
+        }
+
+        .toast-left.show {
+            transform: translateY(-50%) translateX(0) !important;
+        }
+
+        .toast-right {
+            top: 50%;
+            right: 1rem;
+            transform: translateY(-50%) translateX(100%) !important;
+        }
+
+        .toast-right.show {
+            transform: translateY(-50%) translateX(0) !important;
+        }
+
+        .toast-top-right {
+            top: 1rem;
+            right: 1rem;
+            transform: translateX(100%) !important;
+        }
+
+        .toast-top-right.show {
+            transform: translateX(0) !important;
+        }
+
+        .toast-top-left {
+            top: 1rem;
+            left: 1rem;
+            transform: translateX(-100%) !important;
+        }
+
+        .toast-top-left.show {
+            transform: translateX(0) !important;
+        }
+
+        .toast-bottom-right {
+            bottom: 1rem;
+            right: 1rem;
+            transform: translateX(100%) !important;
+        }
+
+        .toast-bottom-right.show {
+            transform: translateX(0) !important;
+        }
+
+        .toast-bottom-left {
+            bottom: 1rem;
+            left: 1rem;
+            transform: translateX(-100%) !important;
+        }
+
+        .toast-bottom-left.show {
+            transform: translateX(0) !important;
+        }
+
+        /* Background toast styles - position-based translations with minimal scale */
+        .toast-card.background {
+            z-index: 900 !important;
+            scale: 0.98;
+        }
+
+        .toast-card.far-background {
+            z-index: 800 !important;
+            scale: 0.96;
+        }
+
+        /* Position-specific background translations */
+        /* Right positions - translate left */
+        /* .toast-top-right.background,
+        .toast-bottom-right.background,
+        .toast-right.background {
+            transform: translateX(-20px) !important;
+        }
+
+        .toast-top-right.far-background,
+        .toast-bottom-right.far-background,
+        .toast-right.far-background {
+            transform: translateX(-40px) !important;
+        } */
+
+        /* Left positions - translate right */
+        /* .toast-top-left.background,
+        .toast-bottom-left.background,
+        .toast-left.background {
+            transform: translateX(20px) !important;
+        }
+
+        .toast-top-left.far-background,
+        .toast-bottom-left.far-background,
+        .toast-left.far-background {
+            transform: translateX(40px) !important;
+        } */
+
+        .toast-top.background,
+        .toast-top-left.background,
+        .toast-top-right.background,
+        .toast-left.background,
+        .toast-right.background {
+            transform: translateY(20px) !important;
+        }
+
+        .toast-top.far-background,
+        .toast-top-left.far-background,
+        .toast-top-right.far-background,
+        .toast-left.far-background,
+        .toast-right.far-background {
+            transform: translateY(40px) !important;
+        }
+
+        /* Bottom positions - translate up */
+        .toast-bottom.background,
+        .toast-bottom-left.background,
+        .toast-bottom-right.background {
+            transform: translateY(-20px) !important;
+        }
+
+        .toast-bottom.far-background,
+        .toast-bottom-left.far-background,
+        .toast-bottom-right.far-background {
+            transform: translateY(-40px) !important;
+        }
+
+        /* Top center - translate down */
+        .toast-top.background {
+            transform: translateX(-55%) translateY(20px) !important;
+        }
+
+        .toast-top.far-background {
+            transform: translateX(-60%) translateY(40px) !important;
+        }
+
+        /* Bottom center - translate up */
+        .toast-bottom.background {
+            transform: translateX(-55%) translateY(-20px) !important;
+        }
+
+        .toast-bottom.far-background {
+            transform: translateX(-60%) translateY(-40px) !important;
+        }
+
+        .toast-close {
+            position: absolute;
+            top: 0.5rem;
+        }
+
+        .toast-success {
+            background-color: #f0fdf4;
+            color: #166534;
+            border-left: 4px solid #22c55e;
+        }
+
+        .toast-error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .toast-info {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .toast-warning {
+            background-color: #fefce8;
+            color: #854d0e;
+            border-left: 4px solid #eab308;
+        }
+
+        .toast-dark {
+            background-color: #1f2937;
+            color: #f9fafb;
+            border-left: 4px solid #4b5563;
+        }
+
+        .toast-light {
+            background-color: #f9fafb;
+            color: #374151;
+            border-left: 4px solid #d1d5db;
+        }
+
+        .toast-icon {
+            margin-right: 1rem;
+            font-size: 2.5rem;
+        }
+
+        .toast-success .toast-icon {
+            color: #166534;
+        }
+
+        .toast-error .toast-icon {
+            color: #991b1b;
+        }
+
+        .toast-info .toast-icon {
+            color: #1e40af;
+        }
+
+        .toast-warning .toast-icon {
+            color: #854d0e;
+        }
+
+        .toast-dark .toast-icon {
+            color: #f9fafb;
+        }
+
+        .toast-light .toast-icon {
+            color: #374151;
+        }
+
+        .toast-title {
+            font-weight: bold;
+        }
+
+        .toast-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 0.5rem 0.5rem;
+            overflow: hidden;
+        }
+
+        .toast-progress-bar {
+            height: 100%;
+            width: 100%;
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .toast-success .toast-progress-bar {
+            background-color: #22c55e;
+        }
+
+        .toast-error .toast-progress-bar {
+            background-color: #ef4444;
+        }
+
+        .toast-info .toast-progress-bar {
+            background-color: #3b82f6;
+        }
+
+        .toast-warning .toast-progress-bar {
+            background-color: #eab308;
+        }
+
+        .toast-dark .toast-progress-bar {
+            background-color: #4b5563;
+        }
+
+        .toast-light .toast-progress-bar {
+            background-color: #d1d5db;
+        }
+
+        /* Hover info text */
+        .hover-info {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            z-index: 10001;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast-container:hover .hover-info {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">Toast Notifications with Position-based Stacking
+        </h1>
+        <p class="text-gray-600 text-center mb-8">New toasts push previous ones to the back with position-based
+            translations. Hover anywhere to see all toasts.</p>
+
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Toast Examples</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button id="success-toast"
+                    class="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-check-circle"></i>
+                    Success Toast
+                </button>
+
+                <button id="error-toast"
+                    class="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-times-circle"></i>
+                    Error Toast
+                </button>
+
+                <button id="info-toast"
+                    class="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-info-circle"></i>
+                    Info Toast
+                </button>
+
+                <button id="warning-toast"
+                    class="flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Warning Toast
+                </button>
+
+                <button id="dark-toast"
+                    class="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-900 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-moon"></i>
+                    Dark Toast
+                </button>
+
+                <button id="light-toast"
+                    class="flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-sun"></i>
+                    Light Toast
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button id="top-center-toast"
+                    class="flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-arrow-up"></i>
+                    Top Center
+                </button>
+
+                <button id="bottom-center-toast"
+                    class="flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-arrow-down"></i>
+                    Bottom Center
+                </button>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Quick Add Multiple Toasts</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button id="add-multiple"
+                        class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg transition-colors">
+                        Add 3 Toasts Quickly
+                    </button>
+                    <button id="clear-all"
+                        class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors">
+                        Clear All Toasts
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Position-based Stack Management</h2>
+            <ul class="list-disc pl-5 text-gray-600 mb-4 space-y-2">
+                <li><strong>Right positions</strong> - Background toasts translate left (-20px/-40px)</li>
+                <li><strong>Left positions</strong> - Background toasts translate right (+20px/+40px)</li>
+                <li><strong>Top center</strong> - Background toasts translate down (+20px/+40px)</li>
+                <li><strong>Bottom center</strong> - Background toasts translate up (-20px/-40px)</li>
+                <li><strong>Minimal scaling</strong> - 0.98x for first background, 0.96x for further back</li>
+                <li><strong>No blur effects</strong> - Clean visual hierarchy with opacity and translation only</li>
+                <li><strong>Hover to reveal</strong> - Hover anywhere to temporarily bring all toasts to front</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container">
+        <div class="hover-info">All toasts are now visible. Move cursor away to restore stack.</div>
+    </div>
+
+    <script>
+        // Toast configuration
+        const toastConfig = {
+            success: {
+                title: 'Success!',
+                message: 'Your action was completed successfully.',
+                icon: 'fa-check-circle'
+            },
+            error: {
+                title: 'Error!',
+                message: 'Something went wrong. Please try again.',
+                icon: 'fa-times-circle'
+            },
+            info: {
+                title: 'Information',
+                message: 'Here is some important information for you.',
+                icon: 'fa-info-circle'
+            },
+            warning: {
+                title: 'Warning!',
+                message: 'This action requires your attention.',
+                icon: 'fa-exclamation-triangle'
+            },
+            dark: {
+                title: 'Dark Theme',
+                message: 'This is a toast with dark styling.',
+                icon: 'fa-moon'
+            },
+            light: {
+                title: 'Light Theme',
+                message: 'This is a toast with light styling.',
+                icon: 'fa-sun'
+            },
+            topCenter: {
+                title: 'Top Center',
+                message: 'This toast appears at the top center.',
+                icon: 'fa-arrow-up'
+            },
+            bottomCenter: {
+                title: 'Bottom Center',
+                message: 'This toast appears at the bottom center.',
+                icon: 'fa-arrow-down'
+            }
+        };
+
+        // Track all active toasts
+        let allToasts = [];
+        let toastCounter = 0;
+
+        // Get appropriate icon for toast type
+        function getIcon(type) {
+            return `<i class="fas ${toastConfig[type].icon}"></i>`;
+        }
+
+        // Update background states for all toasts with position-based translations
+        function updateToastStack() {
+            // Sort toasts by creation time (newest first)
+            allToasts.sort((a, b) => b.id - a.id);
+
+            // Update each toast's visual state based on its position in stack
+            allToasts.forEach((toast, index) => {
+                const element = toast.element;
+
+                // Remove all background classes
+                element.classList.remove('background', 'far-background');
+
+                // Apply appropriate state based on position in stack
+                if (index === 0) {
+                    // Front toast - full visibility and normal position
+                    element.style.zIndex = 1000 + index;
+                    element.style.opacity = '1';
+                    element.style.scale = '1';
+                } else if (index === 1) {
+                    // First background toast
+                    element.classList.add('background');
+                    element.style.scale = '0.9';
+                    element.style.zIndex = 1000 - index;
+                } else {
+                    // Further background toasts
+                    element.classList.add('far-background');
+                    element.style.scale = '0.8';
+                    element.style.zIndex = 1000 - index;
+                }
+            });
+        }
+
+        // Show toast function with stack management
+        function Toast(type, title, message, position = 'top-right', toastTime = 5000) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-card toast-${type} toast-${position}`;
+            toast.dataset.toastId = ++toastCounter;
+
+            // Set toast content
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    ${getIcon(type)}
+                </div>
+                <div class="flex flex-col gap-1 flex-grow">
+                    <h1 class="toast-title">${title}</h1>
+                    <p>${message}</p>
+                </div>
+                <div class="toast-close">
+                    <i class="fas fa-times"></i>
+                </div>
+                <div class="toast-progress">
+                    <div class="toast-progress-bar"></div>
+                </div>
+            `;
+
+            // Add to container
+            document.getElementById('toast-container').appendChild(toast);
+
+            // Add to tracking
+            const toastData = {
+                id: toastCounter,
+                element: toast,
+                type: type,
+                position: position,
+                createdAt: Date.now()
+            };
+            allToasts.push(toastData);
+
+            // Update stack visual states
+            updateToastStack();
+
+            // Animate in
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Set up auto dismiss
+            const dismissTimeout = setTimeout(() => dismissToast(toastData), toastTime);
+
+            // Set up progress bar animation
+            setTimeout(() => {
+                const progressBar = toast.querySelector('.toast-progress-bar');
+                if (progressBar) {
+                    progressBar.style.transform = 'scaleX(0)';
+                    progressBar.style.transition = `transform ${toastTime}ms linear`;
+                }
+            }, 10);
+
+            // Set up close button
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                clearTimeout(dismissTimeout);
+                dismissToast(toastData);
+            });
+
+            return toastData;
+        }
+
+        // Dismiss toast function
+        function dismissToast(toastData) {
+            const toast = toastData.element;
+
+            // Remove show class to trigger exit animation
+            toast.classList.remove('show');
+
+            // Remove from tracking
+            const index = allToasts.findIndex(t => t.id === toastData.id);
+            if (index !== -1) {
+                allToasts.splice(index, 1);
+            }
+
+            // Update remaining toasts after animation
+            setTimeout(() => {
+                updateToastStack();
+
+                // Remove from DOM
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300);
+        }
+
+        // Clear all toasts
+        function clearAllToasts() {
+            // Create a copy of the array to avoid modification during iteration
+            const toastsToRemove = [...allToasts];
+            toastsToRemove.forEach(toast => dismissToast(toast));
+        }
+
+        // Set up button event listeners
+        document.getElementById('success-toast').addEventListener('click', () => {
+            Toast('success', toastConfig.success.title, toastConfig.success.message, 'top-right');
+        });
+
+        document.getElementById('error-toast').addEventListener('click', () => {
+            Toast('error', toastConfig.error.title, toastConfig.error.message, 'top-left');
+        });
+
+        document.getElementById('info-toast').addEventListener('click', () => {
+            Toast('info', toastConfig.info.title, toastConfig.info.message, 'bottom-right');
+        });
+
+        document.getElementById('warning-toast').addEventListener('click', () => {
+            Toast('warning', toastConfig.warning.title, toastConfig.warning.message, 'bottom-left');
+        });
+
+        document.getElementById('dark-toast').addEventListener('click', () => {
+            Toast('dark', toastConfig.dark.title, toastConfig.dark.message, 'left');
+        });
+
+        document.getElementById('light-toast').addEventListener('click', () => {
+            Toast('light', toastConfig.light.title, toastConfig.light.message, 'right');
+        });
+
+        document.getElementById('top-center-toast').addEventListener('click', () => {
+            Toast('info', toastConfig.topCenter.title, toastConfig.topCenter.message, 'top');
+        });
+
+        document.getElementById('bottom-center-toast').addEventListener('click', () => {
+            Toast('info', toastConfig.bottomCenter.title, toastConfig.bottomCenter.message, 'bottom');
+        });
+
+        // Quick add multiple toasts
+        document.getElementById('add-multiple').addEventListener('click', () => {
+            const types = ['success', 'error', 'info', 'warning'];
+            const positions = ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
+
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const randomType = types[Math.floor(Math.random() * types.length)];
+                    const randomPosition = positions[Math.floor(Math.random() * positions.length)];
+                    Toast(randomType, `Quick Toast ${i + 1}`, `This is toast number ${i + 1} of 3`, randomPosition);
+                }, i * 300);
+            }
+        });
+
+        // Clear all toasts
+        document.getElementById('clear-all').addEventListener('click', () => {
+            clearAllToasts();
+        });
+
+        // Show a welcome toast on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                Toast('info', 'Welcome!', 'New toasts push previous ones to the background with position-based translations. Hover anywhere to see all toasts.', 'top-right');
+            }, 1000);
+        });
+    </script>
+</body>
+
+</html> -->

@@ -24,7 +24,7 @@ class Route
     private function compileUri($uri)
     {
         // Escape regex special characters except { } and /
-        $escaped = preg_replace('/([.\/+*?^$()[]|])/','\\\$1', trim($uri, '/'));
+        $escaped = preg_replace('/([.\/+*?^$()[]|])/', '\\\$1', trim($uri, '/'));
         // Convert {param} to regex pattern
         return preg_replace('/\{([^}]+)\}/', '([^/]+)', $escaped);
     }
@@ -119,7 +119,8 @@ class Router
         }
 
         $fullUri = rtrim($prefix . '/' . ltrim($uri, '/'), '/');
-        if ($fullUri === '') $fullUri = '/';
+        if ($fullUri === '')
+            $fullUri = '/';
 
         $route = new Route($fullUri, [$method], $action, $name, $middleware);
         $router->routes[$method][] = $route;
@@ -270,61 +271,61 @@ class Router
     }
 
     public function dispatch()
-{
-    // Load route definitions (if not already loaded)
-    $this->loadRoutes();
+    {
+        // Load route definitions (if not already loaded)
+        $this->loadRoutes();
 
-    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-    $path = $this->getPath();
-    $this->currentRoute = null;
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $path = $this->getPath();
+        $this->currentRoute = null;
 
-    // Find matching route
-    foreach ($this->routes[$method] ?? [] as $route) {
-        if ($route->matches($method, $path)) {
-            $this->currentRoute = $route;
-            $this->params = $route->extractParameters($path);
-            break;
-        }
-    }
-
-    if (!$this->currentRoute) {
-        $this->handleNotFound($path, $method);
-        return;
-    }
-
-    // Run middleware (if any)
-    $this->runMiddleware($this->currentRoute->middleware);
-
-    // Execute action (and capture the result)
-    return $this->executeActionAndReturn($this->currentRoute->action, $this->params);
-}
-private function executeActionAndReturn($action, $params = [])
-{
-    if (is_callable($action)) {
-        return call_user_func_array($action, array_values($params));
-    }
-
-    if (is_string($action) && strpos($action, '@') !== false) {
-        list($controllerName, $methodName) = explode('@', $action);
-        $controllerFile = __DIR__ . "/../app/Controllers/{$controllerName}.php";
-
-        if (!file_exists($controllerFile)) {
-            throw new Exception("Controller not found: {$controllerName}");
+        // Find matching route
+        foreach ($this->routes[$method] ?? [] as $route) {
+            if ($route->matches($method, $path)) {
+                $this->currentRoute = $route;
+                $this->params = $route->extractParameters($path);
+                break;
+            }
         }
 
-        require_once $controllerFile;
-        $controller = new $controllerName();
-
-        if (!method_exists($controller, $methodName)) {
-            throw new Exception("Method not found: {$controllerName}::{$methodName}");
+        if (!$this->currentRoute) {
+            $this->handleNotFound($path, $method);
+            return;
         }
 
-        // ✅ Return whatever the controller returns
-        return call_user_func_array([$controller, $methodName], array_values($params));
-    }
+        // Run middleware (if any)
+        $this->runMiddleware($this->currentRoute->middleware);
 
-    throw new Exception("Invalid route action type");
-}
+        // Execute action (and capture the result)
+        return $this->executeActionAndReturn($this->currentRoute->action, $this->params);
+    }
+    private function executeActionAndReturn($action, $params = [])
+    {
+        if (is_callable($action)) {
+            return call_user_func_array($action, array_values($params));
+        }
+
+        if (is_string($action) && strpos($action, '@') !== false) {
+            list($controllerName, $methodName) = explode('@', $action);
+            $controllerFile = __DIR__ . "/../app/Controllers/{$controllerName}.php";
+
+            if (!file_exists($controllerFile)) {
+                throw new Exception("Controller not found: {$controllerName}");
+            }
+
+            require_once $controllerFile;
+            $controller = new $controllerName();
+
+            if (!method_exists($controller, $methodName)) {
+                throw new Exception("Method not found: {$controllerName}::{$methodName}");
+            }
+
+            // ✅ Return the JSON string instead of echo
+            return $controller->$methodName(...array_values($params));
+        }
+
+        throw new Exception("Invalid route action type");
+    }
 
 }
 ?>

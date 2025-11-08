@@ -15,7 +15,7 @@ $menuData = [
         'icon' => '📊',
         'url' => 'dashboard',
         'permissions' => ['read_data', 'delete_customer'],
-        'user_group' => ['admin', 'user', 'viewer'],
+        'user_group' => [0, 'admin', 'user', 'viewer'],
         'children' => [],
         'open' => ['dashboard']
     ],
@@ -25,7 +25,7 @@ $menuData = [
         'icon' => '👥',
         'url' => '#',
         'permissions' => ['read_data', 'delete_customer'],
-        'user_group' => ['admin', 'user', 'viewer'],
+        'user_group' => [0, 'admin', 'user', 'viewer'],
         'open' => ['users', 'create_user'],
         'children' => [
             [
@@ -34,7 +34,7 @@ $menuData = [
                 'icon' => '📋',
                 'url' => 'users',
                 'permissions' => ['read_data', 'delete_customer'],
-                'user_group' => ['admin', 'user', 'viewer'],
+                'user_group' => [0, 'admin', 'user', 'viewer'],
                 'children' => [],
                 'active' => ['users']
             ],
@@ -44,7 +44,7 @@ $menuData = [
                 'icon' => '➕',
                 'url' => 'add-user',
                 'permissions' => ['read_data', 'delete_customer'],
-                'user_group' => ['admin', 'user', 'viewer'],
+                'user_group' => [0, 'admin', 'user', 'viewer'],
                 'children' => [],
                 'active' => ['create_user']
             ],
@@ -54,7 +54,7 @@ $menuData = [
                 'icon' => '🛡️',
                 'url' => '#',
                 'permissions' => ['read_data', 'delete_customer'],
-                'user_group' => ['admin', 'user', 'viewer'],
+                'user_group' => [0, 'admin', 'user', 'viewer'],
                 'children' => [
                     [
                         'id' => 'roles_list',
@@ -62,7 +62,7 @@ $menuData = [
                         'icon' => '⚙️',
                         'url' => 'roles',
                         'permissions' => ['read_data', 'delete_customer'],
-                        'user_group' => ['admin', 'user', 'viewer'],
+                        'user_group' => [0, 'admin', 'user', 'viewer'],
                         'children' => []
                     ],
                     [
@@ -71,7 +71,7 @@ $menuData = [
                         'icon' => '🔑',
                         'url' => 'permissions',
                         'permissions' => ['read_data', 'delete_customer'],
-                        'user_group' => ['admin', 'user', 'viewer'],
+                        'user_group' => [0, 'admin', 'user', 'viewer'],
                         'children' => []
                     ]
                 ]
@@ -112,7 +112,7 @@ $menuData = [
         'icon' => '📦',
         'url' => '#',
         'permissions' => ['read_data', 'delete_customer'],
-        'user_group' => ['admin', 'user', 'viewer'],
+        'user_group' => [0, 'admin', 'user', 'viewer'],
         'children' => [
             [
                 'id' => 'products_list',
@@ -120,7 +120,7 @@ $menuData = [
                 'icon' => '📋',
                 'url' => 'products',
                 'permissions' => ['read_data', 'delete_customer'],
-                'user_group' => ['admin', 'user', 'viewer'],
+                'user_group' => [0, 'admin', 'user', 'viewer'],
                 'children' => []
             ],
             [
@@ -129,7 +129,7 @@ $menuData = [
                 'icon' => '➕',
                 'url' => 'add-product',
                 'permissions' => ['read_data', 'delete_customer'],
-                'user_group' => ['admin', 'user', 'viewer'],
+                'user_group' => [0, 'admin', 'user', 'viewer'],
                 'children' => []
             ],
             [
@@ -138,7 +138,7 @@ $menuData = [
                 'icon' => '📑',
                 'url' => 'categories',
                 'permissions' => ['read_data', 'delete_customer'],
-                'user_group' => ['admin', 'user', 'viewer'],
+                'user_group' => [0, 'admin', 'user', 'viewer'],
                 'children' => []
             ]
         ]
@@ -149,7 +149,7 @@ $menuData = [
         'icon' => '⚙️',
         'url' => 'settings',
         'permissions' => ['read_data', 'delete_customer'],
-        'user_group' => ['admin', 'user',],
+        'user_group' => [0, 'admin', 'user',],
         'children' => []
     ]
 ];

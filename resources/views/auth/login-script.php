@@ -1,0 +1,1 @@
+<script type="module" src="../resources/views/auth/auth.js"></script>

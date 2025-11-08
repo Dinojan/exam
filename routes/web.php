@@ -8,11 +8,9 @@ Router::get('/profile/{id}', 'DashboardController@profile', 'profile.show');
 // Resource example (assumes PostController exists or create it)
 Router::resource('posts', 'PostController');
 // Group example with middleware
-Router::group(['prefix' => 'admin', 'middleware' => ['auth']], function() {
+Router::group(['prefix' => 'admin', 'middleware' => ['auth']], function () {
     Router::get('/dashboard', 'DashboardController@adminDashboard');
 });
 // Closure example
-Router::post('/login', function() {
-    // Handle login
-    echo 'Login processed';
-}, 'login');
+Router::post('/API/login', 'AuthController@validate_credentials', 'login');
+Router::post('/API/logout', 'AuthController@logout', 'login');

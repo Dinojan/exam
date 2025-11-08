@@ -39,10 +39,10 @@ function currentNav()
 
 function hasAccess($item)
 {
-    $userGroupAccess = in_array($_SESSION['user_group'], $item['user_group']);
+    $userGroupAccess = in_array($_SESSION['role'], $item['user_group']);
     $permissionAccess = true;
     if (!empty($item['permissions'])) {
-        $permissionAccess = !empty(array_intersect($item['permissions'], $_SESSION['user_permissions']));
+        $permissionAccess = !empty(array_intersect($item['permissions'], $_SESSION['permissions']));
     }
     return $userGroupAccess && $permissionAccess;
 }
@@ -117,7 +117,7 @@ function renderMenuOptions($menu, $collapse, $level = 0)
                     <div class="overflow-hidden ml-2 border-l border-gray-700 transition-all duration-500 ease-in-out
                             peer-checked:opacity-100 opacity-0 
                             peer-checked:max-h-[1000px] max-h-0">
-                        <?php renderMenuOptions($item['children'], $level + 1, $collapse); ?>
+                        <?php renderMenuOptions($item['children'], $collapse); ?>
                     </div>
 
                 <?php else: ?>

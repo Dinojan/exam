@@ -1,4 +1,7 @@
-<script>
+<script type="module">
+    import { Toast } from '../resources/assets/js/toast.js';
+
+
     const menuBtn = document.getElementById('menu-btn');
     const menuClose = document.getElementById('menu-close');
     const sidebar = document.getElementById('sidebar');
@@ -10,6 +13,7 @@
     const logoContainer = document.getElementById('logo-container');
     const fullScreen = document.getElementById('full-screen');
     const footer = document.getElementById('footer');
+    const logout = document.getElementById('logout');
 
     function toggleSidebar() {
         sidebar.classList.toggle('w-0');
@@ -86,4 +90,24 @@
             footer.classList.add('w-[calc(100%-4rem)]');
         }
     });
+
+    logout.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetch('API/logout', {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Toast({ type: 'success', title: 'Logout', msg: data.msg });
+                    setTimeout(() => {
+                        window.location.href = 'login';
+                    }, 1000)
+                }
+            })
+            .catch(error => {
+                console.error('Logout Error:', error);
+                Toast({ type: 'error', title: 'Error', msg: 'Logout failed' });
+            });
+    })
 </script>
