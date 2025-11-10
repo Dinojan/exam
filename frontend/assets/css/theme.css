@@ -10,18 +10,14 @@
   scroll-behavior: smooth;
 }
 
+#menu-container::-webkit-scrollbar {
+  display: none;
+}
 
-/* body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    overflow: hidden;
-    position: relative;
-} */
+/* Navbar */
+.navbar {
+  position: fixed;
+}
 
 /* Animated background elements */
 .light-effect {

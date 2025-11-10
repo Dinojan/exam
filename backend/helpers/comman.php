@@ -53,7 +53,7 @@ if (!function_exists('config')) {
 function view($view, $data = [])
 {
     // use Core\View;
-    $viewPath = FRONTEND_PATH . "views/" . str_replace('.', '/', $view) . ".php";
+    $viewPath = FRONTEND_PATH . "pages/" . str_replace('.', '/', $view) . ".php";
     $viewEngine = new View($data);
     return $viewEngine->render($viewPath, $data);
 }
@@ -61,7 +61,7 @@ function view($view, $data = [])
 // view_path helper for includes
 function view_path($view)
 {
-    return FRONTEND_PATH . "views/" . str_replace('.', '/', $view) . ".php";
+    return FRONTEND_PATH . "pages/" . str_replace('.', '/', $view) . ".php";
 }
 
 
@@ -90,8 +90,9 @@ if (!function_exists('asset')) {
 }
 
 // db()
-if(!function_exists('db')){
-    function db(){
+if (!function_exists('db')) {
+    function db()
+    {
         $db = new Database();
         return $db->getConnection();
     }
@@ -110,9 +111,113 @@ if (!function_exists('dbTable')) {
     function dbTable(string $table, array $columns, array $seeds = []): array
     {
         return [
-            'table'   => $table,
+            'table' => $table,
             'columns' => $columns,
-            'seeds'   => $seeds
+            'seeds' => $seeds
         ];
     }
+}
+
+function currentNav()
+{
+    $current = strtok($_SERVER['REQUEST_URI'], '?');
+    $current = str_replace('/NIT/exam/', '', $current);
+    return $current;
+}
+
+function hasAccess($item)
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $roleMatch = in_array($_SESSION['role'], $item['role'] ?? []);
+    $permissionMatch = false;
+
+    if (!empty($item['permissions']) && !empty($_SESSION['permissions'])) {
+        $permissionMatch = !empty(array_intersect($item['permissions'], $_SESSION['permissions']));
+    }
+
+    // Role match or permission match => show menu
+    return $roleMatch || $permissionMatch;
+}
+
+
+
+function isActiveMenuItem($item, $current)
+{
+    if ($item['url'] == $current)
+        return true;
+
+    if (!empty($item['children'])) {
+        foreach ($item['children'] as $child) {
+            if (isActiveMenuItem($child, $current))
+                return true;
+        }
+    }
+    return false;
+}
+$collapse = false;
+function setMinibar()
+{
+    global $collapse;
+    $collapse = true;
+}
+
+function isCollapse()
+{
+    global $collapse;
+    return $collapse;
+}
+
+function renderMenuOptions($menu, $collapse, $level = 0)
+{
+    $current = currentNav();
+    ?>
+    <ul class="space-y-1 <?php echo ($level == 0) ? 'mb-32' : '' ?>">
+        <?php foreach ($menu as $item): ?>
+            <?php if (!hasAccess($item))
+                continue; ?>
+            <?php
+            $hasChildren = !empty($item['children']);
+            $menuId = 'menu_' . $item['id'] . '_' . $level;
+            $isActive = isActiveMenuItem($item, $current);
+            $checked = $isActive ? 'checked' : '';
+            $activeClass = $isActive ? 'bg-[#0ff3] hover:bg-[#0ff6] border-blue-500 border-l-[#0ff] border-l-2' : 'text-gray-300 hover:text-white hover:bg-[#fff6]';
+            // $iconClass = $isActive ? 'text-blue-500' : 'text-gray-400';
+            ?>
+
+            <li class="overflow-hidden rounded-r-lg transition-all duration-200">
+                <?php if ($hasChildren): ?>
+                    <input type="checkbox" id="<?= $menuId ?>" class="peer hidden" <?= $checked ?>>
+                    <label for="<?= $menuId ?>"
+                        class="flex items-center justify-between p-2 cursor-pointer text-white hover:bg-[#fff6]">
+                        <div class="list flex items-center gap-3 group-hover:ml-0 <?php echo $collapse ? 'ml-0 md:ml-2' : ''; ?>">
+                            <span class="text-lg text-white"><?= $item['icon'] ?></span>
+                            <span
+                                class="menu-label font-medium transition-all duration-300 group-hover:opacity-100 group-hover:mx-0 group-hover:leading-none <?php echo $collapse ? 'md:opacity-0 md:mx-2 md:leading-3 ' : 'leading-none'; ?>"><?= $item['title'] ?></span>
+                        </div>
+                        <i
+                            class="fa-solid fa-chevron-right text-white transition-transform duration-300 peer-checked:rotate-90"></i>
+                    </label>
+
+                    <div class="overflow-hidden ml-2 border-l border-gray-700 transition-all duration-500 ease-in-out
+                            peer-checked:opacity-100 opacity-0 
+                            peer-checked:max-h-[1000px] max-h-0">
+                        <?php renderMenuOptions($item['children'], $collapse, $level + 1); ?>
+                    </div>
+
+                <?php else: ?>
+                    <a href="<?= $item['url'] ?>"
+                        class="flex items-center gap-3 p-2 <?= $activeClass ?> transition-all duration-200">
+                        <span
+                            class="list-icon text-lg text-white <?php echo $collapse ? 'md:ml-2 group-hover:ml-0' : ''; ?>"><?= $item['icon'] ?></span>
+                        <span
+                            class="menu-label font-medium text-<?php echo $isActive ? 'white font-bold' : 'white' ?> group-hover:opacity-100 group-hover:mx-0 group-hover:leading-none <?php echo $collapse ? 'md:opacity-0 md:mx-2 md:leading-3' : 'leading-none'; ?>"><?= $item['title'] ?></span>
+                    </a>
+                <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+    <?php
 }

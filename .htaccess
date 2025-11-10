@@ -6,7 +6,7 @@
     Options +FollowSymLinks -MultiViews -Indexes
     RewriteEngine On
     # RewriteBase /public/
-    RewriteBase /web_2/
+    RewriteBase /NIT/exam/
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
