@@ -10,7 +10,7 @@
 <nav id="navbar"
     class="sticky top-0 flex flex-row items-center justify-between pl-1 pr-1 py-2 bg-[#0003] border-[#fff6] border-b md:rounded-br-2xl backdrop-blur transition-all duration-200 max-h-10 w-full z-[999999]">
     <button id="menu-btn" class="text-white px-3 py-1 rounded-md hover:bg-[#fff2] transition-all duration-300">
-        <i class="fa-solid fa-bars"></i>
+        <i class="fa-solid fa-angle-left"></i>
     </button>
     <div class="flex flex-row">
         <button id="notification"

@@ -225,7 +225,7 @@ $menuData = [
             [
                 'id' => 'user_group',
                 'title' => 'User Group',
-                'icon' => '<i class="fa-solid fa-users"></i>',
+                'icon' => '<i class="fa-solid fa-user-group"></i>',
                 'url' => 'user_group',
                 'role' => [1, 2, 3],
                 'permissions' => ['manage_users'],

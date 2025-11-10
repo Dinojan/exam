@@ -33,6 +33,7 @@ Router::get('/notifications', 'PageAPI@notifications', 'notifications', ['auth']
 // 🔹 User Management
 Router::get('/users', 'PageAPI@users', 'users_list', ['auth']);
 Router::get('/add_user', 'PageAPI@addUser', 'users_add', ['auth']);
+Router::get('/user_group', 'PageAPI@userGroup', 'user_group', ['auth']);
 
 // 🔹 Reports
 Router::get('/exam_reports', 'PageAPI@examReports', 'exam_reports', ['auth']);

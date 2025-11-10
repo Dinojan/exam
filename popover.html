@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Popover System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .toast-card {
+            @apply fixed flex items-center px-4 py-2 rounded-md shadow-md transition-all duration-300 z-[10000000] min-w-[20rem] max-w-[36rem];
+        }
+
+        /* Positions & Animations */
+        .toast-right,
+        .toast-top-right,
+        .toast-bottom-right {
+            @apply opacity-0 translate-x-full;
+        }
+
+        .toast-right.show,
+        .toast-top-right.show,
+        .toast-bottom-right.show {
+            @apply opacity-100 translate-x-0;
+        }
+
+        .toast-left,
+        .toast-top-left,
+        .toast-bottom-left {
+            @apply opacity-0 -translate-x-full;
+        }
+
+        .toast-left.show,
+        .toast-top-left.show,
+        .toast-bottom-left.show {
+            @apply opacity-100 translate-x-0;
+        }
+
+        .toast-top {
+            @apply opacity-0 left-1/2 top-4 -translate-x-1/2 -translate-y-full;
+        }
+
+        .toast-top.show {
+            @apply opacity-100 -translate-x-1/2 translate-y-0;
+        }
+
+        .toast-bottom {
+            @apply opacity-0 left-1/2 bottom-4 -translate-x-1/2 translate-y-full;
+        }
+
+        .toast-bottom.show {
+            @apply opacity-100 -translate-x-1/2 translate-y-0;
+        }
+
+        .toast-left {
+            @apply top-1/2 left-4 opacity-0 -translate-y-1/2 -translate-x-full;
+        }
+
+        .toast-left.show {
+            @apply opacity-100 -translate-y-1/2 translate-x-0;
+        }
+
+        .toast-right {
+            @apply top-1/2 right-4 opacity-0 -translate-y-1/2 translate-x-full;
+        }
+
+        .toast-right.show {
+            @apply opacity-100 -translate-y-1/2 translate-x-0;
+        }
+
+        .toast-top-right {
+            @apply top-4 right-4 opacity-0 translate-x-full;
+        }
+
+        .toast-top-right.show {
+            @apply opacity-100 translate-x-0;
+        }
+
+        .toast-top-left {
+            @apply top-4 left-4 opacity-0 -translate-x-full;
+        }
+
+        .toast-top-left.show {
+            @apply opacity-100 translate-x-0;
+        }
+
+        .toast-bottom-right {
+            @apply bottom-4 right-4 opacity-0 translate-x-full;
+        }
+
+        .toast-bottom-right.show {
+            @apply opacity-100 translate-x-0;
+        }
+
+        .toast-bottom-left {
+            @apply bottom-4 left-4 opacity-0 -translate-x-full;
+        }
+
+        .toast-bottom-left.show {
+            @apply opacity-100 translate-x-0;
+        }
+
+        /* Toast Types */
+        .toast-success {
+            @apply bg-green-50 text-green-800 border-l-4 border-green-500;
+        }
+
+        .toast-error {
+            @apply bg-red-50 text-red-800 border-l-4 border-red-500;
+        }
+
+        .toast-info {
+            @apply bg-blue-50 text-blue-800 border-l-4 border-blue-500;
+        }
+
+        .toast-warning {
+            @apply bg-yellow-50 text-yellow-800 border-l-4 border-yellow-400;
+        }
+
+        .toast-dark {
+            @apply bg-gray-800 text-gray-50 border-l-4 border-gray-600;
+        }
+
+        .toast-light {
+            @apply bg-gray-50 text-gray-700 border-l-4 border-gray-300;
+        }
+
+        /* Toast Icon */
+        .toast-icon {
+            @apply mr-4 text-[2.5rem];
+        }
+
+        .toast-success .toast-icon {
+            @apply text-green-800;
+        }
+
+        .toast-error .toast-icon {
+            @apply text-red-800;
+        }
+
+        .toast-info .toast-icon {
+            @apply text-blue-800;
+        }
+
+        .toast-warning .toast-icon {
+            @apply text-yellow-800;
+        }
+
+        .toast-dark .toast-icon {
+            @apply text-gray-50;
+        }
+
+        .toast-light .toast-icon {
+            @apply text-gray-700;
+        }
+
+        /* Toast Title */
+        .toast-title {
+            @apply font-bold;
+        }
+
+        /* Toast Close Button */
+        .toast-close {
+            @apply absolute top-2 right-2 cursor-pointer opacity-70 transition-opacity duration-200;
+        }
+
+        .toast-close:hover {
+            @apply opacity-100;
+        }
+
+        /* Toast Progress */
+        .toast-progress {
+            @apply absolute bottom-0 left-0 h-1 w-full rounded-b-md overflow-hidden bg-black/10;
+        }
+
+        .toast-progress-bar {
+            @apply h-full w-full origin-left;
+            transform: scaleX(1);
+        }
+
+        .toast-success .toast-progress-bar {
+            @apply bg-green-500;
+        }
+
+        .toast-error .toast-progress-bar {
+            @apply bg-red-500;
+        }
+
+        .toast-info .toast-progress-bar {
+            @apply bg-blue-500;
+        }
+
+        .toast-warning .toast-progress-bar {
+            @apply bg-yellow-400;
+        }
+
+        .toast-dark .toast-progress-bar {
+            @apply bg-gray-600;
+        }
+
+        .toast-light .toast-progress-bar {
+            @apply bg-gray-300;
+        }
+
+        /* Additional styles for popovers */
+        .popover-overlay {
+            @apply fixed top-0 inset-0 bg-black/30 z-[9999999] transition-opacity duration-300;
+        }
+
+        .popover-card {
+            @apply fixed top-0 bg-white rounded-lg shadow-xl z-[10000000] transition-all duration-300;
+            min-width: 400px;
+            max-width: 90vw;
+        }
+
+        .popover-header {
+            @apply flex justify-between items-center p-4 border-b;
+        }
+
+        .popover-body {
+            @apply p-4;
+        }
+
+        .popover-footer {
+            @apply flex justify-end gap-2 p-4 border-t;
+        }
+
+        .popover-btn {
+            @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+        }
+
+        .popover-btn-primary {
+            @apply bg-blue-500 text-white hover:bg-blue-600;
+        }
+
+        .popover-btn-secondary {
+            @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+        }
+
+        .popover-btn-danger {
+            @apply bg-red-500 text-white hover:bg-red-600;
+        }
+
+        .popover-table {
+            @apply w-full border-collapse;
+        }
+
+        .popover-table th,
+        .popover-table td {
+            @apply border border-gray-300 p-2 text-left;
+        }
+
+        .popover-table th {
+            @apply bg-gray-100;
+        }
+
+        .popover-form input,
+        .popover-form textarea,
+        .popover-form select {
+            @apply w-full p-2 border border-gray-300 rounded-md mb-3;
+        }
+
+        .popover-form label {
+            @apply block mb-1 font-medium;
+        }
+
+        /* Animation classes for popovers */
+        .popover-center {
+            @apply top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 scale-95;
+        }
+
+        .popover-center.show {
+            @apply opacity-100 scale-100;
+        }
+
+        .popover-top {
+            @apply top-4 left-1/2 transform -translate-x-1/2 opacity-0 -translate-y-full;
+        }
+
+        .popover-top.show {
+            @apply opacity-100 translate-y-0;
+        }
+
+        .popover-bottom {
+            @apply bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 translate-y-full;
+        }
+
+        .popover-bottom.show {
+            @apply opacity-100 translate-y-0;
+        }
+
+        .popover-left {
+            @apply top-1/2 left-4 transform -translate-y-1/2 opacity-0 -translate-x-full;
+        }
+
+        .popover-left.show {
+            @apply opacity-100 translate-x-0;
+        }
+
+        .popover-right {
+            @apply top-1/2 right-4 transform -translate-y-1/2 opacity-0 translate-x-full;
+        }
+
+        .popover-right.show {
+            @apply opacity-100 translate-x-0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-2">Dynamic Popover System</h1>
+        <p class="text-center text-gray-600 mb-8">Three types of popovers with different functionality</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-3">Information Popover</h2>
+                <p class="text-gray-600 mb-4">Displays information with an OK button. Can be positioned in different screen locations.</p>
+                <button id="showInfo" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors">
+                    Show Information
+                </button>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-3">Confirmation Popover</h2>
+                <p class="text-gray-600 mb-4">Asks for user confirmation with Confirm and Cancel buttons. Returns user choice.</p>
+                <button id="showConfirm" class="w-full bg-yellow-500 text-white py-2 rounded-md hover:bg-yellow-600 transition-colors">
+                    Show Confirmation
+                </button>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-3">Content Popover</h2>
+                <p class="text-gray-600 mb-4">Displays custom content like forms, tables, or any HTML content.</p>
+                <button id="showContent" class="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition-colors">
+                    Show Content
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4">Position Options</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="top-left">
+                    Top Left
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="top">
+                    Top Center
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="top-right">
+                    Top Right
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="left">
+                    Left
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="center">
+                    Center
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="right">
+                    Right
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="bottom-left">
+                    Bottom Left
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="bottom">
+                    Bottom Center
+                </button>
+                <button class="popover-position-btn bg-gray-200 py-2 rounded-md hover:bg-gray-300" data-position="bottom-right">
+                    Bottom Right
+                </button>
+            </div>
+            <p class="text-gray-600">Selected position: <span id="currentPosition" class="font-medium">center</span></p>
+        </div>
+
+        <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+            <h3 class="font-bold mb-2">How to use:</h3>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Select a position for the popover</li>
+                <li>Click on one of the three popover types</li>
+                <li>Information popovers auto-close after 5 seconds or when manually closed</li>
+                <li>Confirmation popovers return your choice via callback</li>
+                <li>Content popovers can display any HTML content</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Popover system
+        class PopoverSystem {
+            constructor() {
+                this.currentPosition = 'center';
+                this.initEventListeners();
+            }
+
+            initEventListeners() {
+                // Position buttons
+                document.querySelectorAll('.popover-position-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.currentPosition = btn.getAttribute('data-position');
+                        document.getElementById('currentPosition').textContent = this.currentPosition;
+                    });
+                });
+
+                // Show popover buttons
+                document.getElementById('showInfo').addEventListener('click', () => {
+                    this.showInformation(
+                        'Information Popover',
+                        'This is an information popover with an OK button. It will automatically close after 5 seconds.',
+                        'info'
+                    );
+                });
+
+                document.getElementById('showConfirm').addEventListener('click', () => {
+                    this.showConfirmation(
+                        'Confirm Action',
+                        'Are you sure you want to proceed with this action?',
+                        (confirmed) => {
+                            if (confirmed) {
+                                this.showToast('Action confirmed!', 'success');
+                            } else {
+                                this.showToast('Action cancelled.', 'warning');
+                            }
+                        }
+                    );
+                });
+
+                document.getElementById('showContent').addEventListener('click', () => {
+                    this.showContent(
+                        'Content Popover',
+                        this.getSampleContent()
+                    );
+                });
+            }
+
+            // Show information popover
+            showInformation(title, message, type = 'info') {
+                const popover = this.createPopover(title, message, type);
+                
+                // Add OK button
+                const okButton = document.createElement('button');
+                okButton.className = 'popover-btn popover-btn-primary';
+                okButton.textContent = 'OK';
+                okButton.addEventListener('click', () => {
+                    this.closePopover(popover.id);
+                });
+                
+                popover.footer.appendChild(okButton);
+                
+                // Auto close after 5 seconds
+                setTimeout(() => {
+                    if (document.getElementById(popover.id)) {
+                        this.closePopover(popover.id);
+                    }
+                }, 5000000);
+            }
+
+            // Show confirmation popover
+            showConfirmation(title, message, callback) {
+                const popover = this.createPopover(title, message, 'warning');
+                
+                // Add Cancel button
+                const cancelButton = document.createElement('button');
+                cancelButton.className = 'popover-btn popover-btn-secondary';
+                cancelButton.textContent = 'Cancel';
+                cancelButton.addEventListener('click', () => {
+                    callback(false);
+                    this.closePopover(popover.id);
+                });
+                
+                // Add Confirm button
+                const confirmButton = document.createElement('button');
+                confirmButton.className = 'popover-btn popover-btn-danger';
+                confirmButton.textContent = 'Confirm';
+                confirmButton.addEventListener('click', () => {
+                    callback(true);
+                    this.closePopover(popover.id);
+                });
+                
+                popover.footer.appendChild(cancelButton);
+                popover.footer.appendChild(confirmButton);
+            }
+
+            // Show content popover
+            showContent(title, content) {
+                const popover = this.createPopover(title, '', 'info');
+                
+                // Set custom content
+                popover.body.innerHTML = content;
+                
+                // Add Close button
+                const closeButton = document.createElement('button');
+                closeButton.className = 'popover-btn popover-btn-primary';
+                closeButton.textContent = 'Close';
+                closeButton.addEventListener('click', () => {
+                    this.closePopover(popover.id);
+                });
+                
+                popover.footer.appendChild(closeButton);
+            }
+
+            // Create base popover structure
+            createPopover(title, message, type) {
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'popover-overlay';
+                overlay.id = 'popover-overlay-' + Date.now();
+                
+                // Create popover card
+                const popoverId = 'popover-' + Date.now();
+                const popover = document.createElement('div');
+                popover.id = popoverId;
+                popover.className = `popover-card popover-${this.currentPosition}`;
+                
+                // Create header
+                const header = document.createElement('div');
+                header.className = 'popover-header';
+                
+                const titleEl = document.createElement('h3');
+                titleEl.className = 'text-lg font-bold';
+                titleEl.textContent = title;
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'toast-close';
+                closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                closeBtn.addEventListener('click', () => {
+                    this.closePopover(popoverId);
+                });
+                
+                header.appendChild(titleEl);
+                header.appendChild(closeBtn);
+                
+                // Create body
+                const body = document.createElement('div');
+                body.className = 'popover-body';
+                
+                if (message) {
+                    const messageEl = document.createElement('p');
+                    messageEl.textContent = message;
+                    body.appendChild(messageEl);
+                }
+                
+                // Create footer
+                const footer = document.createElement('div');
+                footer.className = 'popover-footer';
+                
+                // Assemble popover
+                popover.appendChild(header);
+                popover.appendChild(body);
+                popover.appendChild(footer);
+                
+                // Add to document
+                document.body.appendChild(overlay);
+                overlay.appendChild(popover);
+                
+                // Show with animation
+                setTimeout(() => {
+                    overlay.classList.add('opacity-100');
+                    popover.classList.add('show');
+                }, 10);
+                
+                // Close on overlay click
+                overlay.addEventListener('click', () => {
+                    this.closePopover(popoverId);
+                });
+                
+                return {
+                    id: popoverId,
+                    body: body,
+                    footer: footer
+                };
+            }
+
+            // Close popover
+            closePopover(popoverId) {
+                const popover = document.getElementById(popoverId);
+                const overlay = document.getElementById('popover-overlay-' + popoverId.split('-')[1]);
+                
+                if (popover) {
+                    popover.classList.remove('show');
+                    setTimeout(() => {
+                        if (popover.parentNode) {
+                            popover.parentNode.removeChild(popover);
+                        }
+                    }, 300);
+                }
+                
+                if (overlay) {
+                    overlay.classList.remove('opacity-100');
+                    setTimeout(() => {
+                        if (overlay.parentNode) {
+                            overlay.parentNode.removeChild(overlay);
+                        }
+                    }, 300);
+                }
+            }
+
+            // Get sample content for content popover
+            getSampleContent() {
+                return `
+                    <div class="popover-form mb-4">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" placeholder="Enter your name">
+                        
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="Enter your email">
+                        
+                        <label for="message">Message</label>
+                        <textarea id="message" rows="3" placeholder="Enter your message"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="font-bold mb-2">Sample Table</h4>
+                        <table class="popover-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Product A</td>
+                                    <td>$19.99</td>
+                                    <td>5</td>
+                                </tr>
+                                <tr>
+                                    <td>Product B</td>
+                                    <td>$29.99</td>
+                                    <td>3</td>
+                                </tr>
+                                <tr>
+                                    <td>Product C</td>
+                                    <td>$9.99</td>
+                                    <td>10</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize the popover system when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new PopoverSystem();
+        });
+    </script>
+</body>
+</html>

@@ -92,6 +92,11 @@ class PageAPI
         return view('users.add', ['title' => 'Add User']);
     }
 
+    public function userGroup()
+    {
+        return view('users.group', ['title' => 'User Groups']);
+    }
+
     public function examReports()
     {
         return view('reports.exam', ['title' => 'Exam Reports']);
