@@ -1,7 +1,7 @@
 // PHP API Content Loader
 const PHPAPILoader = {
     config: {
-        baseUrl: 'model/',
+        baseUrl: 'modal/',
         timeout: 10000,
         retryAttempts: 3,
         defaultHeaders: {
@@ -44,6 +44,11 @@ const PHPAPILoader = {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
+                const contentType = response.headers.get('content-type') || '';
+
+                if (contentType.includes('text/html')) {
+                    return { html: await response.text() }; // popup expects { html: '...' }
+                }
                 return await response.json();
 
             } catch (error) {

@@ -93,10 +93,11 @@ if (!function_exists('asset')) {
 }
 
 if (!function_exists('getModelFile')) {
-    function getModelFile($model)
+    function getModalFile($file_name)
     {
-        $url = 'frontend/models/' . str_replace('.', '/', $model) . '.php';
-        return $url;
+
+        $path = 'frontend/modals/' . str_replace('.', '/', $file_name) . '.php';
+        return file_exists($path) ? $path : false;
     }
 }
 

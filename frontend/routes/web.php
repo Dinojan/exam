@@ -61,8 +61,11 @@ Router::group(['middleware' => ['auth']], function () {
 Router::group(['prefix' => 'API'], function() {
     Router::post('/login', 'AuthAPI@login');
     Router::post('/logout', 'AuthAPI@logout');
+    Router::get('/users', 'UserAPI@getAllUsers', 'get_all_users', ['auth']);
+    Router::get('/user_groups', 'UserGroupAPI@getAllGroups', 'get_all_users_groups', ['auth']);
+    Router::get('/user_groups/{id}/permissions', 'UserGroupAPI@getGroupPermissions', 'get_group_permissions', ['auth']);
 });
 
-Router::group(['prefix' => 'model'], function() {
-    Router::get('/{model}', 'ModelAPI@getModel');
+Router::group(['prefix' => 'modal'], function() {
+    Router::get('/{modal}', 'ModalAPI@getModal');
 });

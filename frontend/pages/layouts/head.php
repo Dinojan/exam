@@ -18,6 +18,7 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="<?= asset('assets/js/angular.min.js') ?>"></script>
     <script src="<?= asset('assets/js/angularApp.js') ?>"></script>
+    <script src="<?php echo asset('assets/js/modalController.js') ?>"></script>
     <script type="module" src="<?= asset('assets/js/main.js') ?>"></script>
     <!-- end head -->
 </head>

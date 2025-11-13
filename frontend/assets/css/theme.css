@@ -167,6 +167,22 @@
   }
 }
 
+[ng-if] {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .opacity-50 {
   opacity: 0.5;
 }
@@ -417,7 +433,7 @@
 }
 
 .popover-body {
-  @apply p-6;
+  @apply p-6 max-h-[80vh] overflow-y-auto;
 }
 
 .popover-footer {
