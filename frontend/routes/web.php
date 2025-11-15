@@ -64,6 +64,7 @@ Router::group(['prefix' => 'API'], function() {
     Router::get('/users', 'UserAPI@getAllUsers', 'get_all_users', ['auth']);
     Router::get('/user_groups', 'UserGroupAPI@getAllGroups', 'get_all_users_groups', ['auth']);
     Router::get('/user_groups/{id}/permissions', 'UserGroupAPI@getGroupPermissions', 'get_group_permissions', ['auth']);
+    Router::put('/user_groups/{id}/permissions', 'UserGroupAPI@setPermissions', 'set_group_permissions', ['auth']);
 });
 
 Router::group(['prefix' => 'modal'], function() {

@@ -80,6 +80,7 @@ const PHPAPILoader = {
 };
 
 // Simplified Popover system with automatic API fetching for any content type
+let lastPopupInstance = null;
 export const popup = {
     async show(options) {
         const overlay = document.createElement('div');
@@ -108,14 +109,14 @@ export const popup = {
             contentHtml = `
                 <div class="popover-loading">
                     <div class="loading-spinner"></div>
-                    <p class="mt-3 text-gray-600">Loading content...</p>
+                    <p class="mt-3 text-gray-300">Loading content...</p>
                 </div>
             `;
         } else if (typeof options.content === 'function') {
             contentHtml = `
                 <div class="popover-loading">
                     <div class="loading-spinner"></div>
-                    <p class="mt-3 text-gray-600">Loading content...</p>
+                    <p class="mt-3 text-gray-300">Loading content...</p>
                 </div>
             `;
         }
@@ -156,7 +157,7 @@ export const popup = {
                     footerHtml = options.buttons.map((btn, index) => `
                         <button 
                             class="popover-button ${btn.class || ''}"
-                            style="background:${btn.background || '#3498db'};color:${btn.color || '#fff'}"
+                            style="background:${btn.background || '#3498db'}; color:${btn.color || '#fff'}"
                             data-index="${index}">
                             ${btn.text}
                         </button>
@@ -187,12 +188,12 @@ export const popup = {
 
         popover.innerHTML = `
             <div class="popover-header">
-                <h3 class="popover-title" style="color:${options.titleColor || '#000'}">${options.title}</h3>
+                <h3 class="popover-title" style="color:${options.titleColor || '#fff'}">${options.title}</h3>
                 <button class="popover-close">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="popover-body" style="color:${options.contentColor || '#000'}">
+            <div class="popover-body" style="color:${options.contentColor || '#fff'}">
                 ${contentHtml}
             </div>
             <div class="popover-footer" style="justify-content:${buttonPositionClass}">
@@ -230,6 +231,7 @@ export const popup = {
         }
 
         const closePopover = () => {
+            console.log('Closing popover');
             overlay.classList.remove('show');
             popover.classList.remove('show');
 
@@ -263,12 +265,35 @@ export const popup = {
         });
 
         popover.querySelectorAll('.popover-footer button').forEach((btn, idx) => {
-            btn.addEventListener('click', () => {
-                const button = options.buttons && options.buttons[idx];
-                if (button && button.onClick) button.onClick(popover);
-                else closePopover();
+            btn.addEventListener('click', async () => {
+                const buttonConfig = options.buttons && options.buttons[idx];
+                if (!buttonConfig || !buttonConfig.onClick) return;
+
+                // spinner & disable
+                const originalText = btn.textContent;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${originalText}`;
+
+                try {
+                    await buttonConfig.onClick(popover);
+                    // success
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                } catch (error) {
+                    // fail
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    Toast.fire({
+                        type: 'error',
+                        title: 'Error!',
+                        msg: error.message || 'Something went wrong'
+                    });
+                }
             });
         });
+
+
+
 
         const handleKeydown = (e) => {
             if (e.key === 'Escape') {
@@ -325,7 +350,8 @@ export const popup = {
             originalClose();
         };
 
-        return {
+
+        lastPopupInstance = {
             close: enhancedClose,
             element: popover,
             updateContent: (newContent) => {
@@ -351,6 +377,7 @@ export const popup = {
                 }
             }
         };
+        return lastPopupInstance;
     },
 
     async fetchAPIContent(apiConfig) {

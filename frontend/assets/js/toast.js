@@ -2,7 +2,6 @@ import { toast } from "./toast/fire.js";
 import { toast2 } from "./toast/fire2.js";
 import { popup } from "./toast/popover.js";
 
-
 export const Toast = {
     fire({ type, title, msg, position = 'top-right', duration = 5 }) {
         toast(type, title, msg, position, duration);
@@ -24,6 +23,8 @@ export const Toast = {
                 return popup.apiContent({ title, endpoint: apiConfig?.endpoint, method: apiConfig?.method, data: apiConfig?.data, buttons, size, buttonPosition });
             case 'error':
                 return popup.error({ title, content, options: { ...options, buttonPosition }, size });
+            case 'close':
+                return popup.destroyAll();
             default:
                 return popup.success({ title, content: { text: content, color: contentColor }, options: { ...options, buttonPosition }, size });
         }

@@ -20,5 +20,10 @@
     <script src="<?= asset('assets/js/angularApp.js') ?>"></script>
     <script src="<?php echo asset('assets/js/modalController.js') ?>"></script>
     <script type="module" src="<?= asset('assets/js/main.js') ?>"></script>
+    <style>
+        [ng-cloak] {
+            display: none !important;
+        }
+    </style>
     <!-- end head -->
 </head>

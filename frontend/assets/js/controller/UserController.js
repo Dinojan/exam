@@ -109,7 +109,9 @@ app.controller('UserController', [
 
         $scope.setPermissions = function (group) {
             $scope.selectedGroup = group;
-            $scope.permissionModalCtrl = permissionModelController($scope);
+            if (!$scope.permissionModalCtrl) {
+                $scope.permissionModalCtrl = permissionModelController($scope);
+            }
 
             // Init permission modules before popover opens
             $scope.permissionModalCtrl.init(group);
@@ -121,9 +123,16 @@ app.controller('UserController', [
                     endpoint: 'permission',
                     method: 'GET'
                 },
-                size: 'xxl'
+                size: 'xxl',
+                buttons: [{
+                    text: 'Save Permissions',
+                    onClick: function () {
+                        $scope.permissionModalCtrl.save();
+                    }
+                }],
+                buttonPosition: 'end'
+
             }).then(popoverInstance => {
-                // HTML load ஆன பிறகு Angular கம்பைல் செய்யவும்
                 $timeout(() => {
                     const modal = document.getElementById('permission-model');
                     if (modal) {
@@ -136,8 +145,6 @@ app.controller('UserController', [
                 }, 150);
             });
         };
-
-
 
         // Delete group
         $scope.deleteGroup = function (group) {

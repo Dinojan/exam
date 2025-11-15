@@ -155,7 +155,14 @@ function hasAccess($item)
     return $roleMatch || $permissionMatch;
 }
 
+function hasPermission($permission)
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
 
+    return in_array($permission, $_SESSION['permissions'] ?? []);
+}
 
 function isActiveMenuItem($item, $current)
 {
@@ -341,4 +348,22 @@ function unique_transaction_ref_no($type = 'deposit')
     $statement->execute(array());
     $inc = (int) $statement->rowCount() + 1;
     return $prefix . $inc;
+}
+
+function user_id()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    return $_SESSION['user_id'] ?? null;
+}
+
+function getUserRole()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    return $_SESSION['role_name'] ?? null;
 }

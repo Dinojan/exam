@@ -6,7 +6,7 @@
 <!-- start body -->
 
 <body
-    class="flex flex-row justify-center <?php echo (currentNav() == 'login') ? 'items-center' : 'text-white' ?> min-h-[100vh] overflow-hidden relative bg-gradient-to-br from-[#0f172a] from-0% via-[#1e293b] via-50% to-[#334155] to-100%">
+    class="flex flex-row justify-center <?php echo (currentNav() == 'login') ? 'items-center' : 'text-white' ?> min-h-[100vh] relative bg-gradient-to-br from-[#0f172a] from-0% via-[#1e293b] via-50% to-[#334155] to-100%">
     <?php if (currentNav() != 'login')
         include 'layouts/sidebar.php' ?>
         <div class="w-full">

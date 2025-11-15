@@ -20,7 +20,6 @@ app.factory("permissionModelController", [
     ) {
         return function ($scope) {
             const modalId = "permission-model";
-            console.log("permissionModelController")
 
             $rootScope.staticPermissionData = {
                 "dashboard": {
@@ -51,6 +50,7 @@ app.factory("permissionModelController", [
                     "name": "Exams",
                     "permissions": {
                         "exams.create": "Create Exam",
+                        "exams.edit": "Edit Exam",
                         "exams.view": "View Exam",
                         "exams.delete": "Delete Exam",
                         "exams.attempt": "Attempt Exam",
@@ -147,19 +147,12 @@ app.factory("permissionModelController", [
                 $scope.isLoading = false;
                 $scope.isSaving = false;
 
-                console.log('Initializing permission modal for group:', group);
-
-                // Process static permission data
                 $scope.processStaticPermissionData();
-
-                // Load current group permissions from API
                 $scope.loadGroupCurrentPermissions();
             };
 
             $scope.processStaticPermissionData = function () {
                 $scope.permissionModules = [];
-
-                console.log('Processing static permission data:', $scope.staticPermissionData);
 
                 for (var moduleKey in $scope.staticPermissionData) {
                     if ($scope.staticPermissionData.hasOwnProperty(moduleKey)) {
@@ -183,8 +176,6 @@ app.factory("permissionModelController", [
                     }
                 }
 
-                console.log('Processed permission modules:', $scope.permissionModules);
-
                 // Force UI update
                 $timeout(function () {
                     if (!$scope.$$phase) $scope.$apply();
@@ -204,7 +195,6 @@ app.factory("permissionModelController", [
                     method: 'GET'
                 }).then(
                     function (response) {
-                        console.log('Current group permissions:', response.data);
                         const currentPermissions = response.data?.permissions || response.data || [];
 
                         // Initialize selectedPermissions object
@@ -219,8 +209,6 @@ app.factory("permissionModelController", [
                         } else {
                             return
                         }
-
-                        console.log('Selected permissions:', $scope.selectedPermissions);
                     },
                     function (error) {
                         console.error('Failed to load group permissions:', error);
@@ -244,8 +232,6 @@ app.factory("permissionModelController", [
                 $scope.isSaving = true;
                 const selectedPerms = Object.keys($scope.selectedPermissions).filter(key => $scope.selectedPermissions[key]);
 
-                console.log('Saving permissions:', selectedPerms);
-
                 $http({
                     url: 'API/user_groups/' + $scope.selectedGroup.id + '/permissions',
                     method: 'PUT',
@@ -253,19 +239,20 @@ app.factory("permissionModelController", [
                 }).then(
                     function (response) {
                         $scope.isSaving = false;
-                        console.log('Save response:', response.data);
 
                         Toast.fire({
                             type: 'success',
                             title: 'Success!',
                             msg: 'Permissions updated successfully'
                         });
-                        $scope.closePermissionsModal();
 
-                        // Refresh user groups in parent controller
-                        if ($scope.loadUserGroups) {
-                            $scope.loadUserGroups();
-                        }
+                        Toast.popover({ type: 'close' });
+                        $timeout(function () {
+                            if ($scope.loadUserGroups) {
+                                $scope.loadUserGroups();
+                            }
+                        }, 100);
+
                     },
                     function (error) {
                         $scope.isSaving = false;
@@ -304,7 +291,7 @@ app.factory("permissionModelController", [
                     $scope.initPermissionModal(group);
                 },
                 close: function () {
-                    $scope.closePermissionsModal();
+                    Toast.popover({ type: 'close' });
                 },
                 save: function () {
                     $scope.savePermissions();
