@@ -1,7 +1,7 @@
 import { Toast } from './toast.js';
 
 window.typeNIC = function (inputId) {
-    let searchInput = $("#"+ inputId);
+    let searchInput = $("#" + inputId);
 
     searchInput.on("input", function (e) {
         let value = this.value;
@@ -49,3 +49,6 @@ window.typeNIC = function (inputId) {
         this.selectionStart = this.selectionEnd = cursorPosition + diff;
     });
 };
+
+//Initialize Select2 Elements
+$('.select2').select2()

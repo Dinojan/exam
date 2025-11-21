@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="<?= asset('assets/css/theme.min.css') ?>">
     <!-- FONT AWESOME 7.0.1 -->
     <link rel="stylesheet" href="<?php echo asset('assets/plugins/fontawesome-free-7.1.0-web/css/all.min.css') ?>">
+    <link rel="stylesheet" href="<?php echo asset('assets/plugins/select2/select2.css') ?>">
     <!-- load dynamic css  -->
     <?= $this->stack('css') ?>
     <!-- set wanted script -->
@@ -17,6 +18,7 @@
     <script src="<?= asset('assets/js/angularApp.js') ?>"></script>
     <script src="<?php echo asset('assets/js/modalController.js') ?>"></script>
     <script type="module" src="<?= asset('assets/js/main.js') ?>"></script>
+    <script src="<?= asset('assets/plugins/select2/select2.js') ?>"></script>
     <script type="module">
         var baseUrl = '<?php echo BASE_URL ?>';
     </script>

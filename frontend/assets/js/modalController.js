@@ -299,8 +299,7 @@ app.factory("permissionModalController", [
                 }
             };
 
-            function getUserPermissionsFormat(staticData, loggedUser) {
-                // loggedUser = { role: 3, permissions: ['settings.manage'] }
+            function getUserPermissionsFormat(staticData, pinnedUser) {
 
                 const result = {};
 
@@ -308,8 +307,8 @@ app.factory("permissionModalController", [
                     const module = staticData[moduleKey];
 
                     // Check module-level access
-                    if (module.access.role.includes(loggedUser.role) ||
-                        module.access.permissions.some(p => loggedUser.permissions.includes(p))) {
+                    if (module.access.role.includes(pinnedUser.role) ||
+                        module.access.permissions.some(p => pinnedUser.permissions.includes(p))) {
 
                         result[moduleKey] = {
                             name: module.name,
@@ -319,14 +318,26 @@ app.factory("permissionModalController", [
                         for (let permKey in module.permissions) {
                             const perm = module.permissions[permKey];
 
-                            const hasRoleAccess = perm.access.role.includes(loggedUser.role);
-                            const hasPermissionAccess = perm.access.permissions.some(p => loggedUser.permissions.includes(p));
+                            const hasRoleAccess = perm.access.role.includes(pinnedUser.role);
+                            const hasPermissionAccess = perm.access.permissions.some(p => pinnedUser.permissions.includes(p));
 
                             if (hasRoleAccess || hasPermissionAccess) {
                                 result[moduleKey].permissions[permKey] = perm.label;
                             }
                         }
-                    }
+                    } 
+                    // else {
+                    //     result[moduleKey] = {
+                    //         name: module.name,
+                    //         permissions: {}
+                    //     };
+
+                    //     for (let permKey in module.permissions) {
+                    //         const perm = module.permissions[permKey];
+                    //         result[moduleKey].permissions[permKey] = perm.label;
+
+                    //     }
+                    // }
                 }
 
                 return result;
@@ -518,9 +529,7 @@ app.factory("createAndEdituserGroupModalController", [
         return function ($scope) {
 
             $scope.initCreateAndEdituserGroupModal = function (isEditing, group = null) {
-                console.log("isEditing:", isEditing);
                 $scope.isEditing = isEditing;
-                console.log("group:", group);
                 if (isEditing && group) {
                     $scope.group = angular.copy(group);
                 } else {
@@ -532,13 +541,13 @@ app.factory("createAndEdituserGroupModalController", [
             };
 
             // Correct save
-            $scope.modalSave = function () {
+            $scope.groupSave = function () {
                 $scope.isSaving = true;
 
                 const apiUrl = $scope.isEditing
                     ? `API/user_groups/${$scope.group.id}`
                     : 'API/user_groups';
-                const method = $scope.isEditing ? 'PUT' : 'POST';
+                const method = $scope.isEditing ? 'POST' : 'POST';
                 console.log("Saving to URL:", apiUrl, "with method:", method);
 
                 $http({
@@ -547,9 +556,13 @@ app.factory("createAndEdituserGroupModalController", [
                     data: $('#user-group-create-and-edit-form').serialize(),
                 }).then(function (response) {
                     $scope.isSaving = false;
-                    $scope.closeModal();
-                    $scope.loadUserGroups();
-                    Toast.fire({ type: "success", title: "Success!", msg: $scope.isEditing ? "User group updated successfully" : "User group created successfully" });
+                    if (response.data && response.data.status === 'success') {
+                        $scope.closeModal();
+                        $scope.loadUserGroups();
+                        Toast.fire({ type: "success", title: "Success!", msg: $scope.isEditing ? "User group updated successfully" : "User group created successfully" });
+                    } else {
+                        Toast.fire({ type: "error", title: "Error!", msg: $scope.isEditing ? "Failed to update user group" : "Failed to create user group" });
+                    }
                 }, function (error) {
                     $scope.isSaving = false;
                     Toast.fire({ type: "error", title: "Error!", msg: $scope.isEditing ? "Failed to update user group" : "Failed to create user group" });
@@ -565,7 +578,74 @@ app.factory("createAndEdituserGroupModalController", [
                     Toast.popover({ type: "close" });
                 },
                 save: function () {
-                    $scope.modalSave(); // <-- correct
+                    $scope.groupSave();
+                }
+            };
+        };
+    }
+]);
+
+// Delete user group modal controller
+app.factory("deleteUserGroupModalController", [
+    "API_URL",
+    "window",
+    "jQuery",
+    "$http",
+    "$sce",
+    "$rootScope",
+    "$compile",
+    "$timeout",
+    function (
+        API_URL,
+        window,
+        $,
+        $http,
+        $sce,
+        $rootScope,
+        $compile,
+        $timeout
+    ) {
+        return function ($scope) {
+
+            $scope.initDeleteUserGroupModal = function (group) {
+                $scope.groupToDelete = group;
+            };
+
+            $scope.deleteUserGroup = function () {
+                $http({
+                    url: 'API/user_groups/' + $scope.groupToDelete.id,
+                    method: 'DELETE'
+                }).then(
+                    function (response) {
+                        Toast.fire({
+                            type: 'success',
+                            title: 'Success!',
+                            msg: 'Group deleted successfully'
+                        });
+                        $scope.closeDeleteModal();
+                        $scope.loadUserGroups();
+                    },
+                    function (error) {
+                        const errorMsg = error.data?.message || 'Failed to delete group';
+                        Toast.fire({
+                            type: 'error',
+                            title: 'Error!',
+                            msg: errorMsg
+                        });
+                    }
+                );
+            };
+
+            $scope.closeDeleteModal = function () {
+                Toast.popover({ type: 'close' });
+            };
+
+            return {
+                init: function (group) {
+                    $scope.initDeleteUserGroupModal(group);
+                },
+                close: function () {
+                    Toast.popover({ type: "close" });
                 }
             };
         };

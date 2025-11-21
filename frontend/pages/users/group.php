@@ -60,6 +60,7 @@
                             </button>
                             <button
                                 ng-if="theLoggedUser.role === '1' || theLoggedUser.role === '2' || theLoggedUser.role === 1 || theLoggedUser.role === 2"
+                                ng-click="deleteGroup(group)"
                                 class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-[#f001] transition-colors duration-300 hover:text-red-200 flex items-center space-x-2 rounded-md">
                                 <i class="fas fa-trash"></i>
                                 <span>Delete Group</span>
@@ -81,9 +82,9 @@
                         class=" text-cyan-200 bg-[#12aac830] text-sm px-3 py-1 rounded-full">
                         {{permission}}
                     </span> -->
-                    <span ng-if="group.permission.length > 3"
-                        class="bg-[#12aac830] text-cyan-200 text-xs px-2 py-1 rounded-full">
-                        {{group.permission.length}} Permissions
+                    <span class="bg-[#12aac830] text-cyan-200 text-xs px-2 py-1 rounded-full">
+                        {{group.permission.length}} Permission<span
+                            ng-if="group.permission && group.permission.length > 1">s</span>
                     </span>
                 </div>
             </div>
@@ -97,11 +98,11 @@
 
             <!-- Group Actions -->
             <div class="p-4 flex items-end space-x-2">
-                <button ng-click="viewMembers(group)"
+                <a href="users?group={{group.id}}"
                     class="flex-1 bg-[#12aac820] hover:bg-[#12aac850] text-gray-100 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1">
                     <i class="fas fa-users"></i>
                     <span>Members</span>
-                </button>
+                </a>
                 <button ng-click="setPermissions(group)"
                     class="flex-1 bg-[#0f02] hover:bg-[#0f03] text-gray-100 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1">
                     <i class="fas fa-shield-alt"></i>
@@ -139,33 +140,4 @@
         </div>
     </div>
 </div>
-
-<!-- Delete Confirmation Modal Template -->
-<script type="text/ng-template" id="deleteConfirmationModal">
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div class="p-6 text-center">
-                <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
-                <h3 class="text-lg font-semibold text-gray-800 mb-2">Delete User Group</h3>
-                <p class="text-gray-600 mb-6">
-                    Are you sure you want to delete the group "{{groupToDelete.name}}"? This action cannot be undone.
-                </p>
-                <div class="flex space-x-3">
-                    <button 
-                        ng-click="closeDeleteModal()"
-                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        ng-click="confirmDelete()"
-                        class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Delete Group
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</script>
 <?php $this->end(); ?>

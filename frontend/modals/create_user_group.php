@@ -8,7 +8,7 @@
 
                     <!-- Group Name -->
                     <div>
-                        <label for="group_name" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="group_name" class="block font-medium text-gray-300 mb-2">
                             Group Name
                         </label>
 
@@ -18,7 +18,7 @@
 
                     <!-- Description -->
                     <div>
-                        <label for="group_description" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="group_description" class="block font-medium text-gray-300 mb-2">
                             Description
                         </label>
 

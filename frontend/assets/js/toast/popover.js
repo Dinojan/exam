@@ -125,6 +125,7 @@ export const popup = {
         const btnWidth = options.buttonWidth === 'full' ? '100%' : options.buttonWidth === 'fit' ? 'fit-content' : options.buttonWidth === 'auto' ? 'auto' : (options.buttonWidth !== 'auto' && options.buttonWidth !== 'full' && options.buttonWidth !== 'fit') ? options.buttonWidth : 'auto';
         const buttonContainerClass = options.buttonContainerClass || '';
         const buttonContainerStyles = options.buttonContainerStyles || '';
+        console.log('options:', options);
 
         switch (options.type) {
             case 'info':
@@ -188,7 +189,7 @@ export const popup = {
             options.btnPosition === 'end' ? 'flex-end' :
                 options.btnPosition === 'between' ? 'space-between' :
                     options.btnPosition === 'around' ? 'space-around' :
-                    'center';
+                        'center';
 
         popover.innerHTML = `
             <div class="popover-header">
@@ -235,7 +236,6 @@ export const popup = {
         }
 
         const closePopover = () => {
-            console.log('Closing popover');
             overlay.classList.remove('show');
             popover.classList.remove('show');
 
@@ -505,10 +505,11 @@ export const popup = {
     },
 
     confirm({ title, content = { text, color: '#f59e0b' }, size = 'md', options = {
-        confirm: { text: 'Ok, confirm', background: '#4CAF50', color: '#fff', onConfirm: null },
-        cancel: { text: 'No, Cancel', background: '#f44336', color: '#fff', onCancel: null },
+        confirm: { text: 'Ok, confirm', background: '#f44336', color: '#fff', onConfirm: null },
+        cancel: { text: 'No, Cancel', background: '#4CAF50', color: '#fff', onCancel: null },
         buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: ''
     } }) {
+        console.log('Confirm options:', options);
         return this.show({
             type: 'confirm',
             title: title || 'Confirmation',
@@ -516,7 +517,11 @@ export const popup = {
             content: content.text || 'This is a confirm message',
             contentColor: content.color || '#000',
             confirmText: options.confirm?.text || 'Ok, Confirm',
+            confirmBg: options.confirm?.background || '#f44336',
+            confirmColor: options.confirm?.color || '#fff',
             cancelText: options.cancel?.text || 'No, Cancel',
+            cancelBg: options.cancel?.background || '#4CAF50',
+            cancelColor: options.cancel?.color || '#fff',
             onConfirm: options.confirm?.onConfirm || null,
             onCancel: options.cancel?.onCancel || null,
             size,
@@ -581,4 +586,5 @@ export const popup = {
             }
         });
     }
+
 };

@@ -1,6 +1,6 @@
 app.controller('UserController', [
-    "$scope", "$http", "$compile", "$timeout", "permissionModalController", "createAndEdituserGroupModalController",
-    function ($scope, $http, $compile, $timeout, permissionModalController, createAndEdituserGroupModalController) {
+    "$scope", "$http", "$compile", "$timeout", "permissionModalController", "createAndEdituserGroupModalController", "deleteUserGroupModalController",
+    function ($scope, $http, $compile, $timeout, permissionModalController, createAndEdituserGroupModalController, deleteUserGroupModalController) {
         // Initialize variables
         $scope.loading = true;
         $scope.error = null;
@@ -9,6 +9,15 @@ app.controller('UserController', [
 
         // Initialize permission modal controller
         $scope.permissionModalCtrl = null;
+
+        // Initialize controller
+        $scope.init = function () {
+            $scope.loadUserGroups();
+            $scope.loadLoggedUserData();
+            $scope.permissionModalCtrl = permissionModalController($scope);
+            $scope.createAndEdituserGroupModalCtrl = createAndEdituserGroupModalController($scope);
+            $scope.deleteUserGroupModalCtrl = deleteUserGroupModalController($scope);
+        };
 
         // Load user groups on controller initialization
         $scope.loadUserGroups = function () {
@@ -77,14 +86,6 @@ app.controller('UserController', [
             });
         }
 
-        // Initialize controller
-        $scope.init = function () {
-            $scope.loadUserGroups();
-            $scope.loadLoggedUserData();
-            $scope.permissionModalCtrl = permissionModalController($scope);
-            $scope.createAndEdituserGroupModalCtrl = createAndEdituserGroupModalController($scope);
-        };
-
         // Toggle group menu
         $scope.toggleGroupMenu = function (groupId) {
             $scope.activeGroupMenu = $scope.activeGroupMenu === groupId ? null : groupId;
@@ -151,7 +152,7 @@ app.controller('UserController', [
 
             Toast.popover({
                 type: "content",
-                title: "Create User Group",
+                title: "Edit User Group",
                 apiConfig: {
                     endpoint: "create_user_group",
                     method: "GET",
@@ -229,15 +230,30 @@ app.controller('UserController', [
 
         // Delete group
         $scope.deleteGroup = function (group) {
-            $scope.groupToDelete = group;
-            $scope.activeGroupMenu = null;
+            if (!$scope.deleteUserGroupModalCtrl) {
+                $scope.deleteUserGroupModalCtrl = deleteUserGroupModalController($scope);
+            }
+            $scope.deleteUserGroupModalCtrl.init(group);
+
             Toast.popover({
                 type: 'content',
                 title: 'Delete Confirmation',
-                content: 'deleteConfirmationModal',
-                size: 'md',
-                buttons: []
-            });
+                apiConfig: {
+                    endpoint: 'delete_user_group',
+                    method: 'GET'
+                },
+                size: 'md'
+            }).then(popoverInstance => {
+                $timeout(() => {
+                    const modal = document.getElementById('confirm-user-group-delete-modal');
+                    if (modal) {
+                        $compile(modal)($scope);
+                        $scope.$apply();
+                    } else {
+                        console.error('#confirm-user-group-delete-modal not found');
+                    }
+                }, 150);
+            })
         };
 
         // View members
@@ -294,66 +310,6 @@ app.controller('UserController', [
                         type: 'error',
                         title: 'Error!',
                         msg: 'Failed to load group members'
-                    });
-                }
-            );
-        };
-
-        // Save group (create/update)
-        $scope.saveGroup = function () {
-            const url = $scope.isEditing ? 'API/user-groups/' + $scope.formData.id : 'API/user-groups';
-            const method = $scope.isEditing ? 'PUT' : 'POST';
-
-            $http({
-                url: url,
-                method: method,
-                data: $scope.formData
-            }).then(
-                function (response) {
-                    Toast.fire({
-                        type: 'success',
-                        title: 'Success!',
-                        msg: $scope.isEditing ? 'Group updated successfully' : 'Group created successfully'
-                    });
-                    popover.destroyAll();
-                    // Refresh the groups list
-                    $scope.loadUserGroups();
-                },
-                function (error) {
-                    const errorMsg = error.data?.message || 'Failed to save group';
-                    Toast.fire({
-                        type: 'error',
-                        title: 'Error!',
-                        msg: errorMsg
-                    });
-                }
-            );
-        };
-
-        // Remove the old savePermissions method since it's now handled by permissionModelController
-
-        // Confirm delete
-        $scope.confirmDelete = function () {
-            $http({
-                url: 'API/user-groups/' + $scope.groupToDelete.id,
-                method: 'DELETE'
-            }).then(
-                function (response) {
-                    Toast.fire({
-                        type: 'success',
-                        title: 'Success!',
-                        msg: 'Group deleted successfully'
-                    });
-                    popover.destroyAll();
-                    // Refresh the groups list
-                    $scope.loadUserGroups();
-                },
-                function (error) {
-                    const errorMsg = error.data?.message || 'Failed to delete group';
-                    Toast.fire({
-                        type: 'error',
-                        title: 'Error!',
-                        msg: errorMsg
                     });
                 }
             );

@@ -17,7 +17,7 @@
                 <div class="mt-3 mb-4 rounded-lg">
                     <div class="flex flex-row justify-between">
                         <h4 class="text-white text-xl font-semibold capitalize">
-                            <?php echo ucwords(str_replace('_', ' ', currentNav())); ?>
+                            <?php // echo ucwords(str_replace('_', ' ', currentNav())); ?>
                         </h4>
 
                         <?php if (currentNav() != 'dashboard'): ?>

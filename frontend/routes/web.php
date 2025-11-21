@@ -55,9 +55,9 @@ Router::group(['middleware' => ['auth']], function () {
     // 🔹 Settings
     Router::get('/settings', 'PageAPI@settings', 'settings', ['auth']);
     // Router::group(['prefix' => 'admin', 'middleware' => ['auth']], function() {
-//     Router::get('/dashboard', 'DashboardAPI@dashboard', 'dashboard');
-// });
+    // Router::get('/dashboard', 'DashboardAPI@dashboard', 'dashboard');
 });
+
 Router::group(['prefix' => 'API'], function() {
     Router::post('/login', 'AuthAPI@login');
     Router::post('/logout', 'AuthAPI@logout');
@@ -70,7 +70,9 @@ Router::group(['prefix' => 'API'], function() {
     Router::get('/auth/logged_user', 'UserAPI@getLoggedUserAccesses', 'get_logged_user_accesses', ['auth']);
 
     Router::put('/user_groups/{id}/permissions', 'UserGroupAPI@setPermissions', 'set_group_permissions', ['auth']);
-    Router::put('/user_groups/{id}', 'UserGroupAPI@updateUserGroup', 'update_user_group', ['auth']);
+    Router::post('/user_groups/{id}', 'UserGroupAPI@updateUserGroup', 'update_user_group', ['auth']);
+
+    Router::delete('/user_groups/{id}', 'UserGroupAPI@deleteUserGroup', 'delete_user_group', ['auth']);
 });
 
 Router::group(['prefix' => 'modal'], function() {

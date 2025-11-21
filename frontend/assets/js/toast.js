@@ -10,6 +10,7 @@ export const Toast = {
         toast2(type, title, msg, position, duration);
     },
     popover({ type, title, content, contentColor = null, options = {}, buttons = [], apiConfig = null, size = 'md', buttonPosition = 'center', buttonWidth = 'fit', buttonContainerClass = '', buttonContainerStyles = '' }) {
+        console.log("Toast popover:", options);
         switch (type) {
             case 'success':
                 return popup.success({ title, content: { text: content, color: contentColor }, options: { ...options, buttonPosition, buttonWidth, buttonContainerClass, buttonContainerStyles }, buttons, apiConfig, size });

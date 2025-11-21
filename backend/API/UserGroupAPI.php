@@ -10,16 +10,18 @@ class UserGroupAPI
 
     public function getAllGroups()
     {
-        $role = getLoggedUserRoleName();
-        $sql = "SELECT * FROM user_group";
-        // $sql = "SELECT * FROM user_group WHERE name != 'Technical'";
-        // if ($role = 'Administrator') {
-        //     $sql .= " AND name != 'Administrator'";
-        // } else if ($role = 'Admin') {
-        //     $sql .= " AND name != 'Administrator' AND name != 'Admin'";
-        // } else {
-        //    $sql .= " AND name != 'Administrator' AND name != 'Admin' AND name != 'HOD'";
-        // }
+        // $sql = "SELECT * FROM user_group";
+        $role = getLoggedUserRoleID();
+        $sql = "SELECT * FROM user_group WHERE id != 1";
+        if ($role == 1) {
+            $sql .= "";
+        } else if ($role == 2) {
+            $sql .= " AND id != 2";
+        } else if ($role == 3) {
+            $sql .= " AND id != 2 AND id != 3";
+        } else {
+           $sql .= " AND id != 2 AND id != 3 AND id != 4";
+        }
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -100,14 +102,14 @@ class UserGroupAPI
         return json_encode(['status' => 'success', 'message' => 'User group created successfully.']);
     }
 
-    public function updateUserGroup() {
-        $id = $_GET['id'] ?? null;
-        $name = $_PUT['group_name'] ?? null;
-        $description = $_PUT['group_description'] ?? null;
-
+    public function updateUserGroup($id) {
+        // $id = $_GET['id'] ?? null;
         if (!$id) {
             return json_encode(['status' => 'error', 'message' => 'Group ID is required.']);
         }
+
+        $name = $_POST['group_name'] ?? null;
+        $description = $_POST['group_description'] ?? null;
 
         if (!$name) {
             return json_encode(['status' => 'error', 'message' => 'Group name is required.']);
@@ -118,5 +120,26 @@ class UserGroupAPI
         $stmt->execute([$name, $description, $id]);
 
         return json_encode(['status' => 'success', 'message' => 'User group updated successfully.']);
+    }
+
+    public function deleteUserGroup($id) {
+        if (!$id) {
+            return json_encode(['status' => 'error', 'message' => 'Group ID is required.']);
+        }
+
+        // Check if any users are assigned to this group
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM users WHERE user_group = ?");
+        $stmt->execute([$id]);
+        $userCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+        if ($userCount > 0) {
+            return json_encode(['status' => 'error', 'message' => 'Cannot delete group with assigned users.']);
+        }
+
+        $sql = "DELETE FROM user_group WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+
+        return json_encode(['status' => 'success', 'message' => 'User group deleted successfully.']);
     }
 }

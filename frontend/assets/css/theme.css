@@ -233,6 +233,14 @@ select {
   animation: spin 1s linear infinite;
 }
 
+.user_list_btn.active {
+  @apply bg-[#0ff3] text-white font-bold border-[#0ff3];
+}
+
+.user_list_btn.active:hover {
+  @apply bg-[#0ff6] border-[#0ff6];
+}
+
 .toast-card {
   @apply fixed flex items-center px-4 py-2 rounded-md shadow-md transition-all duration-300 z-[10000000] min-w-[20rem] max-w-[36rem];
 }
