@@ -417,3 +417,31 @@ function getLoggedUserPermissions()
 
     return $_SESSION['permissions'] ?? [];
 }
+
+function getUserGroupName($id)
+{
+    $sql = "SELECT user_group FROM users WHERE id = ?";
+    $statement = db()->prepare($sql);
+    $statement->execute([$id]);
+    $role = $statement->fetch(PDO::FETCH_ASSOC)['user_group'];
+
+    $sql = "SELECT name FROM user_group WHERE id = ?";
+    $statement = db()->prepare($sql);
+    $statement->execute([$role]);
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
+    return $row ? $row['name'] : null;
+}
+
+function getUserStatusText($status)
+{
+    switch ($status) {
+        case 0:
+            return 'Active';
+        case 1:
+            return 'Inactive';
+        case 2:
+            return 'Suspended';
+        default:
+            return 'Unknown';
+    }
+}

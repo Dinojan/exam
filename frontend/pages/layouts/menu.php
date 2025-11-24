@@ -14,73 +14,73 @@ $menuData = [
     ],
 
     // COURSES SECTION
-    [
-        'id' => 'courses',
-        'title' => 'Courses',
-        'icon' => '<i class="fa-solid fa-book-open"></i>',
-        'url' => '#',
-        'role' => [1,2,3,4,5,6,7],
-        'permissions' => ['courses.manage','courses.view','courses.add','courses.my_courses'],
-        'children' => [
-            [
-                'id' => 'all_courses',
-                'title' => 'All Courses',
-                'icon' => '<i class="fa-solid fa-list"></i>',
-                'url' => 'courses',
-                'role' => [1,2,3,4,5,6,7],
-                'permissions' => ['courses.manage','courses.view'],
-                'children' => []
-            ],
-            [
-                'id' => 'add_course',
-                'title' => 'Add Course',
-                'icon' => '<i class="fa-solid fa-plus"></i>',
-                'url' => 'add_course',
-                'role' => [1,2,4],
-                'permissions' => ['courses.manage','courses.add'],
-                'children' => []
-            ],
-            [
-                'id' => 'my_courses',
-                'title' => 'My Courses',
-                'icon' => '<i class="fa-solid fa-book"></i>',
-                'url' => 'my_courses',
-                'role' => [1,3,5,6,7],
-                'permissions' => ['courses.my_courses'],
-                'children' => []
-            ]
-        ]
-    ],
+    // [
+    //     'id' => 'courses',
+    //     'title' => 'Courses',
+    //     'icon' => '<i class="fa-solid fa-book-open"></i>',
+    //     'url' => '#',
+    //     'role' => [1,2,3,4,5,6,7],
+    //     'permissions' => ['courses.manage','courses.view','courses.add','courses.my_courses'],
+    //     'children' => [
+    //         [
+    //             'id' => 'all_courses',
+    //             'title' => 'All Courses',
+    //             'icon' => '<i class="fa-solid fa-list"></i>',
+    //             'url' => 'courses',
+    //             'role' => [1,2,3,4,5,6,7],
+    //             'permissions' => ['courses.manage','courses.view'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'add_course',
+    //             'title' => 'Add Course',
+    //             'icon' => '<i class="fa-solid fa-plus"></i>',
+    //             'url' => 'add_course',
+    //             'role' => [1,2,4],
+    //             'permissions' => ['courses.manage','courses.add'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'my_courses',
+    //             'title' => 'My Courses',
+    //             'icon' => '<i class="fa-solid fa-book"></i>',
+    //             'url' => 'my_courses',
+    //             'role' => [1,3,5,6,7],
+    //             'permissions' => ['courses.my_courses'],
+    //             'children' => []
+    //         ]
+    //     ]
+    // ],
 
     // LECTURES SECTION
-    [
-        'id' => 'lectures',
-        'title' => 'Lectures',
-        'icon' => '<i class="fa-solid fa-chalkboard-teacher"></i>',
-        'url' => '#',
-        'role' => [1,2,3,4,6,7],
-        'permissions' => ['lectures.manage','lectures.view','lectures.all','lectures.my'],
-        'children' => [
-            [
-                'id' => 'all_lectures',
-                'title' => 'All Lectures',
-                'icon' => '<i class="fa-solid fa-list"></i>',
-                'url' => 'lectures',
-                'role' => [1,2,4],
-                'permissions' => ['lectures.manage','lectures.all'],
-                'children' => []
-            ],
-            [
-                'id' => 'my_lectures',
-                'title' => 'My Lectures',
-                'icon' => '<i class="fa-solid fa-chalkboard"></i>',
-                'url' => 'my_lectures',
-                'role' => [1,3,6,7],
-                'permissions' => ['lectures.view','lectures.my'],
-                'children' => []
-            ]
-        ]
-    ],
+    // [
+    //     'id' => 'lectures',
+    //     'title' => 'Lectures',
+    //     'icon' => '<i class="fa-solid fa-chalkboard-teacher"></i>',
+    //     'url' => '#',
+    //     'role' => [1,2,3,4,6,7],
+    //     'permissions' => ['lectures.manage','lectures.view','lectures.all','lectures.my'],
+    //     'children' => [
+    //         [
+    //             'id' => 'all_lectures',
+    //             'title' => 'All Lectures',
+    //             'icon' => '<i class="fa-solid fa-list"></i>',
+    //             'url' => 'lectures',
+    //             'role' => [1,2,4],
+    //             'permissions' => ['lectures.manage','lectures.all'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'my_lectures',
+    //             'title' => 'My Lectures',
+    //             'icon' => '<i class="fa-solid fa-chalkboard"></i>',
+    //             'url' => 'my_lectures',
+    //             'role' => [1,3,6,7],
+    //             'permissions' => ['lectures.view','lectures.my'],
+    //             'children' => []
+    //         ]
+    //     ]
+    // ],
 
     // EXAMS SECTION
     [
@@ -161,15 +161,15 @@ $menuData = [
     ],
 
     // PAST PAPERS SECTION
-    [
-        'id' => 'past_papers',
-        'title' => 'Past Papers',
-        'icon' => '<i class="fa-solid fa-file-lines"></i>',
-        'url' => 'past_papers',
-        'role' => [1,2,3,4,5,6,7],
-        'permissions' => ['past_papers.view'],
-        'children' => []
-    ],
+    // [
+    //     'id' => 'past_papers',
+    //     'title' => 'Past Papers',
+    //     'icon' => '<i class="fa-solid fa-file-lines"></i>',
+    //     'url' => 'past_papers',
+    //     'role' => [1,2,3,4,5,6,7],
+    //     'permissions' => ['past_papers.view'],
+    //     'children' => []
+    // ],
 
     // RESULTS SECTION
     [
@@ -202,43 +202,43 @@ $menuData = [
     ],
 
     // ATTENDANCE SECTION
-    [
-        'id' => 'attendance',
-        'title' => 'Attendance',
-        'icon' => '<i class="fa-solid fa-calendar-check"></i>',
-        'url' => '#',
-        'role' => [1,2,3,4,5,6,7],
-        'permissions' => ['attendance.manage','attendance.view','attendance.mark','attendance.my'],
-        'children' => [
-            [
-                'id' => 'view_attendance',
-                'title' => 'View Attendance',
-                'icon' => '<i class="fa-solid fa-eye"></i>',
-                'url' => 'attendance',
-                'role' => [1,2,3,4,5],
-                'permissions' => ['attendance.view'],
-                'children' => []
-            ],
-            [
-                'id' => 'mark_attendance',
-                'title' => 'Mark Attendance',
-                'icon' => '<i class="fa-solid fa-pen"></i>',
-                'url' => 'mark_attendance',
-                'role' => [1,5],
-                'permissions' => ['attendance.mark'],
-                'children' => []
-            ],
-            [
-                'id' => 'my_attendance',
-                'title' => 'My Attendance',
-                'icon' => '<i class="fa-solid fa-user"></i>',
-                'url' => 'my_attendance',
-                'role' => [1,6,7],
-                'permissions' => ['attendance.my'],
-                'children' => []
-            ]
-        ]
-    ],
+    // [
+    //     'id' => 'attendance',
+    //     'title' => 'Attendance',
+    //     'icon' => '<i class="fa-solid fa-calendar-check"></i>',
+    //     'url' => '#',
+    //     'role' => [1,2,3,4,5,6,7],
+    //     'permissions' => ['attendance.manage','attendance.view','attendance.mark','attendance.my'],
+    //     'children' => [
+    //         [
+    //             'id' => 'view_attendance',
+    //             'title' => 'View Attendance',
+    //             'icon' => '<i class="fa-solid fa-eye"></i>',
+    //             'url' => 'attendance',
+    //             'role' => [1,2,3,4,5],
+    //             'permissions' => ['attendance.view'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'mark_attendance',
+    //             'title' => 'Mark Attendance',
+    //             'icon' => '<i class="fa-solid fa-pen"></i>',
+    //             'url' => 'mark_attendance',
+    //             'role' => [1,5],
+    //             'permissions' => ['attendance.mark'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'my_attendance',
+    //             'title' => 'My Attendance',
+    //             'icon' => '<i class="fa-solid fa-user"></i>',
+    //             'url' => 'my_attendance',
+    //             'role' => [1,6,7],
+    //             'permissions' => ['attendance.my'],
+    //             'children' => []
+    //         ]
+    //     ]
+    // ],
 
     // NOTIFICATIONS SECTION
     [
@@ -257,7 +257,7 @@ $menuData = [
         'title' => 'User Management',
         'icon' => '<i class="fa-solid fa-users"></i>',
         'url' => '#',
-        'role' => [1,2,3],
+        'role' => [1,2,3,4],
         'permissions' => ['users.manage','users.create','users.edit','users.delete','users.view','students.manage','teachers.manage','parents.manage','groups.manage'],
         'children' => [
             [
@@ -291,34 +291,34 @@ $menuData = [
     ],
 
     // REPORTS SECTION
-    [
-        'id' => 'reports',
-        'title' => 'Reports',
-        'icon' => '<i class="fa-solid fa-chart-line"></i>',
-        'url' => '#',
-        'role' => [1,2,3,4,5],
-        'permissions' => ['reports.view','reports.exam','reports.performance'],
-        'children' => [
-            [
-                'id' => 'exam_reports',
-                'title' => 'Exam Reports',
-                'icon' => '<i class="fa-solid fa-file-invoice"></i>',
-                'url' => 'exam_reports',
-                'role' => [1,2,3,4,5],
-                'permissions' => ['reports.exam'],
-                'children' => []
-            ],
-            [
-                'id' => 'student_performance',
-                'title' => 'Student Performance',
-                'icon' => '<i class="fa-solid fa-chart-pie"></i>',
-                'url' => 'student_performance',
-                'role' => [1,2,3,4,5],
-                'permissions' => ['reports.performance'],
-                'children' => []
-            ]
-        ]
-    ],
+    // [
+    //     'id' => 'reports',
+    //     'title' => 'Reports',
+    //     'icon' => '<i class="fa-solid fa-chart-line"></i>',
+    //     'url' => '#',
+    //     'role' => [1,2,3,4,5],
+    //     'permissions' => ['reports.view','reports.exam','reports.performance'],
+    //     'children' => [
+    //         [
+    //             'id' => 'exam_reports',
+    //             'title' => 'Exam Reports',
+    //             'icon' => '<i class="fa-solid fa-file-invoice"></i>',
+    //             'url' => 'exam_reports',
+    //             'role' => [1,2,3,4,5],
+    //             'permissions' => ['reports.exam'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'student_performance',
+    //             'title' => 'Student Performance',
+    //             'icon' => '<i class="fa-solid fa-chart-pie"></i>',
+    //             'url' => 'student_performance',
+    //             'role' => [1,2,3,4,5],
+    //             'permissions' => ['reports.performance'],
+    //             'children' => []
+    //         ]
+    //     ]
+    // ],
 
     // PROFILE SECTION
     [

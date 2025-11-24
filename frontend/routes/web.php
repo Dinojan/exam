@@ -16,7 +16,7 @@ Router::group(['middleware' => ['auth']], function () {
     // 🔹 Lectures
     Router::get('/lectures', 'PageAPI@lectures', 'all_lectures', ['auth']);
     Router::get('/my_lectures', 'PageAPI@myLectures', 'my_lectures', ['auth']);
-    
+
     // 🔹 Exams
     Router::get('/exams', 'PageAPI@exams', 'all_exams', ['auth']);
     Router::get('/create_exam', 'PageAPI@createExam', 'create_exam', ['auth']);
@@ -58,12 +58,13 @@ Router::group(['middleware' => ['auth']], function () {
     // Router::get('/dashboard', 'DashboardAPI@dashboard', 'dashboard');
 });
 
-Router::group(['prefix' => 'API'], function() {
+Router::group(['prefix' => 'API'], function () {
     Router::post('/login', 'AuthAPI@login');
     Router::post('/logout', 'AuthAPI@logout');
     Router::post('/user_groups', 'UserGroupAPI@createUserGroup', 'create_user_group', ['auth']);
+    Router::post('/user', 'UserAPI@createUser', 'create_user', ['auth']);
 
-    Router::get('/users', 'UserAPI@getAllUsers', 'get_all_users', ['auth']);
+    Router::get('/users', 'UserAPI@getAllUsersHandler', 'get_all_users', ['auth']);
     Router::get('/user_groups', 'UserGroupAPI@getAllGroups', 'get_all_users_groups', ['auth']);
     Router::get('/user_groups/{id}', 'UserGroupAPI@createUserGroup', 'create_user_group', ['auth']);
     Router::get('/user_groups/{id}/permissions', 'UserGroupAPI@getGroupPermissions', 'get_group_permissions', ['auth']);
@@ -75,6 +76,6 @@ Router::group(['prefix' => 'API'], function() {
     Router::delete('/user_groups/{id}', 'UserGroupAPI@deleteUserGroup', 'delete_user_group', ['auth']);
 });
 
-Router::group(['prefix' => 'modal'], function() {
+Router::group(['prefix' => 'modal'], function () {
     Router::get('/{modal}', 'ModalAPI@getModal');
 });

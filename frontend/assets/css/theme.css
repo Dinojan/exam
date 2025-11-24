@@ -233,6 +233,30 @@ select {
   animation: spin 1s linear infinite;
 }
 
+.form-group {
+  @apply mb-4;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-300 mb-2;
+}
+
+.form-input {
+  @apply w-full bg-red-600 border border-gray-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none;
+}
+
+.form-input:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.error-message {
+  @apply text-red-400 text-xs mt-1;
+}
+
+.success-message {
+  @apply text-green-400 text-sm mt-2;
+}
+
 .user_list_btn.active {
   @apply bg-[#0ff3] text-white font-bold border-[#0ff3];
 }

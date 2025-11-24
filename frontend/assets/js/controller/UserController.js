@@ -6,6 +6,22 @@ app.controller('UserController', [
         $scope.error = null;
         $scope.userGroups = [];
         $scope.activeGroupMenu = null;
+        $scope.users = [];
+        $scope.filteredUsers = [];
+        $scope.selectedGroup = "";
+        $scope.selectedStatus = "";
+        $scope.searchTerm = "";
+
+        // Sorting
+        $scope.sortColumn = 'name';
+        $scope.sortReverse = false;
+
+        // Pagination
+        $scope.currentPage = 1;
+        $scope.pageSizeOptions = [5, 10, 25, 50, 100, 'All'];
+        $scope.pageSize = 10;
+        $scope.totalUsers = 0;
+        $scope.totalPages = 0;
 
         // Initialize permission modal controller
         $scope.permissionModalCtrl = null;
@@ -139,7 +155,6 @@ app.controller('UserController', [
                 }, 150);
             });
         };
-
 
         // Edit group
         $scope.editGroup = function (group) {
@@ -322,5 +337,414 @@ app.controller('UserController', [
 
         // Initialize the controller
         $scope.init();
+
+        // Load users from API
+        $scope.loadUsers = function () {
+            $scope.loading = true;
+
+            $http.get('API/users', {
+                params: {
+                    filter: $scope.selectedGroup || null,
+                    status: $scope.selectedStatus || null
+                }
+            }).then(function (response) {
+                $scope.loading = false;
+                $scope.users = response.data || [];
+
+                // Immediately apply filter after loading
+                $scope.applyFilter();
+
+            }, function (error) {
+                $scope.loading = false;
+                $scope.users = [];
+                $scope.filteredUsers = [];
+                $scope.totalPages = 0;
+                console.error(error);
+            });
+        };
+
+        $scope.sortBy = function (column) {
+            if ($scope.sortColumn === column) {
+                $scope.sortReverse = !$scope.sortReverse;
+            } else {
+                $scope.sortColumn = column;
+                $scope.sortReverse = false;
+            }
+            $scope.applySorting();
+        };
+
+        $scope.applySorting = function () {
+            $scope.filteredUsers.sort((a, b) => {
+                let valA = a[$scope.sortColumn];
+                let valB = b[$scope.sortColumn];
+
+                // Convert to lowercase if string
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                if (valA < valB) return $scope.sortReverse ? 1 : -1;
+                if (valA > valB) return $scope.sortReverse ? -1 : 1;
+                return 0;
+            });
+        };
+
+        // Apply search + group + status filter (client-side)
+        $scope.applyFilter = function () {
+            if (!$scope.users) return;
+
+            let term = ($scope.searchTerm || "").toLowerCase();
+
+            $scope.filteredUsers = $scope.users.filter(user => {
+                let matchesName = user.name.toLowerCase().includes(term);
+                let matchesEmail = user.email.toLowerCase().includes(term);
+                let matchesGroup = $scope.selectedGroup ? user.user_group == $scope.selectedGroup : true;
+                let matchesStatus = $scope.selectedStatus ? user.status.toLowerCase() == $scope.selectedStatus.toLowerCase() : true;
+
+                return (matchesName || matchesEmail) && matchesGroup && matchesStatus;
+            });
+
+            // Apply sorting after filtering
+            $scope.applySorting();
+
+            $scope.currentPage = 1;
+            $scope.totalUsers = $scope.filteredUsers.length;
+            $scope.calculateTotalPages();
+        };
+
+        // Call applyFilter() whenever searchTerm, selectedGroup or selectedStatus changes
+        $scope.filterUsers = function () {
+            $scope.applyFilter();
+        };
+
+        // Calculate total pages based on page size
+        $scope.calculateTotalPages = function () {
+            if ($scope.pageSize === 'All') {
+                $scope.totalPages = 1;
+            } else {
+                $scope.totalPages = Math.ceil($scope.totalUsers / $scope.pageSize);
+            }
+        };
+
+        // Pagination helpers
+        $scope.getPages = function () {
+            let pages = [];
+            for (let i = 1; i <= $scope.totalPages; i++) pages.push(i);
+            return pages;
+        };
+
+        $scope.goToPage = function (page) {
+            if (page >= 1 && page <= $scope.totalPages) $scope.currentPage = page;
+        };
+
+        $scope.previousPage = function () {
+            if ($scope.currentPage > 1) $scope.currentPage--;
+        };
+
+        $scope.nextPage = function () {
+            if ($scope.currentPage < $scope.totalPages) $scope.currentPage++;
+        };
+
+        $scope.getRangeEnd = function () {
+            if ($scope.pageSize === 'All') {
+                return $scope.totalUsers;
+            }
+            return Math.min($scope.currentPage * $scope.pageSize, $scope.totalUsers);
+        };
+
+        $scope.changePageSize = function () {
+            let size = document.getElementById('pageSizeSelect').value;
+
+            if (size !== 'All') size = Number(size);
+            $scope.pageSize = size;
+            $scope.currentPage = 1;
+            $scope.totalPages = size === 'All' ? 1 : Math.ceil($scope.totalUsers / size);
+
+            // Angular digest
+            if (!$scope.$$phase) $scope.$apply();
+        };
+
+        $scope.paginatedUsers = function () {
+            if (!$scope.filteredUsers) return [];
+            if ($scope.pageSize === 'All') return $scope.filteredUsers;
+
+            const size = $scope.pageSize === 'All' ? $scope.totalUsers : Number($scope.pageSize);
+            const start = ($scope.currentPage - 1) * size;
+            return $scope.filteredUsers.slice(start, start + size);
+        };
+
+        // Initial load
+        $scope.loadUsers();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Add User Page Functions
+        $scope.userData = {
+            name: '',
+            email: '',
+            phone: '',
+            username: '',
+            user_group: '',
+            status: 'active',
+            password: '',
+            confirmPassword: '',
+            department: '',
+            position: '',
+            notes: ''
+        };
+
+        $scope.loading = false;
+        $scope.passwordVisible = {
+            password: false,
+            confirmPassword: false
+        };
+
+        // Toggle password visibility
+        $scope.togglePasswordVisibility = function (field) {
+            $scope.passwordVisible[field] = !$scope.passwordVisible[field];
+            const input = document.getElementById(field);
+            if (input) {
+                input.type = $scope.passwordVisible[field] ? 'text' : 'password';
+            }
+        };
+
+        $scope.loading = false;
+
+        // ---------------- Validation Functions ----------------
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(String(email).toLowerCase());
+        }
+
+        function validatePhone(phone) {
+            const re = /^\+?[0-9]{7,15}$/;
+            return re.test(String(phone));
+        }
+
+        function validateUsername(username) {
+            const re = /^[a-zA-Z0-9_]{3,20}$/;
+            return re.test(String(username));
+        }
+
+        function validatePassword(password) {
+            return password && password.length >= 3;
+        }
+
+        // ---------------- Helper to safely set field errors ----------------
+        function setFieldError(fieldName, errorName, value) {
+            if (!$scope.addUserForm[fieldName]) $scope.addUserForm[fieldName] = {};
+            if (!$scope.addUserForm[fieldName].$error === undefined) $scope.addUserForm[fieldName].$error = {};
+            $scope.addUserForm[fieldName].$error[errorName] = value;
+        }
+
+        // ---------------- Reset all errors ----------------
+        function resetFormErrors() {
+            const fields = ['fullName', 'email', 'phone', 'username', 'password', 'confirmPassword', 'userGroup', 'status'];
+            fields.forEach(field => {
+                if (!$scope.addUserForm[field]) $scope.addUserForm[field] = {};
+                $scope.addUserForm[field].$error = {};
+            });
+        }
+
+        // ---------------- Real-time validation ----------------
+        $scope.$watchGroup(['userData.password', 'userData.confirmPassword'], function ([pass, confirmPass]) {
+            if ($scope.addUserForm && $scope.addUserForm.confirmPassword) {
+                $scope.addUserForm.confirmPassword.$error.passwordMatch = pass && confirmPass && pass !== confirmPass;
+            }
+        });
+
+        $scope.$watch('userData.email', function (newVal) {
+            if ($scope.addUserForm && $scope.addUserForm.email) {
+                $scope.addUserForm.email.$error.email = newVal ? !validateEmail(newVal) : false;
+            }
+        });
+
+        $scope.$watch('userData.phone', function (newVal) {
+            if ($scope.addUserForm && $scope.addUserForm.phone) {
+                $scope.addUserForm.phone.$error.phone = newVal ? !validatePhone(newVal) : false;
+            }
+        });
+
+        $scope.$watch('userData.username', function (newVal) {
+            if ($scope.addUserForm && $scope.addUserForm.username) {
+                $scope.addUserForm.username.$error.username = newVal ? !validateUsername(newVal) : false;
+            }
+        });
+
+        $scope.$watch('userData.password', function (newVal) {
+            if ($scope.addUserForm && $scope.addUserForm.password) {
+                $scope.addUserForm.password.$error.minlength = newVal ? !validatePassword(newVal) : false;
+            }
+        });
+
+        // ---------------- Form Validation ----------------
+        function validateForm() {
+            let valid = true;
+            resetFormErrors();
+
+            // Full Name
+            if (!$scope.userData.name) {
+                valid = false;
+                setFieldError('fullName', 'required', true);
+            }
+
+            // Email
+            if (!$scope.userData.email) {
+                valid = false;
+                setFieldError('email', 'required', true);
+            } else if (!validateEmail($scope.userData.email)) {
+                valid = false;
+                setFieldError('email', 'email', true);
+            }
+
+            // Phone
+            if (!$scope.userData.phone) {
+                valid = false;
+                setFieldError('phone', 'required', true);
+            } else if (!validatePhone($scope.userData.phone)) {
+                valid = false;
+                setFieldError('phone', 'phone', true);
+            }
+
+            // Username
+            if (!$scope.userData.username) {
+                valid = false;
+                setFieldError('username', 'required', true);
+            } else if (!validateUsername($scope.userData.username)) {
+                valid = false;
+                setFieldError('username', 'username', true);
+            }
+
+            // User Group
+            if (!$scope.userData.user_group) {
+                valid = false;
+                setFieldError('userGroup', 'required', true);
+            }
+
+            // Status
+            if (!$scope.userData.status) {
+                valid = false;
+                setFieldError('status', 'required', true);
+            }
+
+            // Password
+            if (!$scope.userData.password) {
+                valid = false;
+                setFieldError('password', 'required', true);
+            } else if (!validatePassword($scope.userData.password)) {
+                valid = false;
+                setFieldError('password', 'minlength', true);
+            }
+
+            // Confirm Password
+            if (!$scope.userData.confirmPassword) {
+                valid = false;
+                setFieldError('confirmPassword', 'required', true);
+            } else if ($scope.userData.password !== $scope.userData.confirmPassword) {
+                valid = false;
+                setFieldError('confirmPassword', 'passwordMatch', true);
+            }
+
+            // User Group & Status
+            if (!$scope.userData.user_group) valid = false;
+            if (!$scope.userData.status) valid = false;
+
+            return valid;
+        }
+
+        // ---------------- Submit Form ----------------
+        $scope.submitUser = function () {
+            $scope.addUserForm.submitted = true;
+
+            if (!validateForm()) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Validation Error!',
+                    msg: 'Please fill all required fields correctly.'
+                });
+                return;
+            }
+
+            $scope.loading = true;
+
+            const submitData = $('#add-user-form').serialize();
+            console.log('Submitting User Data:', submitData);
+
+            $http({
+                url: 'API/user',
+                method: 'POST',
+                data: submitData
+            }).then(
+                function (response) {
+                    $scope.loading = false;
+
+                    if (response.data?.success) {
+                        Toast.fire({
+                            type: 'success',
+                            title: 'Success!',
+                            msg: 'User created successfully'
+                        });
+                        $scope.resetForm();
+                        $timeout(() => window.location.href = 'user_management', 2000);
+                    } else {
+                        Toast.fire({
+                            type: 'error',
+                            title: 'Error!',
+                            msg: response.data?.message || 'Failed to create user'
+                        });
+                    }
+                },
+                function (error) {
+                    $scope.loading = false;
+                    Toast.fire({
+                        type: 'error',
+                        title: 'Error!',
+                        msg: error.data?.message || 'Failed to create user'
+                    });
+                    console.error('API Error:', error);
+                }
+            );
+        };
+
+
+
+        // Reset form
+        $scope.resetForm = function () {
+            $scope.userData = {
+                name: '',
+                email: '',
+                phone: '',
+                username: '',
+                user_group: '',
+                status: 'active',
+                password: '',
+                confirmPassword: '',
+                department: '',
+                position: '',
+                notes: ''
+            };
+            $scope.addUserForm.$setPristine();
+            $scope.addUserForm.$setUntouched();
+            $scope.addUserForm.$submitted = false;
+        };
+
+
+        if (window.location.pathname.includes('users')) {
+            $scope.loadUsers();
+        } else {
+            $scope.init();
+        }
     }
 ]);

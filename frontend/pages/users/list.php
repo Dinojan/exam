@@ -1,9 +1,36 @@
 <?php $this->extend('frontend');
 $this->controller('UserController');
+$user = user_id(); // Logged-in user
 
-$stmt = db()->prepare("SELECT id, name, (SELECT COUNT(*) FROM users WHERE user_group = ug.id) AS user_count FROM user_group ug");
+$sql = "SELECT id, name, 
+            (SELECT COUNT(*) FROM users WHERE user_group = ug.id";
+
+// Apply role-based filtering for counting users
+if ($user == 1) {
+    $sql .= " AND user_group != 1";
+} elseif ($user == 2) {
+    $sql .= " AND user_group NOT IN (1,2)";
+} else {
+    $sql .= " AND user_group NOT IN (1,2,3)";
+}
+
+// Close subquery
+$sql .= ") AS user_count 
+         FROM user_group ug";
+
+// Apply role-based filtering for visible groups
+if ($user == 1) {
+    $sql .= " WHERE id != 1";
+} elseif ($user == 2) {
+    $sql .= " WHERE id NOT IN (1,2)";
+} else {
+    $sql .= " WHERE id NOT IN (1,2,3)";
+}
+
+$stmt = db()->prepare($sql);
 $stmt->execute();
 $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 <?php $this->start('content'); ?>
 
@@ -23,31 +50,20 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Filters and Search -->
     <div ng-cloak class="mb-6">
-        <div class="flex flex-wrap gap-4 items-center">
-            <!-- Search -->
-            <div class="flex-1 min-w-[300px]">
-                <div class="relative">
-                    <input type="text" ng-model="searchTerm" ng-change="filterUsers()"
-                        placeholder="Search users by name, email, or ID..." class="bg-[#fff1] w-full">
-                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                </div>
-            </div>
-
+        <div class="flex flex-wrap lg:flex-row gap-4 items-center">
             <!-- Group Filter -->
-            <select ng-model="selectedGroup" ng-change="onGroupChange()" ng-disabled="isLoading"
-                class="select2 w-96"
-                placeholder="Select a group">
+            <select ng-model="selectedGroup" ng-change="filterUsers()" ng-disabled="isLoading"
+                class="select2 w-96 md:w-[22rem]" placeholder="Select a group">
                 <option value="">All Groups</option>
                 <?php foreach ($userGroups as $group): ?>
                     <option value="<?= $group['id'] ?>">
-                        <?php echo $group['name'] ?> (<?php echo $group['user_count'] ?> users)
+                        <?= $group['name'] ?> (<?= $group['user_count'] ?> users)
                     </option>
                 <?php endforeach; ?>
             </select>
 
             <!-- Status Filter -->
-            <select ng-model="selectedStatus" ng-change="filterUsers()"
-                class="select2 bg-[#0006] border border-[#fff2] rounded-lg py-2 px-4 text-white focus:outline-none focus:border-cyan-500 transition-colors">
+            <select ng-model="selectedStatus" ng-change="filterUsers()" class="select2 w-96 md:w-[22rem]">
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -55,11 +71,12 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </select>
 
             <!-- Export Button -->
-            <button
+            <!-- <button
                 class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2">
                 <i class="fas fa-download"></i>
                 <span>Export</span>
-            </button>
+            </button> -->
+
         </div>
     </div>
 
@@ -73,27 +90,67 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <!-- Users Table -->
-    <div ng-cloak ng-if="!loading && users.length > 0" class="bg-[#0004] rounded-lg overflow-hidden">
+    <div ng-cloak ng-if="!loading && filteredUsers.length > 0" class="">
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <div class="flex justify-between pt-2">
+                <div class="flex items-center space-x-2 mb-4">
+                    <span class="text-gray-400 text-sm">Show</span>
+                    <select ng-model="pageSize"
+                        ng-change="changePageSize()" id="pageSizeSelect"
+                        class="bg-transparent border border-gray-600 rounded px-2 py-1 text-gray-400">
+                        <option ng-repeat="size in pageSizeOptions" value="{{size}}">{{size}}</option>
+                    </select>
+                    <span class="text-gray-400 text-sm">users per page</span>
+                </div>
+                <!-- Search -->
+                <div class="flex-1 min-w-[200px] max-w-96">
+                    <div class="relative">
+                        <input type="text" ng-model="searchTerm" ng-change="filterUsers()" style="padding-left: 2.5rem;"
+                            placeholder="Search users by name, or email..." class="bg-[#fff1] w-full">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            <table class="w-full bg-[#0004] rounded-lg overflow-hidden">
                 <thead class="bg-[#0006] border-b border-[#fff2]">
                     <tr>
-                        <th class="py-3 px-4 text-left font-semibold text-gray-300">
+                        <!-- <th class="py-3 px-4 text-left font-semibold text-gray-300">
                             <input type="checkbox" class="rounded bg-[#0006] border-[#fff2]">
+                        </th> -->
+                        <th class="py-3 px-4 text-left font-semibold text-gray-300 cursor-pointer"
+                            ng-click="sortBy('name')">
+                            User
+                            <i ng-class="{'fas fa-sort-up': sortColumn === 'name' && !sortReverse,
+                                'fas fa-sort-down': sortColumn === 'name' && sortReverse,
+                                'fas fa-sort': sortColumn !== 'name'}" class="text-xs"></i>
                         </th>
-                        <th class="py-3 px-4 text-left font-semibold text-gray-300">User</th>
-                        <th class="py-3 px-4 text-left font-semibold text-gray-300">Group</th>
-                        <th class="py-3 px-4 text-left font-semibold text-gray-300">Status</th>
+
+                        <th class="py-3 px-4 text-left font-semibold text-gray-300 cursor-pointer"
+                            ng-click="sortBy('group_name')">
+                            Group
+                            <i ng-class="{'fas fa-sort-up': sortColumn === 'group_name' && !sortReverse,
+                                'fas fa-sort-down': sortColumn === 'group_name' && sortReverse,
+                                'fas fa-sort': sortColumn !== 'group_name'}" class="text-xs"></i>
+                        </th>
+
+                        <th class="py-3 px-4 text-left font-semibold text-gray-300 cursor-pointer"
+                            ng-click="sortBy('status')">
+                            Status
+                            <i ng-class="{'fas fa-sort-up': sortColumn === 'status' && !sortReverse,
+                                'fas fa-sort-down': sortColumn === 'status' && sortReverse,
+                                'fas fa-sort': sortColumn !== 'status'}" class="text-xs"></i>
+                        </th>
+
                         <th class="py-3 px-4 text-left font-semibold text-gray-300">Last Login</th>
-                        <th class="py-3 px-4 text-left font-semibold text-gray-300">Actions</th>
+                        <!-- <th class="py-3 px-4 text-left font-semibold text-gray-300">Actions</th> -->
                     </tr>
                 </thead>
                 <tbody>
-                    <tr ng-repeat="user in filteredUsers"
+                    <tr ng-repeat="user in paginatedUsers()"
                         class="border-b border-[#fff1] hover:bg-[#fff1] transition-colors">
-                        <td class="py-3 px-4">
+                        <!-- <td class="py-3 px-4">
                             <input type="checkbox" class="rounded bg-[#0006] border-[#fff2]">
-                        </td>
+                        </td> -->
                         <td class="py-3 px-4">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 bg-cyan-600 rounded-full flex items-center justify-center">
@@ -122,39 +179,39 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <td class="py-3 px-4 text-gray-400">
                             {{ user.last_login || 'Never' }}
                         </td>
-                        <td class="py-3 px-4">
-                            <div class="flex items-center space-x-2">
+                        <!-- <td class="py-3 px-4">
+                            <div class="flex items-center space-x-2"> -->
                                 <!-- Edit -->
-                                <button ng-click="editUser(user)"
+                                <!-- <button ng-click="editUser(user)"
                                     class="text-cyan-400 hover:text-cyan-300 transition-colors" title="Edit User">
                                     <i class="fas fa-edit"></i>
-                                </button>
+                                </button> -->
 
                                 <!-- Permissions -->
-                                <button ng-click="managePermissions(user)"
+                                <!-- <button ng-click="managePermissions(user)"
                                     class="text-purple-400 hover:text-purple-300 transition-colors"
                                     title="Manage Permissions">
                                     <i class="fas fa-key"></i>
-                                </button>
+                                </button> -->
 
                                 <!-- Suspend/Activate -->
-                                <button ng-if="user.status === 'active'" ng-click="toggleUserStatus(user)"
+                                <!-- <button ng-if="user.status === 'Active'" ng-click="toggleUserStatus(user)"
                                     class="text-yellow-400 hover:text-yellow-300 transition-colors"
                                     title="Suspend User">
                                     <i class="fas fa-pause"></i>
                                 </button>
-                                <button ng-if="user.status !== 'active'" ng-click="toggleUserStatus(user)"
+                                <button ng-if="user.status !== 'Active'" ng-click="toggleUserStatus(user)"
                                     class="text-green-400 hover:text-green-300 transition-colors" title="Activate User">
                                     <i class="fas fa-play"></i>
-                                </button>
+                                </button> -->
 
                                 <!-- Delete -->
-                                <button ng-click="deleteUser(user)"
+                                <!-- <button ng-click="deleteUser(user)"
                                     class="text-red-400 hover:text-red-300 transition-colors" title="Delete User">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
-                        </td>
+                        </td> -->
                     </tr>
                 </tbody>
             </table>
@@ -163,13 +220,13 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <!-- Pagination -->
         <div class="flex justify-between items-center p-4 border-t border-[#fff2]">
             <div class="text-gray-400 text-sm">
-                Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, totalUsers) }} of
-                {{ totalUsers }} users
+                Showing {{ (currentPage - 1) * (pageSize === 'All' ? totalUsers : pageSize) + 1 }} to {{ getRangeEnd()
+                }} of {{ totalUsers }} users
             </div>
             <div class="flex space-x-2">
-                <button ng-click="previousPage()" ng-disabled="currentPage === 1"
+                <button ng-click="previousPage()" ng-disabled="currentPage === 1 || pageSize === 'All'"
                     class="px-3 py-1 rounded border border-[#fff2] text-gray-400 hover:bg-[#fff2] transition-colors"
-                    ng-class="{'opacity-50 cursor-not-allowed': currentPage === 1}">
+                    ng-class="{'opacity-50 cursor-not-allowed': currentPage === 1 || pageSize === 'All'}">
                     <i class="fas fa-chevron-left"></i>
                 </button>
 
@@ -181,9 +238,9 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </button>
                 </div>
 
-                <button ng-click="nextPage()" ng-disabled="currentPage === totalPages"
+                <button ng-click="nextPage()" ng-disabled="currentPage === totalPages || pageSize === 'All'"
                     class="px-3 py-1 rounded border border-[#fff2] text-gray-400 hover:bg-[#fff2] transition-colors"
-                    ng-class="{'opacity-50 cursor-not-allowed': currentPage === totalPages}">
+                    ng-class="{'opacity-50 cursor-not-allowed': currentPage === totalPages || pageSize === 'All'}">
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
@@ -196,10 +253,10 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <i class="fas fa-users text-gray-500 text-4xl mb-4"></i>
             <h3 class="text-lg font-medium text-gray-100 mb-2">No Users Found</h3>
             <p class="text-gray-400 mb-6">Get started by adding your first user to the system.</p>
-            <button ng-click="createUser()"
+            <a href="add_user"
                 class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-6 rounded-lg transition-colors duration-200">
                 Add First User
-            </button>
+            </a>
         </div>
     </div>
 
