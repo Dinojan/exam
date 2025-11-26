@@ -75,7 +75,7 @@
     position: absolute;
     left: -100000px;
     width: 100%;
-    z-index: 1051
+    z-index: 99999999999
 }
 
 .select2-results {
@@ -147,7 +147,7 @@
     height: auto;
     width: auto;
     opacity: 0;
-    z-index: 99;
+    z-index: 9999999999;
     background-color: #0006;
     filter: alpha(opacity=0)
 }

@@ -10,7 +10,7 @@ $this->controller('ExamController');
             <h1 class="text-2xl font-bold">Create New Exam</h1>
             <p class="text-gray-400">Set up a new examination with sections and questions</p>
         </div>
-        <a href="exam_management"
+        <a href="exams"
             class="bg-gray-600 hover:bg-gray-700 mt-4 md:mt-0 w-fit text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2">
             <i class="fas fa-arrow-left"></i>
             <span>Back to Exams</span>
@@ -193,7 +193,8 @@ $this->controller('ExamController');
                         <div class="space-y-2 max-h-96 overflow-y-auto">
                             <div ng-repeat="question in savedQuestions track by $index"
                                 ng-click="loadQuestionForEditing($index)"
-                                class="p-3 rounded-lg border cursor-pointer transition-colors duration-200" ng-class="currentQuestionIndex === $index 
+                                class="relative p-3 rounded-lg border cursor-pointer transition-colors duration-200"
+                                ng-class="currentQuestionIndex === $index 
                                     ? 'bg-cyan-600 border-cyan-600' 
                                     : 'bg-[#0008] border-gray-600 hover:bg-[#000a]'">
                                 <div class="flex justify-between items-start">
@@ -213,8 +214,14 @@ $this->controller('ExamController');
                                         <div class="mt-1"
                                             ng-if="question.assignedSections && question.assignedSections.length > 0">
                                             <span class="text-xs text-cyan-400">
-                                                Sections: {{getAssignedSectionNames(question)}}
+                                                Assigned Section{{question.assignedSections.length > 1 ? 's' : ''}}:
+                                                {{getAssignedSectionNames(question)}}
                                             </span>
+                                            <button title="Remove assign question to section"
+                                                ng-click="openUnassignSectionModal(question.id)">
+                                                <i
+                                                    class="fa-solid fa-link-slash absolute top-3 right-3 text-red-400 text-sm"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -231,11 +238,11 @@ $this->controller('ExamController');
                     <!-- Sections Panel -->
                     <div class="bg-[#0006] rounded-lg p-4 border border-gray-600 mt-4">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-medium text-gray-100">Sections ({{examData.sections.length}})</h3>
+                            <h3 class="text-lg font-medium text-gray-100">Sections ({{savedSections.length}})</h3>
                         </div>
 
                         <div class="space-y-3 max-h-64 overflow-y-auto">
-                            <div ng-repeat="section in examData.sections track by $index"
+                            <div ng-repeat="section in savedSections track by $index"
                                 class="p-3 border border-gray-600 rounded-lg bg-[#0008]">
                                 <div class="flex justify-between items-start mb-2">
                                     <h4 class="font-medium text-gray-100">{{section.title || 'Untitled Section'}}</h4>
@@ -244,7 +251,7 @@ $this->controller('ExamController');
                                             class="text-blue-400 hover:text-blue-300 transition-colors text-sm">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button type="button" ng-click="removeSection($index)"
+                                        <button type="button" ng-click="removeSection(section.id)"
                                             class="text-red-400 hover:text-red-300 transition-colors text-sm">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -252,15 +259,12 @@ $this->controller('ExamController');
                                 </div>
                                 <div class="text-xs text-gray-400 space-y-1">
                                     <div>Questions: {{section.assignedQuestions || 0}}/{{section.question_count}}</div>
-                                    <div>Marks: {{section.marks_per_question}} each</div>
-                                    <div>Type: {{section.question_type}}</div>
-                                    <div>Order: {{section.order}}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Empty State for Sections -->
-                        <div ng-if="examData.sections.length === 0" class="text-center py-4">
+                        <div ng-if="savedSections.length === 0" class="text-center py-4">
                             <i class="fas fa-layer-group text-gray-500 text-2xl mb-2"></i>
                             <p class="text-gray-400 text-sm">No sections created</p>
                         </div>
@@ -283,13 +287,13 @@ $this->controller('ExamController');
                             <p>Exam ID: {{examID}}</p>
                             <div class="flex flex-wrap md:flex-row gap-2">
                                 <button type="button" ng-click="saveCurrentQuestion()"
-                                    ng-disabled="!currentQuestion.text"
+                                    ng-disabled="!currentQuestion.question"
                                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 w-full md:w-auto rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
                                     <i class="fas fa-save"></i>
                                     <span>{{currentQuestion.isSaved ? 'Update' : 'Save'}}</span>
                                 </button>
                                 <button type="button" ng-click="assignToSection()"
-                                    ng-disabled="!currentQuestion.isSaved || examData.sections.length === 0"
+                                    ng-disabled="!currentQuestion.isSaved || savedSections.length === 0"
                                     class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 w-full md:w-auto rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
                                     <i class="fas fa-layer-group"></i>
                                     <span>Assign to Section</span>
@@ -606,9 +610,8 @@ $this->controller('ExamController');
 
                 <!-- Sections Summary -->
                 <div class="bg-[#0006] rounded-lg p-4">
-                    <h3 class="text-lg font-medium text-cyan-400 mb-3">Sections ({{examData.sections.length}})</h3>
-                    <div ng-repeat="section in examData.sections"
-                        class="mb-3 last:mb-0 p-3 border border-gray-600 rounded">
+                    <h3 class="text-lg font-medium text-cyan-400 mb-3">Sections ({{savedSections.length}})</h3>
+                    <div ng-repeat="section in savedSections" class="mb-3 last:mb-0 p-3 border border-gray-600 rounded">
                         <div class="flex justify-between items-start">
                             <div>
                                 <h4 class="font-medium text-gray-100">{{section.title}}</h4>
@@ -645,21 +648,24 @@ $this->controller('ExamController');
     </div>
 
     <!-- Assign to Section Modal -->
-    <div ng-show="showAssignModal"
-        class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-[#0006] rounded-lg p-6 border border-gray-600 max-w-md w-full">
+    <div ng-show="showAssignModal" id="assignModal"
+        ng-click="closeModalFromOutside($event, 'assignModal', 'showAssignModal')"
+        class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur flex items-center justify-center z-[9999999] p-4">
+        <div class="relative bg-[#fff1] rounded-lg p-6 border border-gray-600 max-w-md w-full">
+            <i ng-click="showAssignModal = false; showSecondDescription = false"
+                class="fas fa-close absolute top-3 right-3 hover:rotate-90 hover:text-red-400 transition-all duration-300 cursor-pointer"></i>
             <h3 class="text-lg font-medium text-gray-100 mb-4">Assign Question to Section</h3>
-
             <div class="space-y-4">
-                <div class="form-group">
+                <form id="assign_question_to_section_form" onsubmit="return false" class="form-group">
                     <label class="form-label">Select Section</label>
-                    <select ng-model="assignSectionIndex" class="form-input">
+                    <select ng-model="assignSectionId" class="form-input select2" style="width: 100%;"
+                        name="new_section_id">
                         <option value="">-- Select a Section --</option>
-                        <option ng-repeat="section in examData.sections" value="{{$index}}">
-                            Section {{$index + 1}}: {{section.title}} ({{section.question_type}})
+                        <option ng-repeat="section in savedSections" value="{{section.id}}">
+                            Section: {{section.title}}
                         </option>
                     </select>
-                </div>
+                </form>
 
                 <div class="bg-yellow-600 bg-opacity-20 border border-yellow-600 rounded-lg p-3">
                     <p class="text-yellow-400 text-sm">
@@ -673,7 +679,7 @@ $this->controller('ExamController');
                         class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
                         Cancel
                     </button>
-                    <button type="button" ng-click="confirmAssignToSection()" ng-disabled="!assignSectionIndex"
+                    <button type="button" ng-click="confirmAssignToSection()" ng-disabled="!assignSectionId"
                         class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50">
                         Assign to Section
                     </button>
@@ -682,84 +688,105 @@ $this->controller('ExamController');
         </div>
     </div>
 
+    <div ng-show="showUnasignSectionModal" id="removeSectionModal"
+        ng-click="closeModalFromOutside($event, 'removeSectionModal', 'showUnasignSectionModal')"
+        class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur flex items-center justify-center z-[9999999] p-4">
+        <div class="relative bg-[#fff1] rounded-lg p-6 border border-gray-600 max-w-md w-full">
+            <i ng-click="showUnasignSectionModal = false; showSecondDescription = false"
+                class="fas fa-close absolute top-3 right-3 hover:rotate-90 hover:text-red-400 transition-all duration-300 cursor-pointer"></i>
+            <h3 class="text-lg font-medium text-gray-100 mb-4">Remove Question from Section</h3>
+            <div class="space-y-4">
+                <form id="remove_question_to_section_form" onsubmit="return false" class="form-group">
+                    <label class="form-label">Select Section</label>
+                    <select ng-model="unassignSectionId" class="form-input select2" style="width: 100%;"
+                        name="remove_section_id">
+                        <option value="">-- Select a Section --</option>
+                        <option ng-repeat="section in selectedQuestionAssignedSections" value="{{section.id}}">
+                            Section: {{section.title}}
+                        </option>
+                    </select>
+                </form>
+
+                <div class="bg-yellow-600 bg-opacity-20 border border-yellow-600 rounded-lg p-3">
+                    <p class="text-yellow-400 text-sm">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        This question will be removed from the selected section.
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" ng-click="showUnassignModal = false"
+                        class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Cancel
+                    </button>
+                    <button type="button" ng-click="confirmUnassignSection()" ng-disabled="!unassignSectionId"
+                        class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50">
+                        Remove From Section
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Section Editor Modal -->
-    <div ng-show="showSectionModal"
-        class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-[#0006] rounded-lg p-6 border border-gray-600 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div ng-show="showSectionModal" id="sectionModal"
+        ng-click="closeModalFromOutside($event, 'sectionModal', 'showSectionModal', ['showSecondDescription'])"
+        class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur flex items-center justify-center z-[99999999] p-4 transition-all duration-300">
+        <div
+            class="relative bg-[#fff1] rounded-lg p-6 border border-gray-600 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <i ng-click="showSectionModal = false; showSecondDescription = false"
+                class="fas fa-close absolute top-3 right-3 hover:rotate-90 hover:text-red-400 transition-all duration-300 cursor-pointer"></i>
             <h3 class="text-lg font-medium text-gray-100 mb-4">
                 {{editingSectionIndex === null ? 'Create New Section' : 'Edit Section'}}
             </h3>
 
             <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form id="section_form" onsubmit="return false" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="hidden" ng-model="examID" name="exam_id" value="{{examID}}">
+                    <input type="hidden" ng-model="currentSection.id" name="section_id" value="{{currentSection.id}}">
+
                     <!-- Section Title -->
-                    <div class="form-group md:col-span-2">
+                    <div class="form-group">
                         <label class="form-label">Section Title <span class="text-red-700">*</span></label>
                         <input type="text" ng-model="currentSection.title" required class="form-input"
-                            placeholder="e.g., Mathematics, Physics, etc.">
-                    </div>
-
-                    <!-- Section Order -->
-                    <div class="form-group">
-                        <label class="form-label">Order <span class="text-red-700">*</span></label>
-                        <input type="number" ng-model="currentSection.order" required min="1" class="form-input"
-                            placeholder="Sequence">
+                            name="section_title" placeholder="e.g., Mathematics, Physics, etc.">
                     </div>
 
                     <!-- Questions Count -->
                     <div class="form-group">
                         <label class="form-label">Number of Questions <span class="text-red-700">*</span></label>
                         <input type="number" ng-model="currentSection.question_count" required min="1"
-                            class="form-input" placeholder="e.g., 10">
-                    </div>
-
-                    <!-- Marks per Question -->
-                    <div class="form-group">
-                        <label class="form-label">Marks per Question <span class="text-red-700">*</span></label>
-                        <input type="number" ng-model="currentSection.marks_per_question" required min="0.5" step="0.5"
-                            class="form-input" placeholder="e.g., 1">
-                    </div>
-
-                    <!-- Negative Marking -->
-                    <div class="form-group">
-                        <label class="form-label">Negative Marking</label>
-                        <input type="number" ng-model="currentSection.negative_marking" min="0" step="0.25"
-                            class="form-input" placeholder="e.g., 0.25">
-                    </div>
-
-                    <!-- Question Type -->
-                    <div class="form-group">
-                        <label class="form-label">Question Type <span class="text-red-700">*</span></label>
-                        <select ng-model="currentSection.question_type" required class="form-input">
-                            <option value="multiple_choice">Multiple Choice</option>
-                            <option value="true_false">True/False</option>
-                            <option value="descriptive">Descriptive</option>
-                            <option value="fill_blank">Fill in the Blank</option>
-                        </select>
-                    </div>
-
-                    <!-- Time Limit -->
-                    <div class="form-group">
-                        <label class="form-label">Time Limit (minutes)</label>
-                        <input type="number" ng-model="currentSection.time_limit" min="1" class="form-input"
-                            placeholder="Optional">
+                            name="section_question_count" class="form-input" placeholder="e.g., 10">
                     </div>
 
                     <!-- Description -->
                     <div class="form-group md:col-span-2">
                         <label class="form-label">Description</label>
                         <textarea ng-model="currentSection.description" rows="3" class="form-input"
-                            placeholder="Section description..."></textarea>
+                            name="section_description" placeholder="Section description..."></textarea>
                     </div>
-                </div>
+
+                    <button type="button" ng-click="addSecondDescription()" ng-show="!showSecondDescription"
+                        class="group bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 w-auto flex items-center justify-center gap-2 rounded-lg transition-colors duration-200 disabled:opacity-50">
+                        <i class="fas fa-plus group-hover:rotate-180 transition-transform duration-300"></i>
+                        Add 2nd Description
+                    </button>
+
+                    <!-- 2nd Description -->
+                    <div class="form-group md:col-span-2" ng-show="showSecondDescription">
+                        <label class="form-label">2nd Description</label>
+                        <textarea ng-model="currentSection.secondDescription" rows="3" class="form-input"
+                            name="section_second_description" placeholder="Section 2nd description..."></textarea>
+                    </div>
+                </form>
 
                 <div class="flex justify-end space-x-3 pt-4 border-t border-gray-600">
-                    <button type="button" ng-click="showSectionModal = false"
+                    <button type="button" ng-click="showSectionModal = false; showSecondDescription = false"
                         class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
                         Cancel
                     </button>
                     <button type="button" ng-click="saveSection()"
-                        ng-disabled="!currentSection.title || !currentSection.order"
+                        ng-disabled="!currentSection.title || !currentSection.question_count"
                         class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50">
                         {{editingSectionIndex === null ? 'Create Section' : 'Update Section'}}
                     </button>
@@ -771,7 +798,7 @@ $this->controller('ExamController');
     <!-- Navigation Buttons -->
     <div class="flex flex-wrap md:flex-row justify-between gap-2 mt-8 pt-6 border-t border-gray-600">
         <button type="button" ng-click="previousStep()" ng-show="currentStep > 1"
-            class="bg-gray-600 hover:bg-gray-700 text-white w-full md:auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+            class="bg-gray-600 hover:bg-gray-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
             <i class="fas fa-arrow-left"></i>
             <span>Previous</span>
         </button>
@@ -780,20 +807,20 @@ $this->controller('ExamController');
 
         <button type="button" id="basicInfoSubmit" ng-click="saveBasicInfo()" ng-show="currentStep === 1"
             ng-disabled="basicInfoForm.$invalid"
-            class="bg-green-600 hover:bg-green-700 disabled:bg-green-800 w-full md:auto disabled:cursor-not-allowed text-white py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+            class="bg-green-600 hover:bg-green-700 disabled:bg-green-800 w-full md:w-auto disabled:cursor-not-allowed text-white py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
             <i class="fas fa-save"></i>
             <span>Save Basic Info</span>
         </button>
 
         <button type="button" ng-click="nextStep()" ng-show="currentStep < totalSteps"
-            class="bg-cyan-600 hover:bg-cyan-700 text-white w-full md:auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+            class="bg-cyan-600 hover:bg-cyan-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
             <span>Next</span>
             <i class="fas fa-arrow-right"></i>
         </button>
 
         <button type="button" ng-click="createExam()" ng-show="currentStep === totalSteps"
             ng-disabled="creatingExam || savedQuestions.length === 0"
-            class="bg-green-600 hover:bg-green-700 text-white w-full md:auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
+            class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
             <i class="fas fa-save" ng-class="{'fa-spin animate-spin': creatingExam}"></i>
             <span>{{creatingExam ? 'Creating Exam...' : 'Create Exam'}}</span>
         </button>

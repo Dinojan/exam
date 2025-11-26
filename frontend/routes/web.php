@@ -65,6 +65,11 @@ Router::group(['prefix' => 'API'], function () {
     Router::post('/user', 'UserAPI@createUser', 'create_user', ['auth']);
     Router::post('/exams/basic_info', 'ExamAPI@saveExamBasicInfo', 'save_basic_info', ['auth']);
     Router::post('/questions/add_question', 'QuestionAPI@addQuestion', 'save_question', ['auth']);
+    Router::post('/questions/edit_question/{id}', 'QuestionAPI@editQuestion', 'edit_question', ['auth']);
+    Router::post('/questions/assign_to_section/{id}', 'QuestionAPI@assignQuestionToSection', 'assign_question_to_section', ['auth']);
+    Router::post('/questions/unassign_section/{id}', 'QuestionAPI@unassignSection', 'assign_question_to_section', ['auth']);
+    Router::post('/sections/add', 'SectionAPI@addSection', 'add_section', ['auth']);
+    Router::post('/sections/edit/{id}', 'SectionAPI@updateSection', 'adit_section', ['auth']);
 
     Router::get('/users', 'UserAPI@getAllUsersHandler', 'get_all_users', ['auth']);
     Router::get('/user_groups', 'UserGroupAPI@getAllGroups', 'get_all_users_groups', ['auth']);
@@ -77,6 +82,8 @@ Router::group(['prefix' => 'API'], function () {
     Router::post('/user_groups/{id}', 'UserGroupAPI@updateUserGroup', 'update_user_group', ['auth']);
 
     Router::delete('/user_groups/{id}', 'UserGroupAPI@deleteUserGroup', 'delete_user_group', ['auth']);
+    Router::delete('/questions/delete_question/{id}', 'QuestionAPI@deleteQuestion', 'delete_question', ['auth']);
+    Router::delete('/sections/delete/{id}', 'SectionAPI@deleteSection', 'delete_section', ['auth']);
 });
 
 Router::group(['prefix' => 'modal'], function () {

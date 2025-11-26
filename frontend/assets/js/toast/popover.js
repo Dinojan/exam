@@ -100,7 +100,8 @@ export const popup = {
                                 options.size === 'full' ? 'max-w-full w-[calc(100%-2rem)] md:w-[calc(100%-3rem)]' :
                                     'max-w-md w-[calc(100%-2rem)] md:w-full';
 
-        popover.className = `popover-content ${positionClass} ${sizeClass}`;
+        popover.className = `popover-content  ${positionClass} ${sizeClass}`;
+        popover.style.background = options.backgroundColor || '#0003';
 
         let contentHtml = options.content || '';
 
@@ -125,7 +126,6 @@ export const popup = {
         const btnWidth = options.buttonWidth === 'full' ? '100%' : options.buttonWidth === 'fit' ? 'fit-content' : options.buttonWidth === 'auto' ? 'auto' : (options.buttonWidth !== 'auto' && options.buttonWidth !== 'full' && options.buttonWidth !== 'fit') ? options.buttonWidth : 'auto';
         const buttonContainerClass = options.buttonContainerClass || '';
         const buttonContainerStyles = options.buttonContainerStyles || '';
-        console.log('options:', options);
 
         switch (options.type) {
             case 'info':
@@ -198,7 +198,7 @@ export const popup = {
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="popover-body" style="color:${options.contentColor || '#fff'}">
+            <div class="popover-body" style="color:${options.contentColor || '#fff'}; text-align:${options.type === 'confirm' ? 'center' : 'left'}">
                 ${contentHtml}
             </div>
             <div class="popover-footer ${buttonContainerClass}" style="justify-content:${buttonPositionClass}; ${buttonContainerStyles}">
@@ -449,11 +449,12 @@ export const popup = {
         }
     },
 
-    error({ title, content, options = { confirm: { text: 'OK', background: '#3498db', color: '#fff', onConfirm: null }, size: 'md', buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '' } }) {
+    error({ title, titleColor, content, options = { confirm: { text: 'OK', background: '#3498db', color: '#fff', onConfirm: null }, size: 'md',
+        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003' } }) {
         return this.show({
             type: 'info',
             title,
-            titleColor: '#f44336',
+            titleColor: titleColor || '#f44336',
             content: `
                 <div class="text-center p-4">
                     <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-3"></i>
@@ -468,7 +469,8 @@ export const popup = {
             btnPosition: options.buttonPosition,
             buttonWidth: options.buttonWidth,
             buttonContainerClass: options.buttonContainerClass,
-            buttonContainerStyles: options.buttonContainerStyles
+            buttonContainerStyles: options.buttonContainerStyles,
+            backgroundColor: options.backgroundColor || '#0003'
         });
     },
 
@@ -482,9 +484,9 @@ export const popup = {
         `;
     },
 
-    info({ title, content = { text, color: '#3498db' }, titleColor = '#3498db', size = 'md', options = {
+    info({ title, titleColor = '#3498db', content = { text, color: '#3498db' }, size = 'md', options = {
         confirm: { text: 'OK', background: '#3498db', color: '#fff', onConfirm: null },
-        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: ''
+        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003'
     } }) {
         return this.show({
             type: 'info',
@@ -500,20 +502,20 @@ export const popup = {
             btnPosition: options.buttonPosition,
             buttonWidth: options.buttonWidth,
             buttonContainerClass: options.buttonContainerClass,
-            buttonContainerStyles: options.buttonContainerStyles
+            buttonContainerStyles: options.buttonContainerStyles,
+            backgroundColor: options.backgroundColor || '#0003'
         });
     },
 
-    confirm({ title, content = { text, color: '#f59e0b' }, size = 'md', options = {
+    confirm({ title, titleColor, content = { text, color: '#f59e0b' }, size = 'md', options = {
         confirm: { text: 'Ok, confirm', background: '#f44336', color: '#fff', onConfirm: null },
         cancel: { text: 'No, Cancel', background: '#4CAF50', color: '#fff', onCancel: null },
-        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: ''
+        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003'
     } }) {
-        console.log('Confirm options:', options);
         return this.show({
             type: 'confirm',
             title: title || 'Confirmation',
-            titleColor: '#f59e0b',
+            titleColor: titleColor || '#f59e0b',
             content: content.text || 'This is a confirm message',
             contentColor: content.color || '#000',
             confirmText: options.confirm?.text || 'Ok, Confirm',
@@ -528,14 +530,16 @@ export const popup = {
             btnPosition: options.buttonPosition,
             buttonWidth: options.buttonWidth,
             buttonContainerClass: options.buttonContainerClass,
-            buttonContainerStyles: options.buttonContainerStyles
+            buttonContainerStyles: options.buttonContainerStyles,
+            backgroundColor: options.backgroundColor || '#0003',
         });
     },
 
-    content({ title, content, buttons = [], apiConfig = null, size = 'md', buttonPosition = 'center', buttonWidth = 'fit', buttonContainerClass = '', buttonContainerStyles = '' }) {
+    content({ title, titleColor, content, buttons = [], apiConfig = null, size = 'md', buttonPosition = 'center', buttonWidth = 'fit', buttonContainerClass = '', buttonContainerStyles = '' }) {
         return this.show({
             type: 'content',
             title: title || 'Content Popover',
+            titleColor: titleColor || '#fff',
             content,
             buttons,
             apiConfig,
@@ -547,11 +551,12 @@ export const popup = {
         });
     },
 
-    success({ title, content = { text, color: '#4CAF50' }, options = { confirmText: 'OK', onConfirm: null, buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '' }, size = 'md' }) {
+    success({ title, titleColor, content = { text, color: '#4CAF50' }, 
+        options = { confirmText: 'OK', onConfirm: null, buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003' }, size = 'md' }) {
         return this.show({
             type: 'success',
             title: title || 'Success!',
-            titleColor: '#4CAF50',
+            titleColor: titleColor || '#4CAF50',
             content: content.text || 'This is a success message',
             contentColor: content.color || '#004c02' || '#4CAF50',
             confirmText: options.confirm?.text || 'OK',
@@ -560,21 +565,24 @@ export const popup = {
             btnPosition: options.buttonPosition,
             buttonWidth: options.buttonWidth,
             buttonContainerClass: options.buttonContainerClass,
-            buttonContainerStyles: options.buttonContainerStyles
+            buttonContainerStyles: options.buttonContainerStyles,
+            backgroundColor: options.backgroundColor || '#0003'
         });
     },
 
     // Universal API content loader
-    apiContent({ title, endpoint, method = 'GET', data = null, buttons = [], size = 'lg', buttonPosition = 'center', buttonWidth = 'fit', buttonContainerClass = '', buttonContainerStyles = '' }) {
+    apiContent({ title, titleColor, endpoint, method = 'GET', data = null, buttons = [], size = 'lg', buttonPosition = 'center', buttonWidth = 'fit', buttonContainerClass = '', buttonContainerStyles = '', backgroundColor = '#0003' }) {
         return this.content({
             title,
+            titleColor: titleColor || '#fff',
             apiConfig: { endpoint, method, data },
             buttons,
             size,
             buttonPosition,
             buttonWidth,
             buttonContainerClass,
-            buttonContainerStyles
+            buttonContainerStyles,
+            backgroundColor
         });
     },
 

@@ -67,19 +67,30 @@ class QuestionAPI
             // $question['options'] = $optionsData; 
             // print_r($questionId);
 
-            $question = []; // initialize array
-            $question['text'] = $questionText;
-            $question['answer'] = $answer;
-            $question['marks'] = $marks;
-            $question['options'] = [
-                'A' => ['text' => $A],
-                'B' => ['text' => $B],
-                'C' => ['text' => $C],
-                'D' => ['text' => $D]
+            // If images are uploaded, set paths here (example)
+            $a_img = !empty($_POST['a_img']) ? $_POST['a_img'] : null;
+            $b_img = !empty($_POST['b_img']) ? $_POST['b_img'] : null;
+            $c_img = !empty($_POST['c_img']) ? $_POST['c_img'] : null;
+            $d_img = !empty($_POST['d_img']) ? $_POST['d_img'] : null;
+
+            // Option mapping
+            $options = [
+                ['op' => 'A', 'order' => 1, 'text' => $A, 'image' => $a_img],
+                ['op' => 'B', 'order' => 2, 'text' => $B, 'image' => $b_img],
+                ['op' => 'C', 'order' => 3, 'text' => $C, 'image' => $c_img],
+                ['op' => 'D', 'order' => 4, 'text' => $D, 'image' => $d_img]
             ];
-            $question['id'] = $questionId;
-            $question['created_at'] = date('Y-m-d H:i:s');
-            $question['examID'] = $examID;
+
+            $question = [
+                'id' => $questionId,
+                'question' => $questionText,
+                'answer' => $answer,
+                'marks' => $marks + 0,
+                'examID' => $examID,
+                'isSaved' => true,
+                'options' => $options,
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
 
 
             return json_encode([
@@ -96,4 +107,192 @@ class QuestionAPI
         }
     }
 
+    public function editQuestion($id)
+    {
+        try {
+            // Incoming values
+            $questionId = $id;
+            $questionText = $_POST['question'];
+            $A = !empty($_POST['A']) ? $_POST['A'] : null;
+            $B = !empty($_POST['B']) ? $_POST['B'] : null;
+            $C = !empty($_POST['C']) ? $_POST['C'] : null;
+            $D = !empty($_POST['D']) ? $_POST['D'] : null;
+            $answer = $_POST['answer'];
+            $marks = $_POST['marks'];
+            $examID = $_POST['exam_id'];
+
+            // If images are uploaded, set paths here (example)
+            $a_img = !empty($_POST['a_img']) ? $_POST['a_img'] : null;
+            $b_img = !empty($_POST['b_img']) ? $_POST['b_img'] : null;
+            $c_img = !empty($_POST['c_img']) ? $_POST['c_img'] : null;
+            $d_img = !empty($_POST['d_img']) ? $_POST['d_img'] : null;
+
+            // Update query
+            $statement = $this->db->prepare("UPDATE questions SET question = ?, a = ?, b = ?, c = ?, d = ?, answer = ?, marks = ?, exam_id = ?WHERE id = ?");
+            $statement->execute([$questionText, $A, $B, $C, $D, $answer, $marks, $examID, $questionId]);
+
+            $statement = $this->db->prepare("SELECT created_at FROM questions WHERE id = ?");
+            $statement->execute([$questionId]);
+            $question_created_at = $statement->fetch(PDO::FETCH_ASSOC)['created_at'];
+
+            $options = [
+                ['op' => 'A', 'order' => 1, 'text' => $A, 'image' => $a_img],
+                ['op' => 'B', 'order' => 2, 'text' => $B, 'image' => $b_img],
+                ['op' => 'C', 'order' => 3, 'text' => $C, 'image' => $c_img],
+                ['op' => 'D', 'order' => 4, 'text' => $D, 'image' => $d_img]
+            ];
+
+            $question = [
+                'id' => $questionId,
+                'question' => $questionText,
+                'answer' => $answer,
+                'marks' => $marks + 0,
+                'examID' => $examID,
+                'isSaved' => true,
+                'options' => $options,
+                'created_at' => $question_created_at
+            ];
+
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Question edited successfully',
+                'question' => $question
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function deleteQuestion($questionId)
+    {
+        try {
+            $statement = $this->db->prepare("DELETE FROM questions WHERE id = ?");
+            $statement->execute([$questionId]);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Question deleted successfully'
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function assignQuestionToSection($questionId)
+    {
+        try {
+            $new_section_id = $_POST['new_section_id'];
+
+            // Fetch existing section_ids
+            $statement = $this->db->prepare("SELECT section_ids FROM questions WHERE id = ?");
+            $statement->execute([$questionId]);
+            $sectionIds = $statement->fetch(PDO::FETCH_ASSOC)['section_ids'];
+
+            if ($sectionIds) {
+                $the_section_ids_array = json_decode($sectionIds, true);
+
+                // Check if already assigned
+                if (in_array($new_section_id, $the_section_ids_array)) {
+                    throw new Exception("This question is already assigned to this section.");
+                }
+
+                // Add new section_id
+                $the_section_ids_array[] = $new_section_id;
+            } else {
+                $the_section_ids_array = [$new_section_id];
+            }
+
+            // Update in DB
+            $update = $this->db->prepare("UPDATE questions SET section_ids = ? WHERE id = ?");
+            $update->execute([json_encode($the_section_ids_array), $questionId]);
+
+            return json_encode([
+                'status' => 'success',
+                'section_ids' => $the_section_ids_array
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function unassignSection($questionId)
+    {
+        try {
+
+            if (!isset($_POST['remove_section_id'])) {
+                return json_encode([
+                    'status' => 'error',
+                    'msg' => 'Section ID is required'
+                ]);
+            }
+
+            $removeSectionId = intval($_POST['remove_section_id']);
+
+            // Get current question section_ids
+            $stmt = $this->db->prepare("SELECT section_ids FROM questions WHERE id = ?");
+            $stmt->execute([$questionId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return json_encode([
+                    'status' => 'error',
+                    'msg' => 'Question not found'
+                ]);
+            }
+
+            // Decode stored JSON
+            $sectionIds = json_decode($row['section_ids'], true);
+
+            if (!is_array($sectionIds)) {
+                return json_encode([
+                    'status' => 'error',
+                    'msg' => 'Question has no assigned sections'
+                ]);
+            }
+
+            // Check if section exists in the list
+            if (!in_array($removeSectionId, $sectionIds)) {
+                return json_encode([
+                    'status' => 'error',
+                    'msg' => 'Question is not assigned to this section'
+                ]);
+            }
+
+            // Remove section id from array
+            $updatedSections = array_values(array_filter($sectionIds, function ($id) use ($removeSectionId) {
+                return intval($id) !== $removeSectionId;
+            }));
+
+            // Convert back to JSON or null
+            $newJsonValue = empty($updatedSections) ? null : json_encode($updatedSections);
+
+            // Update DB
+            $updateStmt = $this->db->prepare("UPDATE questions SET section_ids = ? WHERE id = ?");
+            $updateStmt->execute([$newJsonValue, $questionId]);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Question successfully removed from section'
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
 }

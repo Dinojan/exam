@@ -120,16 +120,56 @@ class ExamAPI
                 $question['options'] = $options;
                 $question['isSaved'] = true;
                 $question['marks'] = $question['marks'] + 0;
+                if (!empty($question['section_ids'])) {
+                    $assignedSections = json_decode($question['section_ids'], true);
+                    // Convert all IDs to integers
+                    $question['assignedSections'] = array_map('intval', $assignedSections);
+                }
+
 
                 $questions[] = $question;
+            }
+        }
+
+        $statment = $this->db->prepare("SELECT * FROM sections WHERE exam_id = ?");
+        $statment->execute([$id]);
+
+        if ($statment->rowCount() > 0) {
+            $scts = $statment->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($scts as $sct) {
+                $stmt = $this->db->prepare("SELECT * FROM questions");
+                $stmt->execute();
+                $allQuestions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $sectionQuestions = [];
+                foreach ($allQuestions as $q) {
+                    if ($q['section_ids'] != null) {
+                        $section_ids = json_decode($q['section_ids'], true);
+                        if (in_array($sct['id'], $section_ids)) {
+                            $sectionQuestions[] = $q;
+                        }
+                    }
+                }
+
+                $question_count = count($sectionQuestions);
+                $section = [
+                    'id' => $sct['id'],
+                    'title' => $sct['title'],
+                    'description' => $sct['s_des'],
+                    'secondDescription' => $sct['s_s_des'],
+                    'question_count' => $sct['num_of_ques'],
+                    'examID' => $sct['exam_id'],
+                    'assignedQuestions' => $question_count,
+                ];
+
+                $sections[] = $section;
             }
         }
 
         return json_encode([
             'status' => 'success',
             'exam' => $exam,
-            'questions' => $questions
+            'questions' => $questions,
+            'sections' => $sections,
         ]);
     }
-
 }
