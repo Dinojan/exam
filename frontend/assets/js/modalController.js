@@ -652,6 +652,104 @@ app.factory("deleteUserGroupModalController", [
     }
 ]);
 
+// Section editor modal controller
+app.factory("sectionEditorModalController", [
+    "API_URL",
+    "window",
+    "jQuery",
+    "$http",
+    "$sce",
+    "$rootScope",
+    "$compile",
+    "$timeout",
+    function (
+        API_URL,
+        window,
+        $,
+        $http,
+        $sce,
+        $rootScope,
+        $compile,
+        $timeout
+    ) {
+        return function ($scope) {
+
+            const save = async function () {
+                if (!$scope.currentSection.title) {
+                    Toast.fire({
+                        type: 'error',
+                        title: 'Validation Error!',
+                        msg: 'Please enter the section title'
+                    });
+                    return;
+                }
+
+                if (!$scope.currentSection.question_count) {
+                    Toast.fire({
+                        type: 'error',
+                        title: 'Validation Error!',
+                        msg: 'Please enter the number of questions'
+                    });
+                    return;
+                }
+
+                const endpoint = $scope.currentSection.id ? 'API/sections/edit/' + $scope.currentSection.id : 'API/sections/add';
+                await $http({
+                    url: endpoint,
+                    method: 'POST',
+                    data: $('#section_form').serialize()
+                }).then(function (response) {
+                    if (response.data.status === 'success') {
+                        $scope.currentSection = response.data.section;
+                        if ($scope.editingSectionIndex === null) {
+                            $scope.savedSections.push(angular.copy(response.data.section));
+                            Toast.fire({
+                                type: 'success',
+                                title: 'Success!',
+                                msg: 'Section created successfully'
+                            });
+                        } else {
+                            // Update existing section
+                            $scope.savedSections[$scope.editingSectionIndex] = angular.copy(response.data.section);
+                            Toast.fire({
+                                type: 'success',
+                                title: 'Success!',
+                                msg: 'Section updated successfully'
+                            });
+                        }
+                        
+                        $scope.currentSection = {};
+                        $scope.editingSectionIndex = null;
+                        $scope.closeSectionEditorModal()
+                    }
+                })
+                $scope.showSectionModal = false;
+                $scope.showSecondDescription = false;
+                $scope.updateBaseDatas();
+                $scope.updateSectionQuestionCounts();
+                $scope.$apply();
+            };
+
+            $scope.closeSectionEditorModal = () => {
+                Toast.popover({ type: 'close' })
+            }
+
+            $scope.saveSection = () => {
+                save();
+            }
+
+            return {
+                save: function () {
+                    save();
+                },
+                close: function () {
+                    closeSectionEditorModal();
+                }
+            };
+        };
+    }
+]);
+
 // Assign to section modal controller
 app.factory("assignToSectionModalController", [
     "API_URL",
@@ -728,6 +826,7 @@ app.factory("assignToSectionModalController", [
                         $scope.savedQuestions[qIndex] = angular.copy(question);
 
                         $scope.updateSectionQuestionCounts();
+                        $scope.updateBaseDatas();
                         $scope.closePopover();
 
                         Toast.fire({
@@ -870,6 +969,7 @@ app.factory("unassignFromSectionModalController", [
 
                         // Update section counts
                         $scope.updateSectionQuestionCounts();
+                        $scope.updateBaseDatas();
                         $scope.closePopover();
                         Toast.fire({
                             type: 'success',

@@ -14,7 +14,7 @@ export const Toast = {
             case 'success':
                 return popup.success({ title, titleColor, content: { text: content, color: contentColor }, options: { ...options, position, buttonPosition, buttonWidth, buttonContainerClass, buttonContainerStyles, backgroundColor }, buttons, apiConfig, size });
             case 'confirm':
-                return popup.confirm({ title, titleColor, content: { text: content, color: contentColor }, options: { ...options, position, buttonPosition, buttonWidth, buttonContainerClass, buttonContainerStyles, backgroundColor }, size });
+                return popup.confirm({ title, titleColor, content: { text: content, color: contentColor }, buttons, options: { ...options, position, buttonPosition, buttonWidth, buttonContainerClass, buttonContainerStyles, backgroundColor }, size });
             case 'info':
                 return popup.info({ title, titleColor, content: { text: content, color: contentColor }, options: { ...options, position, buttonPosition, buttonWidth, buttonContainerClass, buttonContainerStyles, backgroundColor }, size });
             case 'content':

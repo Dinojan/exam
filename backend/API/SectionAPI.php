@@ -34,9 +34,9 @@ class SectionAPI
 
             $sectionData = [
                 'id' => $sectionID,
-                'examID' => $examID,
+                'examID' => $examID + 0,
                 'title' => $title,
-                'question_count' => $num_of_questions,
+                'question_count' => $num_of_questions + 0,
                 'description' => $description,
                 'secondDescription' => $second_description,
                 'assignedQuestions' => 0

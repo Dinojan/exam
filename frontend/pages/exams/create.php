@@ -82,7 +82,7 @@ $this->controller('ExamController');
                     <div class="form-group">
                         <label for="totalQuestions" class="form-label">Total questions <span
                                 class="text-red-700">*</span></label>
-                        <input type="number" id="totalQuestions" ng-model="examData.total_questions" required min="1"
+                        <input type="number" id="totalQuestions" ng-model="neededQuestionsCount" required min="1"
                             name="totalQuestions" class="form-input" placeholder="e.g., 20">
                         <div class="error-message"
                             ng-show="basicInfoForm.$submitted && basicInfoForm.totalQuestions.$error.required">
@@ -160,19 +160,186 @@ $this->controller('ExamController');
     <!-- Questions & Sections Management -->
     <div ng-show="currentStep === 2" class="max-w-7xl mx-auto">
         <div class="md:bg-[#0004] rounded-lg p-0 md:p-6 md:border border-gray-600">
-            <div class="flex flex-wrap justify-between gap-2 items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-100">Questions & Sections Management</h2>
-                <div class="flex flex-wrap md:flex-row gap-2">
-                    <button type="button" ng-click="addNewSection()"
-                        class="bg-cyan-600 hover:bg-cyan-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
-                        <i class="fas fa-layer-group"></i>
-                        <span>Add Section</span>
-                    </button>
-                    <button type="button" ng-click="startNewQuestion()"
-                        class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
-                        <i class="fas fa-question-circle"></i>
-                        <span>Create Question</span>
-                    </button>
+            <!-- Header with Progress Indicators -->
+            <div class="mb-6">
+                <div class="flex flex-wrap justify-between gap-2 items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-100">Questions & Sections Management</h2>
+                    <div class="flex flex-wrap md:flex-row gap-2">
+                        <button type="button" ng-click="addNewSection()"
+                            class="bg-cyan-600 hover:bg-cyan-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-layer-group"></i>
+                            <span>Add Section</span>
+                        </button>
+                        <button type="button" ng-click="startNewQuestion()"
+                            class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Create Question</span>
+                        </button>
+                        <button type="button" ng-click="importQuestion()" disabled
+                            class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-4 rounded-lg disabled:bg-opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Import Question</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress Status Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                    <!-- Questions Created Status -->
+                    <div class="bg-[#0006] rounded-lg p-4 border border-gray-600">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm text-gray-400 mb-1">Questions Created</div>
+                                <div class="text-lg font-semibold text-white">
+                                    {{createdQuestionsCount}}/{{neededQuestionsCount}}
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                ng-class="isAllQuestionsAreCreated ? 'bg-green-500' : 'bg-yellow-500'">
+                                <i class="fas"
+                                    ng-class="isAllQuestionsAreCreated ? 'fa-check text-white' : 'fa-exclamation text-white'"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs"
+                            ng-class="isAllQuestionsAreCreated ? 'text-green-400' : 'text-yellow-400'">
+                            <span ng-if="isAllQuestionsAreCreated">✓ All questions created</span>
+                            <span ng-if="!isAllQuestionsAreCreated">
+                                {{neededQuestionsCount - createdQuestionsCount}} more needed
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Questions Saved Status -->
+                    <div class="bg-[#0006] rounded-lg p-4 border border-gray-600">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm text-gray-400 mb-1">Questions Saved</div>
+                                <div class="text-lg font-semibold text-white">
+                                    {{ savedQuestionsCount }} / {{ createdQuestionsCount }}
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                ng-class="isAllQuestionsAreSaved ? 'bg-green-500' : 'bg-red-500'">
+                                <i class="fas"
+                                    ng-class="isAllQuestionsAreSaved ? 'fa-check text-white' : 'fa-times text-white'"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs" ng-class="isAllQuestionsAreSaved ? 'text-green-400' : 'text-red-400'">
+                            <span ng-if="isAllQuestionsAreSaved">✓ All questions saved</span>
+                            <span ng-if="!isAllQuestionsAreSaved">
+                                {{ createdQuestionsCount - savedQuestionsCount }} unsaved
+                                question{{(createdQuestionsCount - getSavedCount()) > 1 ? 's' : ''}}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Sections Completed Status -->
+                    <div class="bg-[#0006] rounded-lg p-4 border border-gray-600">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm text-gray-400 mb-1">Sections Completed</div>
+                                <div class="text-lg font-semibold text-white">
+                                    <span ng-if="totalSectionsCount > 0">
+                                        {{ completedSectionsCount }}/{{ totalSectionsCount }}
+                                    </span>
+                                    <span ng-if="totalSectionsCount === 0">0/0</span>
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                ng-class="isAllSectionsAreCompleted ? 'bg-green-500' : totalSectionsCount === 0 ? 'bg-gray-500' : 'bg-yellow-500'">
+                                <i class="fas"
+                                    ng-class="isAllSectionsAreCompleted ? 'fa-check text-white' : totalSectionsCount === 0 ? 'fa-minus text-white' : 'fa-exclamation text-white'"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs"
+                            ng-class="isAllSectionsAreCompleted ? 'text-green-400' : totalSectionsCount === 0 ? 'text-gray-400' : 'text-yellow-400'">
+                            <span ng-if="isAllSectionsAreCompleted">✓ All sections completed</span>
+                            <span ng-if="!isAllSectionsAreCompleted && totalSectionsCount > 0">
+                                {{ totalSectionsCount - completedSectionsCount }} incomplete
+                            </span>
+                            <span ng-if="totalSectionsCount === 0">No sections created</span>
+                        </div>
+                    </div>
+
+                    <!-- Overall Status -->
+                    <div class="bg-[#0006] rounded-lg p-4 border border-gray-600"
+                        ng-class="isAllQuestionsAndSectionsAreCompleted ? 'border-green-500' : 'border-gray-600'">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm text-gray-400 mb-1">Step 2 Ready</div>
+                                <div class="text-lg font-semibold"
+                                    ng-class="isAllQuestionsAndSectionsAreCompleted ? 'text-green-400' : 'text-white'">
+                                    {{isAllQuestionsAndSectionsAreCompleted ? 'Ready to Proceed' : 'In Progress'}}
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                ng-class="isAllQuestionsAndSectionsAreCompleted ? 'bg-green-500' : 'bg-blue-500'">
+                                <i class="fas"
+                                    ng-class="isAllQuestionsAndSectionsAreCompleted ? 'fa-check text-white' : 'fa-solid fa-list-check  text-white'"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs"
+                            ng-class="isAllQuestionsAndSectionsAreCompleted ? 'text-green-400' : 'text-blue-400'">
+                            <span ng-if="isAllQuestionsAndSectionsAreCompleted">
+                                ✓ All requirements met for Step 2
+                            </span>
+                            <span ng-if="!isAllQuestionsAndSectionsAreCompleted">
+                                Complete all requirements to proceed
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Requirements Checklist -->
+                <div class="bg-[#0006] rounded-lg p-4 border border-gray-600 mb-6">
+                    <h3 class="text-lg font-medium text-gray-100 mb-3">Requirements Checklist</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full mr-3 flex items-center justify-center"
+                                ng-class="createdQuestionsCount >= neededQuestionsCount ? 'bg-green-500' : 'bg-gray-600'">
+                                <i class="fas fa-xs text-white"
+                                    ng-class="createdQuestionsCount >= neededQuestionsCount ? 'fa-check' : 'fa-times'"></i>
+                            </div>
+                            <span class="text-sm"
+                                ng-class="createdQuestionsCount >= neededQuestionsCount ? 'text-green-400' : 'text-gray-300'">
+                                Create {{neededQuestionsCount}} questions
+                                <span class="text-gray-500">
+                                    ({{createdQuestionsCount}}/{{neededQuestionsCount}})
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full mr-3 flex items-center justify-center"
+                                ng-class="isAllQuestionsAreSaved ? 'bg-green-400' : 'bg-gray-600'">
+                                <i class="fas fa-xs text-white"
+                                    ng-class="isAllQuestionsAreSaved ? 'fa-check' : 'fa-times'"></i>
+                            </div>
+                            <span class="text-sm"
+                                ng-class="isAllQuestionsAreSaved ? 'text-green-500' : 'text-gray-300'">
+                                Save all questions
+                                <span class="text-gray-500">
+                                    ({{savedQuestionsCount}}/{{createdQuestionsCount}}
+                                    saved)
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full mr-3 flex items-center justify-center"
+                                ng-class="isAllSectionsAreCompleted ? 'bg-green-500' : 'bg-gray-600'">
+                                <i class="fas fa-xs text-white"
+                                    ng-class="isAllSectionsAreCompleted ? 'fa-check' : 'fa-times'"></i>
+                            </div>
+                            <span class="text-sm"
+                                ng-class="isAllSectionsAreCompleted ? 'text-green-400' : 'text-gray-300'">
+                                Complete all sections
+                                <span class="text-gray-500" ng-if="totalSectionsCount > 0">
+                                    {{ completedSectionsCount }}/{{ totalSectionsCount }} completed
+                                </span>
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -181,7 +348,8 @@ $this->controller('ExamController');
                 <!-- Left Column: Questions List & Navigation -->
                 <div class="xl:col-span-1">
                     <div class="bg-[#0006] rounded-lg p-4 border border-gray-600">
-                        <h3 class="text-lg font-medium text-gray-100 mb-4">Questions ({{savedQuestions.length}})</h3>
+                        <h3 class="text-lg font-medium text-gray-100 mb-4">Questions ({{createdQuestionsCount}})
+                        </h3>
 
                         <!-- Questions Navigation -->
                         <div class="mb-4">
@@ -209,17 +377,17 @@ $this->controller('ExamController');
                                 </button>
 
                                 <!-- 2) IF SHOWING MORE → SHOW "HIDE MORE" BUTTON BEFORE ADD -->
-                                <button ng-if="savedQuestions.length > 8 && showMoreQuestions"
+                                <button ng-if="createdQuestionsCount > 8 && showMoreQuestions"
                                     ng-click="toggleMoreQuestions()"
                                     class="w-10 h-10 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all duration-300">
-                                    -{{ savedQuestions.length - 8 }}
+                                    -{{ createdQuestionsCount - 8 }}
                                 </button>
 
                                 <!-- 4) MORE BUTTON – ONLY IF NOT EXPANDED -->
-                                <button ng-if="savedQuestions.length > 8 && !showMoreQuestions"
+                                <button ng-if="createdQuestionsCount > 8 && !showMoreQuestions"
                                     ng-click="toggleMoreQuestions()"
                                     class="w-10 h-10 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all duration-300">
-                                    +{{ savedQuestions.length - 8 }}
+                                    +{{ createdQuestionsCount - 8 }}
                                 </button>
 
                                 <!-- 5) ADD NEW QUESTION BUTTON (ALWAYS LAST) -->
@@ -248,7 +416,8 @@ $this->controller('ExamController');
                                                 {{question.isSaved ? 'Saved' : 'Unsaved'}}
                                             </span>
                                         </div>
-                                        <p class="text-sm text-gray-300 truncate">{{question.question || 'No question
+                                        <p class="text-sm text-gray-300 truncate">{{question.question || 'No
+                                            question
                                             text'}}</p>
                                         <div class="flex justify-between items-center mt-2 text-xs text-gray-400">
                                             <span>{{question.marks || 0}} marks</span>
@@ -256,7 +425,8 @@ $this->controller('ExamController');
                                         <div class="mt-1"
                                             ng-if="question.assignedSections && question.assignedSections.length > 0">
                                             <span class="text-xs text-cyan-400">
-                                                Assigned Section{{question.assignedSections.length > 1 ? 's' : ''}}:
+                                                Assigned Section{{question.assignedSections.length > 1 ? 's' :
+                                                ''}}:
                                                 {{getAssignedSectionNames(question)}}
                                             </span>
                                             <button title="Remove assign question to section"
@@ -270,7 +440,7 @@ $this->controller('ExamController');
                             </div>
 
                             <!-- Empty State -->
-                            <div ng-if="savedQuestions.length === 0" class="text-center py-8">
+                            <div ng-if="createdQuestionsCount === 0" class="text-center py-8">
                                 <i class="fas fa-question-circle text-gray-500 text-3xl mb-2"></i>
                                 <p class="text-gray-400">No questions created yet</p>
                             </div>
@@ -280,14 +450,16 @@ $this->controller('ExamController');
                     <!-- Sections Panel -->
                     <div class="bg-[#0006] rounded-lg p-4 border border-gray-600 mt-4">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-medium text-gray-100">Sections ({{savedSections.length}})</h3>
+                            <h3 class="text-lg font-medium text-gray-100">Sections ({{totalSectionsCount}})
+                            </h3>
                         </div>
 
                         <div class="space-y-3 max-h-64 overflow-y-auto">
                             <div ng-repeat="section in savedSections track by $index"
                                 class="p-3 border border-gray-600 rounded-lg bg-[#0008]">
                                 <div class="flex justify-between items-start mb-2">
-                                    <h4 class="font-medium text-gray-100">{{section.title || 'Untitled Section'}}</h4>
+                                    <h4 class="font-medium text-gray-100">{{section.title || 'Untitled
+                                        Section'}}</h4>
                                     <div class="flex space-x-1">
                                         <button type="button" ng-click="editSection($index)"
                                             class="text-blue-400 hover:text-blue-300 transition-colors text-sm">
@@ -300,13 +472,14 @@ $this->controller('ExamController');
                                     </div>
                                 </div>
                                 <div class="text-xs text-gray-400 space-y-1">
-                                    <div>Questions: {{section.assignedQuestions || 0}}/{{section.question_count}}</div>
+                                    <div>Questions: {{section.assignedQuestions ||
+                                        0}}/{{section.question_count}}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Empty State for Sections -->
-                        <div ng-if="savedSections.length === 0" class="text-center py-4">
+                        <div ng-if="totalSectionsCount === 0" class="text-center py-4">
                             <i class="fas fa-layer-group text-gray-500 text-2xl mb-2"></i>
                             <p class="text-gray-400 text-sm">No sections created</p>
                         </div>
@@ -318,7 +491,8 @@ $this->controller('ExamController');
                     <div class="bg-[#0006] rounded-lg p-6 border border-gray-600">
                         <div class="flex flex-wrap gap-2 justify-between items-center mb-6">
                             <h3 class="text-lg font-medium text-gray-100">
-                                <span ng-if="currentQuestionIndex !== null">Edit Question {{currentQuestionIndex +
+                                <span ng-if="currentQuestionIndex !== null">Edit Question {{currentQuestionIndex
+                                    +
                                     1}}</span>
                                 <span ng-if="currentQuestionIndex === null">Create New Question</span>
                                 <span class="text-sm font-normal text-cyan-400 ml-2"
@@ -336,7 +510,7 @@ $this->controller('ExamController');
                                 </button>
                                 <button type="button" ng-click="assignToSection()"
                                     title="Assign this question to a section"
-                                    ng-disabled="!currentQuestion.isSaved || savedSections.length === 0"
+                                    ng-disabled="!currentQuestion.isSaved || totalSectionsCount === 0"
                                     class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 w-full md:w-auto rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
                                     <i class="fas fa-layer-group"></i>
                                     <span>Assign to Section</span>
@@ -352,7 +526,7 @@ $this->controller('ExamController');
                         </div>
 
                         <!-- Question Editor -->
-                        <div class="space-y-4" ng-if="currentQuestion">
+                        <div class="space-y-4" ng-if="currentQuestion && !isAllQuestionsAreCreated">
                             <form id="questionForm{{currentQuestion.id || 'New'}}" onsubmit="return false"
                                 enctype="multipart/form-data">
                                 <!-- Exam ID hidden -->
@@ -375,7 +549,8 @@ $this->controller('ExamController');
                                                 class="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
                                                 <div ng-if="!currentQuestion.image">
                                                     <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
-                                                    <p class="text-gray-400 mb-2">Drag & drop an image or click to
+                                                    <p class="text-gray-400 mb-2">Drag & drop an image or click
+                                                        to
                                                         browse
                                                     </p>
                                                     <input type="file" id="questionImage" accept="image/*"
@@ -476,7 +651,7 @@ $this->controller('ExamController');
                                 </button>
 
                                 <button type="button" ng-click="nextQuestion()"
-                                    ng-disabled="currentQuestionIndex === null || currentQuestionIndex >= savedQuestions.length - 1"
+                                    ng-disabled="currentQuestionIndex === null || currentQuestionIndex >= createdQuestionsCount - 1"
                                     class="bg-gray-600 hover:bg-gray-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
                                     <span>Next</span>
                                     <i class="fas fa-arrow-right"></i>
@@ -485,14 +660,34 @@ $this->controller('ExamController');
                         </div>
 
                         <!-- Empty State for Question Editor -->
-                        <div ng-if="!currentQuestion" class="text-center py-12">
+                        <div ng-if="!currentQuestion && !isAllQuestionsAreCreated"
+                            class="text-center py-12">
                             <i class="fas fa-question-circle text-gray-500 text-4xl mb-4"></i>
                             <h3 class="text-lg font-medium text-gray-100 mb-2">No Question Selected</h3>
-                            <p class="text-gray-400 mb-6">Select a question from the list or create a new one to start
+                            <p class="text-gray-400 mb-6">Select a question from the list or create a new one to
+                                start
                                 editing.</p>
                             <button type="button" ng-click="startNewQuestion()"
                                 class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-6 rounded-lg transition-colors duration-200">
-                                {{savedQuestions.length > 0 ? 'Create New Question' : 'Add Question'}}
+                                {{createdQuestionsCount > 0 ? 'Create New Question' : 'Add Question'}}
+                            </button>
+                        </div>
+
+                        <div ng-if="isAllQuestionsAndSectionsAreCompleted && !currentQuestion"
+                            class="text-center py-12">
+                            <i class="fas fa-question-circle text-gray-500 text-4xl mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-100 mb-2">All Questions Created</h3>
+                            <p class="text-gray-400">Total questions required: {{ neededQuestionsCount }}</p>
+                            <p class="text-gray-400">Total questions saved: {{ savedQuestionsCount }}</p>
+                            <p ng-if="unsavedQuestionsCount > 0" class="text-gray-400">Total questions unsaved: {{
+                                unsavedQuestionsCount }}</p>
+                            <p ng-if="unsavedQuestionsCount > 0" class="text-gray-400">⚠️ Please save unsaved questions
+                                before moving to the next part.</p>
+                            <button type="button"
+                                ng-click="unsavedQuestionsCount > 0 ? saveUnsavedQuestions() : nextStep()"
+                                class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-6 mt-6 rounded-lg transition-colors duration-200">
+                                {{ unsavedQuestionsCount > 0 ? 'Save unsaved questions & Move next part' : 'Move next
+                                part' }}
                             </button>
                         </div>
                     </div>
@@ -639,7 +834,7 @@ $this->controller('ExamController');
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-300">Total Questions Created:</span>
-                            <span class="text-cyan-400 font-medium">{{savedQuestions.length}}</span>
+                            <span class="text-cyan-400 font-medium">{{createdQuestionsCount}}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-300">Total Marks:</span>
@@ -654,16 +849,18 @@ $this->controller('ExamController');
 
                 <!-- Sections Summary -->
                 <div class="bg-[#0006] rounded-lg p-4">
-                    <h3 class="text-lg font-medium text-cyan-400 mb-3">Sections ({{savedSections.length}})</h3>
+                    <h3 class="text-lg font-medium text-cyan-400 mb-3">Sections ({{totalSectionsCount}})</h3>
                     <div ng-repeat="section in savedSections" class="mb-3 last:mb-0 p-3 border border-gray-600 rounded">
                         <div class="flex justify-between items-start">
                             <div>
                                 <h4 class="font-medium text-gray-100">{{section.title}}</h4>
                                 <p class="text-sm text-gray-400">
-                                    {{section.assignedQuestions || 0}}/{{section.question_count}} questions assigned
+                                    {{section.assignedQuestions || 0}}/{{section.question_count}} questions
+                                    assigned
                                 </p>
                                 <p class="text-sm text-gray-400">
-                                    {{section.marks_per_question}} marks per question | {{section.question_type}}
+                                    {{section.marks_per_question}} marks per question |
+                                    {{section.question_type}}
                                 </p>
                             </div>
                             <span class="text-cyan-400 text-sm">Order: {{section.order}}</span>
@@ -683,76 +880,10 @@ $this->controller('ExamController');
                                 class="text-gray-100">{{examData.show_results_immediately ? 'Immediately' :
                                 'Later'}}</span></div>
                         <div><strong class="text-gray-400">Proctoring:</strong> <span
-                                class="text-gray-100">{{examData.enable_proctoring ? 'Enabled' : 'Disabled'}}</span>
+                                class="text-gray-100">{{examData.enable_proctoring ? 'Enabled' :
+                                'Disabled'}}</span>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section Editor Modal -->
-    <div ng-show="showSectionModal" id="sectionModal"
-        ng-click="closeModalFromOutside($event, 'sectionModal', 'showSectionModal', ['showSecondDescription'])"
-        class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur flex items-center justify-center z-[99999999] p-4 transition-all duration-300">
-        <div
-            class="relative bg-[#fff1] rounded-lg p-6 border border-gray-600 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <i ng-click="showSectionModal = false; showSecondDescription = false"
-                class="fas fa-close absolute top-3 right-3 hover:rotate-90 hover:text-red-400 transition-all duration-300 cursor-pointer"></i>
-            <h3 class="text-lg font-medium text-gray-100 mb-4">
-                {{editingSectionIndex === null ? 'Create New Section' : 'Edit Section'}}
-            </h3>
-
-            <div class="space-y-4">
-                <form id="section_form" onsubmit="return false" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="hidden" ng-model="examID" name="exam_id" value="{{examID}}">
-                    <input type="hidden" ng-model="currentSection.id" name="section_id" value="{{currentSection.id}}">
-
-                    <!-- Section Title -->
-                    <div class="form-group">
-                        <label class="form-label">Section Title <span class="text-red-700">*</span></label>
-                        <input type="text" ng-model="currentSection.title" required class="form-input"
-                            name="section_title" placeholder="e.g., Mathematics, Physics, etc.">
-                    </div>
-
-                    <!-- Questions Count -->
-                    <div class="form-group">
-                        <label class="form-label">Number of Questions <span class="text-red-700">*</span></label>
-                        <input type="number" ng-model="currentSection.question_count" required min="1"
-                            name="section_question_count" class="form-input" placeholder="e.g., 10">
-                    </div>
-
-                    <!-- Description -->
-                    <div class="form-group md:col-span-2">
-                        <label class="form-label">Description</label>
-                        <textarea ng-model="currentSection.description" rows="3" class="form-input"
-                            name="section_description" placeholder="Section description..."></textarea>
-                    </div>
-
-                    <button type="button" ng-click="addSecondDescription()" ng-show="!showSecondDescription"
-                        class="group bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 w-auto flex items-center justify-center gap-2 rounded-lg transition-colors duration-200 disabled:opacity-50">
-                        <i class="fas fa-plus group-hover:rotate-180 transition-transform duration-300"></i>
-                        Add 2nd Description
-                    </button>
-
-                    <!-- 2nd Description -->
-                    <div class="form-group md:col-span-2" ng-show="showSecondDescription">
-                        <label class="form-label">2nd Description</label>
-                        <textarea ng-model="currentSection.secondDescription" rows="3" class="form-input"
-                            name="section_second_description" placeholder="Section 2nd description..."></textarea>
-                    </div>
-                </form>
-
-                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-600">
-                    <button type="button" ng-click="showSectionModal = false; showSecondDescription = false"
-                        class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-                        Cancel
-                    </button>
-                    <button type="button" ng-click="saveSection()"
-                        ng-disabled="!currentSection.title || !currentSection.question_count"
-                        class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50">
-                        {{editingSectionIndex === null ? 'Create Section' : 'Update Section'}}
-                    </button>
                 </div>
             </div>
         </div>
@@ -789,7 +920,7 @@ $this->controller('ExamController');
         </button>
 
         <button type="button" ng-click="createExam()" ng-show="currentStep === totalSteps"
-            ng-disabled="creatingExam || savedQuestions.length === 0"
+            ng-disabled="creatingExam || createdQuestionsCount === 0"
             class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
             <i class="fas fa-save" ng-class="{'fa-spin animate-spin': creatingExam}"></i>
             <span>{{creatingExam ? 'Creating Exam...' : 'Create Exam'}}</span>

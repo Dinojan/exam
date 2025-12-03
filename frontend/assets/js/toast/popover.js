@@ -145,18 +145,94 @@ export const popup = {
 
             case 'confirm':
                 footerHtml = `
-                    <button 
-                        class="popover-button"
-                        style="background:${options.confirmBg || '#4CAF50'};color:${options.confirmColor || '#fff'}; width: ${btnWidth};"
-                        data-action="confirm">
-                        ${options.confirmText || 'Confirm'}
-                    </button>
-                    <button 
-                        class="popover-button"
-                        style="background:${options.cancelBg || '#f44336'};color:${options.cancelColor || '#fff'}; width: ${btnWidth};"
-                        data-action="cancel">
-                        ${options.cancelText || 'Cancel'}
-                    </button>
+                    ${options.buttons ? options.buttons
+                        .map((btn, index) => `
+                            <button 
+                                class="popover-button"
+                                style="background:${btn.bg || '#4CAF50'};color:${btn.color || '#fff'}; width: ${btnWidth};"
+                                data-index="${index}">
+                                ${btn.text || 'Confirm'}
+                            </button>
+                        `).join('') : ''
+                    }
+
+                    ${options.optionButtons ? options.optionButtons
+                        .map((btn, index) => {
+                            if (btn.position === 'start') {
+                                return `
+                                    <button 
+                                        class="popover-button"
+                                        style="
+                                            background: ${btn.background || '#808080'};
+                                            color: ${btn.color || '#fff'};
+                                            width: ${btnWidth};
+                                        "
+                                        data-index="${index}">
+                                        ${btn.text || 'Confirm'}
+                                    </button>
+                                `;
+                            }
+                            return '';
+                        }).join('') : ''
+                    }
+
+                    ${options.confirm ? `
+                        <button 
+                            class="popover-button"
+                            style="background:${options.confirm.bg || '#4CAF50'};color:${options.confirm.color || '#fff'}; width: ${btnWidth};"
+                            data-action="confirm">
+                            ${options.confirm.text || 'Confirm'}
+                        </button>
+                    ` : ''}
+
+                    ${options.optionButtons ? options.optionButtons
+                        .map((btn, index) => {
+                            if (btn.position === 'middle') {
+                                return `
+                                    <button 
+                                        class="popover-button"
+                                        style="
+                                            background: ${btn.background || '#808080'};
+                                            color: ${btn.color || '#fff'};
+                                            width: ${btnWidth};
+                                        "
+                                        data-index="${index}">
+                                        ${btn.text || 'Confirm'}
+                                    </button>
+                                `;
+                            }
+                            return '';
+                        }).join('') : ''
+                    }
+
+                    ${options.cancel ? `
+                        <button 
+                            class="popover-button"
+                            style="background:${options.cancel.bg || '#f44336'};color:${options.cancel.color || '#fff'}; width: ${btnWidth};"
+                            data-action="cancel">
+                            ${options.cancel.text || 'Cancel'}
+                        </button>
+                    ` : ''}
+
+                    ${options.optionButtons ? options.optionButtons
+                        .map((btn, index) => {
+                            if (btn.position === 'end') {
+                                return `
+                                    <button 
+                                        class="popover-button"
+                                        style="
+                                            background: ${btn.background || '#808080'};
+                                            color: ${btn.color || '#fff'};
+                                            width: ${btnWidth};
+                                        "
+                                        data-index="${index}">
+                                        ${btn.text || 'Confirm'}
+                                    </button>
+                                `;
+                            }
+                            return '';
+                        }).join('') : ''
+                    }
                 `;
                 break;
 
@@ -254,7 +330,11 @@ export const popup = {
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 closePopover();
-                if (options.onCancel) options.onCancel();
+                if (options.type === 'confirm') {
+                    options.cancel.onCancel();
+                } else if (options.onCancel) {
+                    options.onCancel()
+                };
             }
         });
 
@@ -263,32 +343,51 @@ export const popup = {
                 const action = button.getAttribute('data-action');
 
                 if (action === 'ok' || action === 'confirm') {
-                    if (options.onConfirm) options.onConfirm();
+                    if (options.type === 'confirm') {
+                        options.confirm.onConfirm();
+                    } else if (options.onConfirm) {
+                        options.onConfirm()
+                    };
                 } else if (action === 'cancel') {
-                    if (options.onCancel) options.onCancel();
+                    if (options.type === 'confirm') {
+                        options.cancel.onCancel();
+                    } else if (options.onCancel) {
+                        options.onCancel()
+                    };
                 }
-
                 closePopover();
             });
         });
 
-        popover.querySelectorAll('.popover-footer button').forEach((btn, idx) => {
-            btn.addEventListener('click', async () => {
-                const buttonConfig = options.buttons && options.buttons[idx];
-                if (!buttonConfig || !buttonConfig.onClick) return;
+        // Collect all button configs in proper order
+        const dynamicButtonConfigs = [];
 
-                // spinner & disable
+        // normal buttons
+        if (options.buttons) {
+            options.buttons.forEach(btn => dynamicButtonConfigs.push(btn));
+        }
+
+        // optionButtons by positions: start -> middle -> end
+        if (options.optionButtons) {
+            ['start', 'middle', 'end'].forEach(pos => {
+                options.optionButtons.filter(btn => btn.position === pos)
+                    .forEach(btn => dynamicButtonConfigs.push(btn));
+            });
+        }
+
+        popover.querySelectorAll('.popover-footer button[data-index]').forEach((btn, idx) => {
+            const buttonConfig = dynamicButtonConfigs[idx];
+            if (!buttonConfig || !buttonConfig.onClick) return;
+            btn.addEventListener('click', async () => {
                 const originalText = btn.textContent;
                 btn.disabled = true;
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${originalText}`;
 
                 try {
                     await buttonConfig.onClick(popover);
-                    // success
                     btn.disabled = false;
                     btn.textContent = originalText;
                 } catch (error) {
-                    // fail
                     btn.disabled = false;
                     btn.textContent = originalText;
                     Toast.fire({
@@ -302,7 +401,11 @@ export const popup = {
 
         const handleKeydown = (e) => {
             if (e.key === 'Escape') {
-                if (options.onCancel) options.onCancel();
+                if (options.type === 'confirm') {
+                    options.cancel.onCancel();
+                } else if (options.onCancel) {
+                    options.onCancel()
+                };
                 closePopover();
                 document.removeEventListener('keydown', handleKeydown);
             } else if (e.key === 'Enter') {
@@ -451,10 +554,12 @@ export const popup = {
         }
     },
 
-    error({ title, titleColor, content, options = {
-        confirm: { text: 'OK', background: '#3498db', color: '#fff', onConfirm: null }, size: 'md',
-        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position
-    } }) {
+    error({
+        title, titleColor, content, options = {
+            confirm: { text: 'OK', background: '#3498db', color: '#fff', onConfirm: null }, size: 'md',
+            buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position
+        }
+    }) {
         return this.show({
             type: 'info',
             title,
@@ -489,10 +594,12 @@ export const popup = {
         `;
     },
 
-    info({ title, titleColor = '#3498db', content = { text, color: '#3498db' }, size = 'md', options = {
-        confirm: { text: 'OK', background: '#3498db', color: '#fff', onConfirm: null },
-        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position
-    } }) {
+    info({
+        title, titleColor = '#3498db', content = { text: '', color: '#3498db' }, size = 'md', options = {
+            confirm: { text: 'OK', background: '#3498db', color: '#fff', onConfirm: null },
+            buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position
+        }
+    }) {
         return this.show({
             type: 'info',
             title: title || 'Information',
@@ -513,32 +620,40 @@ export const popup = {
         });
     },
 
-    confirm({ title, titleColor, content = { text, color: '#f59e0b' }, size = 'md', options = {
-        confirm: { text: 'Ok, confirm', background: '#f44336', color: '#fff', onConfirm: null },
-        cancel: { text: 'No, Cancel', background: '#4CAF50', color: '#fff', onCancel: null },
-        buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position
-    } }) {
+    confirm({
+        title, titleColor, content = { text, color: '#f59e0b' }, size = 'md', buttons = [], options = {
+            confirm: { text: 'Ok, confirm', background: '#f44336', color: '#fff', onConfirm: null },
+            cancel: { text: 'No, Cancel', background: '#4CAF50', color: '#fff', onCancel: null },
+            buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position, buttons: []
+        }
+    }) {
         return this.show({
             type: 'confirm',
             title: title || 'Confirmation',
             titleColor: titleColor || '#f59e0b',
             content: content.text || 'This is a confirm message',
             contentColor: content.color || '#000',
-            confirmText: options.confirm?.text || 'Ok, Confirm',
-            confirmBg: options.confirm?.background || '#f44336',
-            confirmColor: options.confirm?.color || '#fff',
-            cancelText: options.cancel?.text || 'No, Cancel',
-            cancelBg: options.cancel?.background || '#4CAF50',
-            cancelColor: options.cancel?.color || '#fff',
-            onConfirm: options.confirm?.onConfirm || null,
-            onCancel: options.cancel?.onCancel || null,
+            confirm: {
+                text: options.confirm?.text || 'Ok, Confirm',
+                bg: options.confirm?.background || '#f44336',
+                color: options.confirm?.color || '#fff',
+                onConfirm: options.confirm?.onConfirm || null,
+            },
+            cancel: {
+                text: options.cancel?.text || 'No, Cancel',
+                bg: options.cancel?.background || '#4CAF50',
+                color: options.cancel?.color || '#fff',
+                onCancel: options.cancel?.onCancel || null,
+            },
             size,
             btnPosition: options.buttonPosition,
             buttonWidth: options.buttonWidth,
             buttonContainerClass: options.buttonContainerClass,
             buttonContainerStyles: options.buttonContainerStyles,
             backgroundColor: options.backgroundColor || '#0003',
-            position: options.position
+            position: options.position,
+            buttons: buttons || [],
+            optionButtons: options.buttons || [],
         });
     },
 
@@ -560,14 +675,16 @@ export const popup = {
         });
     },
 
-    success({ title, titleColor, content = { text, color: '#4CAF50' },
-        options = { confirmText: 'OK', onConfirm: null, buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position }, size = 'md' }) {
+    success({
+        title, titleColor, content = { text: '', color: '#4CAF50' },
+        options = { confirmText: 'OK', onConfirm: null, buttonPosition: 'center', buttonWidth: 'fit', buttonContainerClass: '', buttonContainerStyles: '', backgroundColor: '#0003', position }, size = 'md'
+    }) {
         return this.show({
             type: 'success',
             title: title || 'Success!',
             titleColor: titleColor || '#4CAF50',
             content: content.text || 'This is a success message',
-            contentColor: content.color || '#004c02' || '#4CAF50',
+            contentColor: content.color || '#4CAF50',
             confirmText: options.confirm?.text || 'OK',
             onConfirm: options.confirm?.onConfirm || null,
             size,
