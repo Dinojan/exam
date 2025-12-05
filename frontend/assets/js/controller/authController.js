@@ -35,8 +35,15 @@ app.controller('AuthController', [
                             title: 'Success!',
                             msg: data.msg || 'Login successful'
                         });
+                        const params = new URLSearchParams(window.location.search);
+                        const redirect = params.get('redirect');
+
                         setTimeout(() => {
-                            window.location.href = 'dashboard';
+                            if (redirect) {
+                                window.location.href = decodeURIComponent(redirect);
+                            } else {
+                                window.location.href = 'dashboard';
+                            }
                         }, 1000);
                     } else if (data.status === 'error') {
                         Toast.fire({

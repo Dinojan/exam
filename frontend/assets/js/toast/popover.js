@@ -330,11 +330,11 @@ export const popup = {
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 closePopover();
-                if (options.type === 'confirm') {
-                    options.cancel.onCancel();
-                } else if (options.onCancel) {
-                    options.onCancel()
-                };
+                // if (options.type === 'confirm') {
+                //     options.cancel.onCancel();
+                // } else if (options.onCancel) {
+                //     options.onCancel()
+                // };
             }
         });
 

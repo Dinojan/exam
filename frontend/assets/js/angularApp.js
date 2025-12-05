@@ -45,209 +45,112 @@ app.filter("formatNIC", function () {
     }
   };
 });
+// app.filter('formatDateTime', function() {
+//     return function(datetimeStr) {
+//         if (!datetimeStr) return '';
+//         let dt = new Date(datetimeStr);
+//         if (isNaN(dt)) return datetimeStr; // invalid date fallback
+
+//         let day = String(dt.getDate()).padStart(2, '0');
+//         let month = String(dt.getMonth() + 1).padStart(2, '0'); // month starts from 0
+//         let year = dt.getFullYear();
+
+//         let hours = dt.getHours();
+//         let minutes = String(dt.getMinutes()).padStart(2, '0');
+//         let ampm = hours >= 12 ? 'PM' : 'AM';
+//         hours = hours % 12;
+//         hours = hours ? hours : 12; // 0 -> 12
+
+//         return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+//     };
+// });
+
+app.filter('formatDateTime', function () {
+  return function (datetimeStr, format = 'DD/MM/YYYY HH:mm:ss') {
+    if (!datetimeStr) return '';
+    var dt = new Date(datetimeStr);
+    if (isNaN(dt)) return datetimeStr;
+
+    var day = String(dt.getDate()).padStart(2, '0');
+    var monthNum = String(dt.getMonth() + 1).padStart(2,'0');
+    var year = dt.getFullYear();
+
+    var hours24 = dt.getHours();
+    var hours12 = hours24 % 12 || 12; // 0 => 12
+    var minutes = String(dt.getMinutes()).padStart(2, '0');
+    var seconds = String(dt.getSeconds()).padStart(2, '0');
+    var ampm = hours24 >= 12 ? 'PM' : 'AM';
+    var hours12Str = String(hours12).padStart(2,'0');
+    var hours24Str = String(hours24).padStart(2,'0');
+
+    // Month names
+    var shortMonthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var fullMonthNames  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    var shortMonth = shortMonthNames[dt.getMonth()];
+    var fullMonth  = fullMonthNames[dt.getMonth()];
+
+    // Replace longer tokens first
+    return format
+      .replace('MMMM', fullMonth)       // full month name
+      .replace('MMM', shortMonth)       // short month name
+      .replace('MM', monthNum)          // numeric month
+      .replace('DD', day)
+      .replace('YYYY', year)
+      .replace('HH', hours24Str)        // 24-hour
+      .replace('hh', hours12Str)        // 12-hour
+      .replace('mm', minutes)
+      .replace('ss', seconds)
+      .replace('A', ampm);              // AM/PM
+  };
+});
+app.filter('fromNow', function () {
+  return function (datetimeStr) {
+    if (!datetimeStr) return '';
+    var now = new Date();
+    var dt = new Date(datetimeStr);
+    if (isNaN(dt)) return datetimeStr;
+
+    var diff = now - dt; // in ms
+    var seconds = Math.floor(diff / 1000);
+    var minutes = Math.floor(seconds / 60);
+    var hours = Math.floor(minutes / 60);
+    var days = Math.floor(hours / 24);
+    var weeks = Math.floor(days / 7);
+    var months = Math.floor(days / 30);
+    var years = Math.floor(days / 365);
+
+    if (seconds < 60) return seconds + ' sec ago';
+    if (minutes < 60) return minutes + ' min ago';
+    if (hours < 24) return hours + ` hour${hours > 1 ? 's' : ''} ago`;
+    if (days < 7) return days + `day${days > 1 ? 's' : ''} ago`;
+    if (weeks < 5) return weeks + `week${weeks > 1 ? 's' : ''} ago`;
+    if (months < 12) return months + `month${months > 1 ? 's' : ''} ago`;
+    return years + `year${years > 1 ? 's' : ''} ago`;
+  };
+});
+app.filter('remainingTime', function () {
+  return function (datetimeStr) {
+    if (!datetimeStr) return '';
+    var now = new Date();
+    var dt = new Date(datetimeStr);
+    if (isNaN(dt)) return datetimeStr;
+
+    var diff = dt - now; // future time
+    if (diff <= 0) return 'Time passed';
+
+    var seconds = Math.floor(diff / 1000);
+    var minutes = Math.floor(seconds / 60);
+    var hours = Math.floor(minutes / 60);
+    var days = Math.floor(hours / 24);
+
+    if (seconds < 60) return seconds + ' sec remaining';
+    if (minutes < 60) return minutes + ' min remaining';
+    if (hours < 24) return hours + ` hour${hours > 1 ? 's' : ''} remaining`;
+    return days + ` day${days > 1 ? 's' : ''} remaining`;
+  };
+});
 app.run([
   "$rootScope",
   function ($rootScope) {
   },
 ]);
-// // Select2Search Directive
-// app.directive('select2search', ['$timeout', function ($timeout) {
-//   return {
-//     restrict: 'C',
-//     scope: {
-//       ngModel: '=',
-//       ngChange: '&',
-//       ngDisabled: '='
-//     },
-//     link: function (scope, element, attrs) {
-//       let wrapper, display, dropdown, searchInput, list, observer;
-
-//       $timeout(function () {
-//         initializeSelect2();
-//       });
-
-//       function initializeSelect2() {
-//         const select = element[0];
-
-//         if (select._select2Initialized) return;
-//         select._select2Initialized = true;
-
-//         select.style.display = 'none';
-
-//         wrapper = document.createElement('div');
-//         wrapper.className = 'select2-wrapper';
-
-//         if (attrs.theme) {
-//           wrapper.classList.add(`select2-${attrs.theme}`);
-//         }
-
-//         select.parentNode.insertBefore(wrapper, select);
-//         wrapper.appendChild(select);
-
-//         display = document.createElement('div');
-//         display.className = 'select2-display';
-//         display.innerHTML = `
-//           <span class='selected-text'>${getSelectedText(select)}</span>
-//           <svg class='select2-arrow w-4 h-4 transform transition-transform' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'>
-//             <path stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/>
-//           </svg>
-//         `;
-//         wrapper.insertBefore(display, select);
-
-//         dropdown = document.createElement('div');
-//         dropdown.className = 'select2-dropdown hidden';
-
-//         searchInput = document.createElement('input');
-//         searchInput.type = 'text';
-//         searchInput.placeholder = 'Search...';
-//         searchInput.className = 'select2-search';
-//         dropdown.appendChild(searchInput);
-
-//         list = document.createElement('ul');
-//         list.className = 'select2-options';
-//         dropdown.appendChild(list);
-
-//         wrapper.appendChild(dropdown);
-
-//         loadOptions();
-
-//         observer = new MutationObserver(function () {
-//           loadOptions(searchInput.value);
-//           updateDisplay();
-//         });
-
-//         observer.observe(select, {
-//           childList: true,
-//           subtree: true,
-//           characterData: true
-//         });
-
-//         scope.$watch('ngModel', function (newVal, oldVal) {
-//           if (newVal !== oldVal && newVal !== undefined) {
-//             select.value = newVal;
-//             updateDisplay();
-//           }
-//         });
-
-//         scope.$watch('ngDisabled', function (newVal) {
-//           if (newVal) {
-//             display.classList.add('opacity-50', 'cursor-not-allowed');
-//             display.classList.remove('cursor-pointer');
-//           } else {
-//             display.classList.remove('opacity-50', 'cursor-not-allowed');
-//             display.classList.add('cursor-pointer');
-//           }
-//         });
-
-//         setupEventListeners();
-//       }
-
-//       function getSelectedText(selectElement) {
-//         const selectedOption = selectElement.options[selectElement.selectedIndex];
-//         return selectedOption ? selectedOption.text : attrs.placeholder || 'Select...';
-//       }
-
-//       function loadOptions(filter = '') {
-//         const select = element[0];
-//         list.innerHTML = '';
-
-//         let hasVisibleOptions = false;
-
-//         Array.from(select.options).forEach(opt => {
-//           if (opt.value === '' && opt.text === '') return;
-
-//           const matchesFilter = !filter || opt.text.toLowerCase().includes(filter.toLowerCase());
-//           if (matchesFilter) {
-//             const li = document.createElement('li');
-//             li.className = 'select2-option p-2 hover:bg-cyan-700 cursor-pointer text-white border-b border-[#fff2] last:border-b-0 transition-colors';
-
-//             if (opt.value === scope.ngModel) {
-//               li.classList.add('bg-cyan-800');
-//             }
-
-//             li.textContent = opt.text;
-//             li.dataset.value = opt.value;
-//             list.appendChild(li);
-//             hasVisibleOptions = true;
-//           }
-//         });
-
-//         if (!hasVisibleOptions) {
-//           const li = document.createElement('li');
-//           li.className = 'select2-no-results p-2 text-gray-400 text-center italic';
-//           li.textContent = 'No options found';
-//           li.style.cursor = 'default';
-//           list.appendChild(li);
-//         }
-//       }
-
-//       function updateDisplay() {
-//         const selectedText = getSelectedText(element[0]);
-//         display.querySelector('.selected-text').textContent = selectedText;
-//       }
-
-//       function setupEventListeners() {
-//         display.addEventListener('click', function () {
-//           if (scope.ngDisabled) return;
-
-//           dropdown.classList.toggle('hidden');
-//           const arrow = display.querySelector('.select2-arrow');
-
-//           if (!dropdown.classList.contains('hidden')) {
-//             arrow.classList.add('rotate-180');
-//             searchInput.focus();
-//           } else {
-//             arrow.classList.remove('rotate-180');
-//           }
-//         });
-
-//         searchInput.addEventListener('input', function (e) {
-//           loadOptions(e.target.value);
-//         });
-
-//         searchInput.addEventListener('keydown', function (e) {
-//           if (e.key === 'Escape') {
-//             dropdown.classList.add('hidden');
-//             display.querySelector('.select2-arrow').classList.remove('rotate-180');
-//           } else if (e.key === 'Enter' && list.children.length > 0) {
-//             const firstOption = list.children[0];
-//             if (firstOption.dataset.value) {
-//               firstOption.click();
-//             }
-//           }
-//         });
-
-//         list.addEventListener('click', function (e) {
-//           if (e.target.tagName === 'LI' && e.target.dataset.value) {
-//             const newValue = e.target.dataset.value;
-
-//             scope.$apply(function () {
-//               scope.ngModel = newValue;
-//               if (scope.ngChange) {
-//                 scope.ngChange();
-//               }
-//             });
-
-//             dropdown.classList.add('hidden');
-//             display.querySelector('.select2-arrow').classList.remove('rotate-180');
-//             searchInput.value = '';
-//             loadOptions('');
-//           }
-//         });
-
-//         document.addEventListener('click', function (e) {
-//           if (!wrapper.contains(e.target)) {
-//             dropdown.classList.add('hidden');
-//             display.querySelector('.select2-arrow').classList.remove('rotate-180');
-//           }
-//         });
-//       }
-
-//       scope.$on('$destroy', function () {
-//         if (observer) {
-//           observer.disconnect();
-//         }
-//       });
-//     }
-//   };
-// }]);

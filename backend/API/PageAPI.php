@@ -6,11 +6,25 @@ class PageAPI
 
     public function __construct()
     {
-        $currentRoute = $_SERVER['REQUEST_URI'] ?? ''; // simple check
-        if (!Auth::isLoggedIn() && !str_contains($currentRoute, '/login')) {
-            redirect('login');
+        // Already on login page → skip redirect
+        $currentRoute = $_SERVER['REQUEST_URI'] ?? '/';
+        $encodedUrl = urlencode($currentRoute);
+
+        // User not logged in AND not already at /login
+        if (!Auth::isLoggedIn() && !str_contains($currentRoute, 'login')) {
+
+            $encodedUrl = rawurlencode($currentRoute);
+
+            $router = Router::getInstance();
+            $loginUrl = $router->url('login');
+            $loginUrl .= '?redirect=' . $encodedUrl;
+
+            header("Location: $loginUrl");
+            exit;
         }
     }
+
+
 
     public function login()
     {
@@ -73,7 +87,7 @@ class PageAPI
     {
         return view('questions.my', ['title' => 'My Exams']);
     }
-    
+
     public function pastPapers()
     {
         return view('past_paper', ['title' => 'My Exams']);

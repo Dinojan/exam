@@ -227,7 +227,6 @@ class Router
 
         // Replace {param} placeholders
         $uri = $route->originalUri;
-        print_r($route);
         foreach ($parameters as $key => $value) {
             $uri = str_replace("{{$key}}", $value, $uri);
         }

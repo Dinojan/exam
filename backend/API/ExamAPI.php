@@ -309,6 +309,26 @@ class ExamAPI
                 'assignedQuestions' => count($sectionQuestions)
             ];
         }
+
+        $statment = $this->db->prepare("SELECT id, schedule_type, start_time, shuffle_questions, shuffle_options, immediate_results, retake, max_attempts, enable_proctoring, full_screen_mode, disable_copy_paste FROM exam_settings WHERE exam_id = ?");
+        $statment->execute([$id]);
+        $settings = $statment->fetch(PDO::FETCH_ASSOC);
+
+        $settings_data = [
+            'id' => $settings['id'] + 0,
+            'schedule_type' => $settings['schedule_type'],
+            'start_time' => $settings['start_time'] != null ? str_replace(" ", "T", $settings['start_time']) : null,
+            'shuffle_questions' => $settings['shuffle_questions'] == 1,
+            'shuffle_options' => $settings['shuffle_options'] == 1,
+            'immediate_results' => $settings['immediate_results'] == 1,
+            'retake' => $settings['retake'] == 1,
+            'max_attempts' => $settings['max_attempts'] != null ? $settings['max_attempts'] + 0 : 1,
+            'enable_proctoring' => $settings['enable_proctoring'] == 1,
+            'full_screen_mode' => $settings['full_screen_mode'] == 1,
+            'disable_copy_paste' => $settings['disable_copy_paste'] == 1,
+            'isDone' => true
+        ];
+
         usort($questions, function ($a, $b) {
             return strtotime($a['created_at']) - strtotime($b['created_at']);
         });
@@ -318,6 +338,148 @@ class ExamAPI
             'exam' => $exam,
             'questions' => array_values($questions), // reindex
             'sections' => $sections,
+            'exam_settings' => $settings_data
         ]);
     }
+
+    public function saveExamSettings()
+    {
+        try {
+            $exam_id = $_POST['exam_id'];
+            $schedule_type = $_POST['scheduleType'];
+            $start_date_time = str_replace("T", " ", $_POST['startDateTime']);
+
+            $shuffle_questions = isset($_POST['shuffleQuestions']) ? 1 : 0;
+            $shuffle_options = isset($_POST['shuffleOptions']) ? 1 : 0;
+            $immediate_results = isset($_POST['showResultsImmediately']) ? 1 : 0;
+            $retake = isset($_POST['allowRetake']) ? 1 : 0;
+
+            $max_attempts = $_POST['maxAttempts'];
+
+            $enable_proctoring = isset($_POST['enableProctoring']) ? 1 : 0;
+            $full_screen_mode = isset($_POST['fullScreenMode']) ? 1 : 0;
+            $disable_copy_paste = isset($_POST['disableCopyPaste']) ? 1 : 0;
+
+            $statement = $this->db->prepare("INSERT INTO exam_settings (exam_id, schedule_type, start_time, shuffle_questions, shuffle_options, immediate_results, retake, max_attempts, enable_proctoring, full_screen_mode, disable_copy_paste) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,? )");
+            $statement->execute([$exam_id, $schedule_type, $start_date_time, $shuffle_questions, $shuffle_options, $immediate_results, $retake, $max_attempts, $enable_proctoring, $full_screen_mode, $disable_copy_paste]);
+            $setting_id = $this->db->lastInsertId();
+
+            $settings_data = [
+                'id' => $setting_id + 0,
+                'exam_id' => $exam_id + 0,
+                'schedule_type' => $schedule_type,
+                'start_time' => str_replace(" ", "T", $start_date_time),
+                'shuffle_questions' => $shuffle_questions == 1 ? true : false,
+                'shuffle_options' => $shuffle_options == 1 ? true : false,
+                'immediate_results' => $immediate_results == 1 ? true : false,
+                'retake' => $retake == 1 ? true : false,
+                'max_attempts' => $max_attempts,
+                'enable_proctoring' => $enable_proctoring == 1 ? true : false,
+                'full_screen_mode' => $full_screen_mode == 1 ? true : false,
+                'disable_copy_paste' => $disable_copy_paste == 1 ? true : false
+            ];
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Exam settings added successfully',
+                'exam_settings' => $settings_data
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function editExamSettings($id)
+    {
+        try {
+            $data = $_POST;
+
+            $fields = [];
+            $values = [];
+
+            // Optional fields
+            if (isset($data['exam_id'])) {
+                $fields[] = "exam_id = ?";
+                $values[] = $data['exam_id'];
+            }
+
+            if (isset($data['scheduleType'])) {
+                $fields[] = "schedule_type = ?";
+                $values[] = $data['scheduleType'];
+            }
+
+            if (isset(($data['scheduleType'])) && ($data['scheduleType']) == 'scheduled' && isset($data['startDateTime'])) {
+                $start_time = str_replace("T", " ", $data['startDateTime']);
+            } else {
+                $start_time = null;
+            }
+            $fields[] = "start_time = ?";
+            $values[] = $start_time;
+
+
+            // Boolean fields
+            $booleanFields = [
+                'shuffleQuestions' => 'shuffle_questions',
+                'shuffleOptions' => 'shuffle_options',
+                'showResultsImmediately' => 'immediate_results',
+                'allowRetake' => 'retake',
+                'enableProctoring' => 'enable_proctoring',
+                'fullScreenMode' => 'full_screen_mode',
+                'disableCopyPaste' => 'disable_copy_paste'
+            ];
+
+            foreach ($booleanFields as $key => $column) {
+                if (isset($data[$key])) {
+                    $fields[] = "$column = ?";
+                    $values[] = $data[$key] ? 1 : 0;
+                }
+            }
+
+            $fields[] = "max_attempts = ?";
+            if (isset($data['allowRetake']) && $data['allowRetake'] && isset($data['maxAttempts'])) {
+                $values[] = $data['maxAttempts'];
+            } else {
+                $values[] = null;
+            }
+
+            if (!empty($fields)) {
+                $values[] = $id;
+                $sql = "UPDATE exam_settings SET " . implode(", ", $fields) . " WHERE id = ?";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($values);
+            }
+
+            // Build settings_data for response
+            $settings_data = [
+                'id' => $id + 0,
+                'exam_id' => isset($data['exam_id']) ? $data['exam_id'] + 0 : null,
+                'schedule_type' => $data['scheduleType'] ?? null,
+                'start_time' => isset($start_time) ? str_replace(" ", "T", $start_time) : null,
+                'isDone' => true
+            ];
+
+            foreach ($booleanFields as $key => $column) {
+                $settings_data[$column] = isset($data[$key]) ? ($data[$key] ? true : false) : false;
+            }
+
+            $settings_data['max_attempts'] = isset($data['maxAttempts']) ? $data['maxAttempts'] + 0 : 1;
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Exam settings updated successfully',
+                'exam_settings' => $settings_data
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
 }

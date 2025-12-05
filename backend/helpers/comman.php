@@ -10,13 +10,22 @@ if (!function_exists('route')) {
 }
 
 if (!function_exists('redirect')) {
-    function redirect($name, $parameters = [])
+    function redirect($name, $params = [], $query = [])
     {
         $router = Router::getInstance();
-        //   $router->url($name, $parameters);
-        header('Location: ' . $router->url($name, $parameters));
-        exit();
+
+        // Base route (without query)
+        $url = $router->url($name, $params);
+
+        // Add query manually
+        if (!empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+
+        header("Location: " . $url);
+        exit;
     }
+
 }
 
 if (!function_exists('config')) {
@@ -462,7 +471,7 @@ function uploadFile($fileData, $targetFolder = 'uploads/questions', $customName 
     if (isset($fileData) && $fileData['error'] === 0) {
         // Generate file name
         $filename = $customName ? $customName : generateRandomString(10);
-        $targetPath = 'storage/'. rtrim($targetFolder, '/') . '/' . $filename;
+        $targetPath = 'storage/' . rtrim($targetFolder, '/') . '/' . $filename;
 
         // Create folder if not exists
         if (!is_dir($targetFolder))
@@ -479,7 +488,8 @@ function uploadFile($fileData, $targetFolder = 'uploads/questions', $customName 
 }
 
 
-function generateRandomString($length = 6) {
+function generateRandomString($length = 6)
+{
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $charactersLength = strlen($characters);
     $randomString = '';

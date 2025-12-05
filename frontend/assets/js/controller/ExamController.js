@@ -5,6 +5,7 @@ app.controller('ExamController', [
         // Initialize exam data
         $scope.examData = {
             title: '',
+            id: '',
             code: '',
             duration: 120,
             total_marks: 100,
@@ -14,7 +15,6 @@ app.controller('ExamController', [
             totalQuestions: 20,
             sections: [],
             start_time: '',
-            end_time: '',
             shuffle_questions: false,
             shuffle_options: false,
             show_results_immediately: false,
@@ -22,7 +22,9 @@ app.controller('ExamController', [
             max_attempts: 1,
             enable_proctoring: false,
             full_screen_mode: false,
-            disable_copy_paste: false
+            disable_copy_paste: false,
+            schedule_type: 'scheduled',
+            isSettingsDone: false
         };
 
         // Steps configuration
@@ -62,10 +64,7 @@ app.controller('ExamController', [
 
         // Initialize controller
         $scope.init = function () {
-            // $scope.startNewQuestion();
             $scope.handleExamCreation();
-            // Add a default section
-            // $scope.addNewSection();
         };
 
         $scope.handleExamCreation = async function () {
@@ -78,7 +77,15 @@ app.controller('ExamController', [
                 }).then(async function (response) {
                     if (response.data.status === 'success') {
                         if (response.data.exam) {
-                            $scope.examData = await response.data.exam;
+                            $scope.examData.code = await response.data.exam.code;
+                            $scope.examData.duration = await response.data.exam.duration;
+                            $scope.examData.id = await response.data.exam.id;
+                            $scope.examData.instructions = await response.data.exam.instructions;
+                            $scope.examData.passing_marks = await response.data.exam.passing_marks;
+                            $scope.examData.status = await response.data.exam.status;
+                            $scope.examData.title = await response.data.exam.title;
+                            $scope.examData.total_marks = await response.data.exam.total_marks;
+                            $scope.examData.total_questions = await response.data.exam.total_questions;
                             $scope.examID = await response.data.exam.id;
 
                             $scope.currentStep = 2;
@@ -92,10 +99,33 @@ app.controller('ExamController', [
 
                             if (response.data.sections) {
                                 $scope.savedSections = await response.data.sections;
+                                $scope.examData.sections = await response.data.sections;
+                            }
+
+                            if (response.data.exam_settings) {
+                                const settings = await response.data.exam_settings;
+                                $scope.examData.setting_id = settings.id;
+                                $scope.examData.schedule_type = settings.schedule_type;
+                                $scope.examData.start_time = settings.start_time ? new Date(settings.start_time) : '';
+                                $scope.examData.shuffle_questions = settings.shuffle_questions;
+                                $scope.examData.shuffle_options = settings.shuffle_options;
+                                $scope.examData.show_results_immediately = settings.immediate_results;
+                                $scope.examData.allow_retake = settings.retake;
+                                $scope.examData.max_attempts = settings.max_attempts;
+                                $scope.examData.enable_proctoring = settings.enable_proctoring;
+                                $scope.examData.full_screen_mode = settings.full_screen_mode;
+                                $scope.examData.disable_copy_paste = settings.disable_copy_paste;
+                                $scope.examData.isSettingsDone = settings.isDone;
                             }
 
                             await $scope.updateBaseDatas();
                             if ($scope.isAllQuestionsAndSectionsAreCompleted) {
+                                $scope.examData = $scope.examData
+                                $scope.nextStep();
+                            }
+
+                            if ($scope.examData.isSettingsDone) {
+                                $scope.examData = $scope.examData
                                 $scope.nextStep();
                             }
                         }
@@ -204,7 +234,16 @@ app.controller('ExamController', [
                     return true;
 
                 case 3:
-                    return true;
+                    if ($scope.examData.isSettingsDone) {
+                        return true;
+                    } else {
+                        Toast.fire({
+                            type: 'error',
+                            title: 'Validation Error!',
+                            msg: 'Please save your exam settings changes.'
+                        })
+                        return false;
+                    }
 
                 default:
                     return true;
@@ -229,12 +268,6 @@ app.controller('ExamController', [
                     setTimeout(() => {
                         window.location.href = 'create_exam?exam=' + response.data.exam.id;
                     }, 500);
-                    // $scope.currentStep = 2;
-                    // $scope.examData = response.data.exam;
-                    // $scope.examID = response.data.exam.id;
-                    // $scope.steps[0].completed = true;
-                    // $scope.steps[0].active = false;
-                    // $scope.steps[1].active = true;
                 } else {
                     Toast.fire({
                         type: 'error',
@@ -285,13 +318,14 @@ app.controller('ExamController', [
                             text: 'Save & Continue',
                             background: '#0e7490',
                             onConfirm: async function () {
-                                const unsavedQuestions = $scope.savedQuestions.filter(q => !q.isSaved)
-                                const response = await saveUnsavedQuestions(unsavedQuestions);
+                                const response = await $scope.saveUnsavedQuestions();
                                 if (response) {
                                     await $scope.updateBaseDatas();
                                     setTimeout(() => {
                                         $scope.nextStep();
                                     }, 500);
+                                } else {
+                                    $scope.$apply();
                                 }
                             }
                         },
@@ -325,21 +359,25 @@ app.controller('ExamController', [
                             onConfirm: async function () {
                                 const response = await $scope.saveCurrentQuestion();
                                 if (response) {
-                                    $scope.currentQuestion = {
-                                        text: '',
-                                        image: null,
-                                        options: [
-                                            { text: '', order: 1, op: 'A' },
-                                            { text: '', order: 2, op: 'B' },
-                                            { text: '', order: 3, op: 'C' },
-                                            { text: '', order: 4, op: 'D' }
-                                        ],
-                                        correct_answer: null,
-                                        model_answer: '',
-                                        marks: 1,
-                                        isSaved: false,
-                                        assignedSections: []
-                                    };
+                                    if ($scope.savedQuestions.length === $scope.examData.total_questions) {
+                                        $scope.currentQuestion = null;
+                                    } else {
+                                        $scope.currentQuestion = {
+                                            question: '',
+                                            image: null,
+                                            options: [
+                                                { text: '', image: '', order: 1, op: 'A' },
+                                                { text: '', image: '', order: 2, op: 'B' },
+                                                { text: '', image: '', order: 3, op: 'C' },
+                                                { text: '', image: '', order: 4, op: 'D' }
+                                            ],
+                                            answer: null,
+                                            marks: 1,
+                                            isSaved: false,
+                                            assignedSections: []
+                                        };
+                                        $scope.currentQuestionIndex = null;
+                                    }
                                     $scope.currentQuestionIndex = null;
                                 }
                             }
@@ -349,21 +387,25 @@ app.controller('ExamController', [
                             background: '#dc2626',
                             onCancel: function () {
                                 $scope.storeUnsavedQuestions();
-                                $scope.currentQuestion = {
-                                    text: '',
-                                    image: null,
-                                    options: [
-                                        { text: '', order: 1, op: 'A' },
-                                        { text: '', order: 2, op: 'B' },
-                                        { text: '', order: 3, op: 'C' },
-                                        { text: '', order: 4, op: 'D' }
-                                    ],
-                                    correct_answer: null,
-                                    model_answer: '',
-                                    marks: 1,
-                                    isSaved: false,
-                                    assignedSections: []
-                                };
+                                if ($scope.savedQuestions.length === $scope.examData.total_questions) {
+                                    $scope.currentQuestion = null;
+                                } else {
+                                    $scope.currentQuestion = {
+                                        question: '',
+                                        image: null,
+                                        options: [
+                                            { text: '', image: '', order: 1, op: 'A' },
+                                            { text: '', image: '', order: 2, op: 'B' },
+                                            { text: '', image: '', order: 3, op: 'C' },
+                                            { text: '', image: '', order: 4, op: 'D' }
+                                        ],
+                                        answer: null,
+                                        marks: 1,
+                                        isSaved: false,
+                                        assignedSections: []
+                                    };
+                                    $scope.currentQuestionIndex = null;
+                                }
                                 $scope.currentQuestionIndex = null;
                                 $scope.$apply();
                                 $scope.closePopover();
@@ -375,13 +417,13 @@ app.controller('ExamController', [
             }
 
             $scope.currentQuestion = {
-                text: '',
+                question: '',
                 image: null,
                 options: [
-                    { text: '', order: 1, op: 'A' },
-                    { text: '', order: 2, op: 'B' },
-                    { text: '', order: 3, op: 'C' },
-                    { text: '', order: 4, op: 'D' }
+                    { text: '', image: '', order: 1, op: 'A' },
+                    { text: '', image: '', order: 2, op: 'B' },
+                    { text: '', image: '', order: 3, op: 'C' },
+                    { text: '', image: '', order: 4, op: 'D' }
                 ],
                 correct_answer: null,
                 model_answer: '',
@@ -405,8 +447,8 @@ app.controller('ExamController', [
             }
 
             const validOptions = $scope.currentQuestion.options.filter(opt => opt.text || opt.image);
-            if (validOptions.length < 2) {
-                Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'At least 2 options are required' });
+            if (validOptions.length < 4) {
+                Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'All options are required' });
                 return false;
             }
 
@@ -462,6 +504,10 @@ app.controller('ExamController', [
                         $scope.currentQuestionIndex = $scope.savedQuestions.length - 1;
                     }
 
+                    if ($scope.savedQuestions.length === $scope.examData.total_questions) {
+                        $scope.currentQuestion = null
+                    }
+
                     $scope.updateBaseDatas();
                     $scope.updateSectionQuestionCounts();
                     $scope.$apply();
@@ -477,39 +523,102 @@ app.controller('ExamController', [
             };
         };
 
-        $scope.storeUnsavedQuestions = async function () {
+        $scope.storeUnsavedQuestions = function () {
+            if (!$scope.currentQuestion.question) {
+                Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'Please enter question text' });
+                return;
+            }
+
             $scope.savedQuestions = $scope.savedQuestions || [];
 
             // Check if question already exists
             const existingIndex = $scope.savedQuestions.findIndex(q => q.question === $scope.currentQuestion.question);
 
             if (existingIndex === -1) {
-                // Question not found → push new
-                $scope.currentQuestion.tempId = Math.floor(100000 + Math.random() * 900000).toString();
-                $scope.savedQuestions.push(angular.copy($scope.currentQuestion));
-                $scope.updateBaseDatas();
-            } else {
-                const existingQuestion = $scope.savedQuestions[existingIndex];
+                if ($scope.currentQuestion.tempId) {
+                    const currentQuestionIndex = $scope.savedQuestions.findIndex(q => q.tempId === $scope.currentQuestion.tempId);
+                    const existingQuestion = $scope.savedQuestions[currentQuestionIndex];
+                    existingQuestion.question = $scope.currentQuestion.question || $scope.currentQuestion.text;
 
-                // Update only changed options
-                $scope.currentQuestion.options.forEach(currOpt => {
-                    const existingOpt = existingQuestion.options.find(opt => opt.op === currOpt.op);
-                    if (existingOpt) {
-                        if (existingOpt.text !== currOpt.text) existingOpt.text = currOpt.text;
-                        if (existingOpt.image !== currOpt.image) existingOpt.image = currOpt.image;
-                    } else {
-                        existingQuestion.options.push(currOpt);
+                    // Update only changed options
+                    $scope.currentQuestion.options.forEach(currOpt => {
+                        const existingOpt = existingQuestion.options.find(opt => opt.op === currOpt.op);
+                        if (existingOpt) {
+                            if (existingOpt.text !== currOpt.text) existingOpt.text = currOpt.text;
+                            if (existingOpt.image !== currOpt.image) existingOpt.image = currOpt.image;
+                        } else {
+                            existingQuestion.options.push(currOpt);
+                        }
+                    });
+
+                    // Update other properties
+                    existingQuestion.answer = $scope.currentQuestion.answer;
+                    existingQuestion.marks = $scope.currentQuestion.marks;
+                    existingQuestion.assignedSections = angular.copy($scope.currentQuestion.assignedSections);
+                    $scope.updateBaseDatas();
+                    if ($scope.savedQuestions.length === $scope.examData.total_questions) {
+                        $scope.currentQuestion = null;
                     }
-                });
-
-                // Update other properties
-                existingQuestion.answer = $scope.currentQuestion.answer;
-                existingQuestion.marks = $scope.currentQuestion.marks;
-                existingQuestion.assignedSections = angular.copy($scope.currentQuestion.assignedSections);
-                $scope.updateBaseDatas();
-                if ($scope.createdQuestionsCount === $scope.examData.total_questions) {
-                    $scope.currentQuestion = null;
+                } else {
+                    // Question not found → push new
+                    $scope.currentQuestion.tempId = Math.floor(100000 + Math.random() * 900000).toString();
+                    $scope.savedQuestions.push(angular.copy($scope.currentQuestion));
+                    $scope.updateBaseDatas();
+                    if ($scope.savedQuestions.length === $scope.examData.total_questions) {
+                        $scope.currentQuestion = null;
+                    }
                 }
+            } else {
+                setTimeout(() => {
+                    Toast.popover({
+                        type: 'confirm',
+                        title: 'This Question Already Exists',
+                        titleColor: '#65deff',
+                        content: `
+                            <i class="fa-solid fa-circle-info" style="font-size: 3rem; color: #0e7490"></i><br><br>
+                            <p>This question already exists. Do you want to update it with new changes?</p>
+                        `,
+                        contentColor: '#fff',
+                        // backgroundColor: '#fff3',
+                        // closeButtonColor: '#dc2626',
+                        options: {
+                            confirm: {
+                                text: 'Update',
+                                background: '#0e7490',
+                                onConfirm: function () {
+                                    const existingQuestion = $scope.savedQuestions[existingIndex];
+
+                                    // Update only changed options
+                                    $scope.currentQuestion.options.forEach(currOpt => {
+                                        const existingOpt = existingQuestion.options.find(opt => opt.op === currOpt.op);
+                                        if (existingOpt) {
+                                            if (existingOpt.text !== currOpt.text) existingOpt.text = currOpt.text;
+                                            if (existingOpt.image !== currOpt.image) existingOpt.image = currOpt.image;
+                                        } else {
+                                            existingQuestion.options.push(currOpt);
+                                        }
+                                    });
+
+                                    // Update other properties
+                                    existingQuestion.answer = $scope.currentQuestion.answer;
+                                    existingQuestion.marks = $scope.currentQuestion.marks;
+                                    existingQuestion.assignedSections = angular.copy($scope.currentQuestion.assignedSections);
+                                    $scope.updateBaseDatas();
+                                    if ($scope.savedQuestions.length === $scope.examData.total_questions) {
+                                        $scope.currentQuestion = null;
+                                    }
+                                }
+                            },
+                            cancel: {
+                                text: 'Cancel',
+                                background: '#dc2626',
+                                onCancel: function () {
+                                    $scope.closePopover();
+                                }
+                            }
+                        }
+                    });
+                }, 500);
             }
         };
 
@@ -1045,73 +1154,104 @@ app.controller('ExamController', [
                 .join(', ');
         };
 
-        function saveUnsavedQuestions(unsavedQuestions) {
-            return new Promise((resolve) => {
+        $scope.saveUnsavedQuestions = async function () {
+            if ($scope.currentQuestion) {
+                const currentQuestionIndex = $scope.savedQuestions.findIndex(q => q.tempId === $scope.currentQuestion.tempId);
+                const existingQuestion = $scope.savedQuestions[currentQuestionIndex];
+                existingQuestion.question = $scope.currentQuestion.question || $scope.currentQuestion.text;
 
-                if (!unsavedQuestions.length) {
-                    resolve(true);
-                    return;
-                }
-
-                let failed = false;
-                let completed = 0;
-
-                unsavedQuestions.forEach(q => {
-
-                    const formData = new FormData();
-                    formData.append('exam_id', $scope.examID || '');
-                    formData.append('question', q.question || '');
-                    formData.append('answer', q.answer || '');
-                    if (Array.isArray(q.options)) {
-                        q.options.forEach(opt => {
-                            const key = opt.op;
-
-                            formData.append(`${key}`, opt.text || '');
-
-                            if (opt.image) {
-                                formData.append(`options[${key}][image]`, opt.image);
-                            }
-                        });
+                // Update only changed options
+                $scope.currentQuestion.options.forEach(currOpt => {
+                    const existingOpt = existingQuestion.options.find(opt => opt.op === currOpt.op);
+                    if (existingOpt) {
+                        if (existingOpt.text !== currOpt.text) existingOpt.text = currOpt.text;
+                        if (existingOpt.image !== currOpt.image) existingOpt.image = currOpt.image;
+                    } else {
+                        existingQuestion.options.push(currOpt);
                     }
-                    if (q.image) {
-                        formData.append('image', q.image);
-                    }
-
-                    $http.post(apiUrl, formData, {
-                        transformRequest: angular.identity,
-                        headers: { 'Content-Type': undefined }
-                    })
-                        .then(res => {
-                            if (res.data.status !== 'success') {
-                                failed = true;
-                            }
-                        })
-                        .catch(() => {
-                            failed = true;
-                        })
-                        .finally(() => {
-
-                            completed++;
-
-                            // If completed all requests:
-                            if (completed === unsavedQuestions.length) {
-
-                                if (!failed) {
-                                    // Mark all as saved
-                                    unsavedQuestions.forEach(x => x.isSaved = true);
-                                    resolve(true);
-                                } else {
-                                    resolve(false);
-                                }
-                            }
-                        });
-
                 });
 
-            });
-        }
+                // Update other properties
+                existingQuestion.answer = $scope.currentQuestion.answer;
+                existingQuestion.marks = $scope.currentQuestion.marks;
+                existingQuestion.assignedSections = angular.copy($scope.currentQuestion.assignedSections);
+                $scope.updateBaseDatas();
+                if ($scope.savedQuestions.length === $scope.examData.total_questions) {
+                    $scope.currentQuestion = null;
+                }
+            }
 
-        // Options management
+            const unsavedQuestions = $scope.savedQuestions.filter(q => !q.isSaved);
+
+            for (let index = 0; index < unsavedQuestions.length; index++) {
+                const q = unsavedQuestions[index];
+                const originalIndex = $scope.savedQuestions.findIndex(oq => oq.id === q.id);
+
+                if (!q.question) {
+                    Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'Please enter the text for question ' + (originalIndex + 1) });
+                    return false;
+                }
+
+                const validOptions = q.options.filter(opt => opt.text || opt.image);
+                if (validOptions.length < 4) {
+                    Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'All options are required for question ' + (originalIndex + 1) });
+                    return false;
+                }
+
+                if (q.answer === null || q.answer === undefined) {
+                    Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'Please select a correct answer for question ' + (originalIndex + 1) });
+                    return false;
+                }
+
+
+                const formData = new FormData();
+                formData.append('exam_id', $scope.location.exam);
+                formData.append('question', q.question);
+                formData.append('answer', q.answer);
+                formData.append('marks', q.marks);
+                q.options.forEach(opt => {
+                    formData.append(opt.op, opt.text || '');
+                    formData.append('img' + opt.op, opt.image || '');
+                });
+
+                try {
+                    const response = await $http({
+                        method: 'POST',
+                        url: 'API/questions/add_question',
+                        data: formData,
+                        headers: { 'Content-Type': undefined }
+                    });
+
+                    const savedQuestionIndex = $scope.savedQuestions.findIndex(i => i.tempId === q.tempId);
+
+                    if (response.data.status === 'success') {
+                        const savedQuestion = response.data.question;
+                        if (savedQuestionIndex !== -1) {
+                            angular.copy(savedQuestion, $scope.savedQuestions[savedQuestionIndex]);
+                            $scope.savedQuestions[savedQuestionIndex].isSaved = true;
+                        }
+                    } else {
+                        if (savedQuestionIndex !== -1) {
+                            $scope.savedQuestions[savedQuestionIndex].isSaved = false;
+                        }
+                    }
+
+                } catch (error) {
+                    Toast.fire({ type: 'error', title: 'Error!', msg: 'Network or server error' });
+                    return false;
+                }
+            }
+
+            const isAllSaved = $scope.savedQuestions.every(q => q.isSaved);
+            if (isAllSaved) {
+                Toast.fire({ type: 'success', title: 'Success!', msg: 'All questions saved successfully' });
+                return true;
+            } else {
+                Toast.fire({ type: 'error', title: 'Error!', msg: 'Failed to save all questions' });
+                return false;
+            }
+        };
+
         $scope.addOption = function (question) {
             if (!question.options) {
                 question.options = [];
@@ -1149,10 +1289,10 @@ app.controller('ExamController', [
             // Reset options when question type changes
             if (!$scope.currentQuestion.options || $scope.currentQuestion.options.length === 0) {
                 $scope.currentQuestion.options = [
-                    { text: '', order: 1, op: 'A' },
-                    { text: '', order: 2, op: 'B' },
-                    { text: '', order: 3, op: 'C' },
-                    { text: '', order: 4, op: 'D' }
+                    { text: '', image: '', order: 1, op: 'A' },
+                    { text: '', image: '', order: 2, op: 'B' },
+                    { text: '', image: '', order: 3, op: 'C' },
+                    { text: '', image: '', order: 4, op: 'D' }
                 ];
             }
             $scope.currentQuestion.correct_answer = null;
@@ -1207,6 +1347,66 @@ app.controller('ExamController', [
             option.image = null;
         };
 
+        // Save exam settings
+        $scope.saveExamSettings = async function () {
+            if ($scope.examData.schedule_type === 'scheduled' && !$scope.examData.start_time) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Validation Error!',
+                    msg: 'Please select a start time.'
+                });
+                return false;
+            }
+
+            if ($scope.examData.allow_retake && !$scope.examData.max_attempts) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Validation Error!',
+                    msg: 'Please enter the number of times the exam can be retaken.'
+                });
+                return false;
+            }
+
+            if ($scope.examData.allow_retake && $scope.examData.max_attempts < 1) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Validation Error!',
+                    msg: 'The number of times the exam can be retaken must be greater than 0.'
+                });
+                return false;
+            }
+
+            const formData = $('#exam_settings_form').serialize();
+            const restEndpoint = $scope.examData.setting_id ? '/' + $scope.examData.setting_id : '';
+            const response = await $http({
+                url: `API/exams/settings${restEndpoint}`,
+                method: 'POST',
+                data: formData
+            })
+
+            if (response.data.status === 'success') {
+                Toast.fire({ type: 'success', title: 'Success!', msg: `Exam settings ${$scope.examData.setting_id ? 'updated' : 'save'} successfully.` });
+
+                const settings = response.data.exam_settings;
+                $scope.examData.setting_id = settings.id;
+                $scope.examData.schedule_type = settings.schedule_type;
+                $scope.examData.start_time = new Date(settings.start_time);;
+                $scope.examData.shuffle_questions = settings.shuffle_questions;
+                $scope.examData.shuffle_options = settings.shuffle_options;
+                $scope.examData.show_results_immediately = settings.immediate_results;
+                $scope.examData.allow_retake = settings.retake;
+                $scope.examData.max_attempts = settings.max_attempts;
+                $scope.examData.enable_proctoring = settings.enable_proctoring;
+                $scope.examData.full_screen_mode = settings.full_screen_mode;
+                $scope.examData.disable_copy_paste = settings.disable_copy_paste;
+                $scope.examData.isSettingsDone = settings.isDone
+                return true;
+            }
+
+            Toast.fire({ type: 'error', title: 'Error!', msg: `Failed to  ${$scope.examData.setting_id ? 'update' : 'save'}  exam settings.` });
+            return false;
+        };
+
         // Calculations and summaries
         $scope.getTotalMarks = function () {
             return $scope.savedQuestions.reduce((total, question) => {
@@ -1222,58 +1422,6 @@ app.controller('ExamController', [
             return Object.keys(typeCounts).map(type => {
                 return `${typeCounts[type]} ${type.replace('_', ' ')}`;
             }).join(', ');
-        };
-
-        // Create exam
-        $scope.createExam = function () {
-            $scope.creatingExam = true;
-
-            // Prepare data for API
-            const submitData = {
-                ...$scope.examData,
-                questions: $scope.savedQuestions,
-                total_questions: $scope.savedQuestions.length,
-                total_marks: $scope.getTotalMarks()
-            };
-
-            $http({
-                url: 'API/exams',
-                method: 'POST',
-                data: submitData
-            }).then(
-                function (response) {
-                    $scope.creatingExam = false;
-
-                    if (response.data && response.data.success) {
-                        Toast.fire({
-                            type: 'success',
-                            title: 'Success!',
-                            msg: 'Exam created successfully'
-                        });
-
-                        // Redirect to exam management after 2 seconds
-                        $timeout(() => {
-                            window.location.href = 'exam_management';
-                        }, 2000);
-                    } else {
-                        Toast.fire({
-                            type: 'error',
-                            title: 'Error!',
-                            msg: response.data.message || 'Failed to create exam'
-                        });
-                    }
-                },
-                function (error) {
-                    $scope.creatingExam = false;
-                    const errorMsg = error.data?.message || 'Failed to create exam';
-                    Toast.fire({
-                        type: 'error',
-                        title: 'Error!',
-                        msg: errorMsg
-                    });
-                    console.error('API Error:', error);
-                }
-            );
         };
 
         // Close when clicking outside modal

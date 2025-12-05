@@ -175,11 +175,11 @@ $this->controller('ExamController');
                             <i class="fas fa-question-circle"></i>
                             <span>Create Question</span>
                         </button>
-                        <button type="button" ng-click="importQuestion()" disabled
-                            class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-4 rounded-lg disabled:bg-opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2">
+                        <!-- <button type="button" ng-click="importQuestion()" disabled
+                            class="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-4 rounded-lg disabled:bg-opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
                             <i class="fa-solid fa-download"></i>
                             <span>Import Question</span>
-                        </button>
+                        </button> -->
                     </div>
                 </div>
 
@@ -526,7 +526,7 @@ $this->controller('ExamController');
                         </div>
 
                         <!-- Question Editor -->
-                        <div class="space-y-4" ng-if="currentQuestion && !isAllQuestionsAreCreated">
+                        <div class="space-y-4" ng-if="currentQuestion">
                             <form id="questionForm{{currentQuestion.id || 'New'}}" onsubmit="return false"
                                 enctype="multipart/form-data">
                                 <!-- Exam ID hidden -->
@@ -660,8 +660,7 @@ $this->controller('ExamController');
                         </div>
 
                         <!-- Empty State for Question Editor -->
-                        <div ng-if="!currentQuestion && !isAllQuestionsAreCreated"
-                            class="text-center py-12">
+                        <div ng-if="!currentQuestion && !isAllQuestionsAreCreated" class="text-center py-12">
                             <i class="fas fa-question-circle text-gray-500 text-4xl mb-4"></i>
                             <h3 class="text-lg font-medium text-gray-100 mb-2">No Question Selected</h3>
                             <p class="text-gray-400 mb-6">Select a question from the list or create a new one to
@@ -673,8 +672,8 @@ $this->controller('ExamController');
                             </button>
                         </div>
 
-                        <div ng-if="isAllQuestionsAndSectionsAreCompleted && !currentQuestion"
-                            class="text-center py-12">
+                        <!-- All Questions Created Indicator for Question Editor -->
+                        <div ng-if="isAllQuestionsAreCreated && !currentQuestion" class="text-center py-12">
                             <i class="fas fa-question-circle text-gray-500 text-4xl mb-4"></i>
                             <h3 class="text-lg font-medium text-gray-100 mb-2">All Questions Created</h3>
                             <p class="text-gray-400">Total questions required: {{ neededQuestionsCount }}</p>
@@ -698,7 +697,8 @@ $this->controller('ExamController');
 
     <!-- Schedule & Settings Section -->
     <div ng-show="currentStep === 3" class="max-w-4xl mx-auto">
-        <div class="bg-[#0004] rounded-lg p-6 border border-gray-600">
+        <form id="exam_settings_form" onsubmit="return false" class="bg-[#0004] rounded-lg p-6 border border-gray-600">
+            <input type="hidden" name="exam_id" value="{{ examID }}">
             <h2 class="text-xl font-semibold text-gray-100 mb-6">Schedule & Settings</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -707,17 +707,74 @@ $this->controller('ExamController');
                     <h3 class="text-lg font-medium text-gray-100 mb-4">Schedule</h3>
                 </div>
 
-                <!-- Start Date & Time -->
-                <div class="form-group">
-                    <label for="startDateTime" class="form-label">Start Date & Time</label>
-                    <input type="datetime-local" id="startDateTime" ng-model="examData.start_time" class="form-input">
+                <!-- Schedule Type Selection -->
+                <div class="form-group md:col-span-2">
+                    <label class="form-label mb-2">Schedule Type</label>
+                    <div class="flex flex-wrap gap-4">
+                        <!-- Any Time Option -->
+                        <label class="flex-1 min-w-[200px] cursor-pointer">
+                            <input type="radio" name="scheduleType" required ng-model="examData.schedule_type"
+                                ng-change="examData.isSettingsDone = false" value="anytime" class="hidden">
+                            <div class="h-full p-4 border-2 rounded-lg transition-all duration-200" ng-class="examData.schedule_type === 'anytime' ? 
+                                     'border-cyan-500 bg-cyan-900/20' : 
+                                     'border-gray-600 hover:border-gray-500 bg-[#0006]'">
+                                <div class="flex items-center justify-center space-x-3">
+                                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                                        ng-class="examData.schedule_type === 'anytime' ? 
+                                             'border-cyan-500 bg-cyan-500' : 
+                                             'border-gray-500'">
+                                        <div ng-if="examData.schedule_type === 'anytime'"
+                                            class="w-2 h-2 rounded-full bg-white"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-100 flex flex-wrap items-center gap-x-2">Any
+                                            Time Attempt<span class="text-gray-400 text-sm">(No start time
+                                                restrictions)</span></h4>
+                                        <!-- <p class="text-sm text-gray-400 mt-1">No start/end time restrictions</p> -->
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+
+                        <!-- Scheduled Option -->
+                        <label class="flex-1 min-w-[200px] cursor-pointer">
+                            <input type="radio" name="scheduleType" required ng-model="examData.schedule_type"
+                                ng-change="examData.isSettingsDone = false" value="scheduled" class="hidden">
+                            <div class="h-full p-4 border-2 rounded-lg transition-all duration-200" ng-class="examData.schedule_type === 'scheduled' ? 
+                                     'border-cyan-500 bg-cyan-900/20' : 
+                                     'border-gray-600 hover:border-gray-500 bg-[#0006]'">
+                                <div class="flex items-center justify-center space-x-3">
+                                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center"
+                                        ng-class="examData.schedule_type === 'scheduled' ? 
+                                             'border-cyan-500 bg-cyan-500' : 
+                                             'border-gray-500'">
+                                        <div ng-if="examData.schedule_type === 'scheduled'"
+                                            class="w-2 h-2 rounded-full bg-white"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-100 flex flex-wrap items-center gap-x-2">
+                                            Scheduled Attempt<span class="text-gray-400 text-sm">(Set specific time
+                                                window)</span></h4>
+                                        <!-- <p class="text-sm text-gray-400 mt-1">Set specific time window</p> -->
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
-                <!-- End Date & Time -->
-                <div class="form-group">
-                    <label for="endDateTime" class="form-label">End Date & Time</label>
-                    <input type="datetime-local" id="endDateTime" ng-model="examData.end_time" class="form-input">
+                <!-- Start Date & Time (Conditional) -->
+                <div class="form-group" ng-if="examData.schedule_type === 'scheduled'">
+                    <label for="startDateTime" class="form-label">Start Date & Time</label>
+                    <input type="datetime-local" id="startDateTime" name="startDateTime" required
+                        ng-model="examData.start_time" ng-change="examData.isSettingsDone = false" class="form-input">
                 </div>
+
+                <!-- End Date & Time (Conditional) -->
+                <!-- <div class="form-group" ng-if="examData.schedule_type === 'scheduled'">
+                    <label for="endDateTime" class="form-label">End Date & Time</label>
+                    <input type="datetime-local" id="endDateTime" name="endDateTime" required ng-model="examData.end_time" ng-change="examData.isSettingsDone = false" class="form-input">
+                </div> -->
 
                 <!-- Exam Settings -->
                 <div class="md:col-span-2">
@@ -728,7 +785,8 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.shuffle_questions"
-                            class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                            ng-change="examData.isSettingsDone = false" id="shuffleQuestions" name="shuffleQuestions"
+                            required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Shuffle Questions</span>
                     </label>
                 </div>
@@ -737,7 +795,8 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.shuffle_options"
-                            class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                            ng-change="examData.isSettingsDone = false" id="shuffleOptions" name="shuffleOptions"
+                            required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Shuffle Options</span>
                     </label>
                 </div>
@@ -746,6 +805,8 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.show_results_immediately"
+                            ng-change="examData.isSettingsDone = false" id="showResultsImmediately"
+                            name="showResultsImmediately" required
                             class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Show Results Immediately</span>
                     </label>
@@ -755,6 +816,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.allow_retake"
+                            ng-change="examData.isSettingsDone = false" id="allowRetake" name="allowRetake" required
                             class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Allow Retake</span>
                     </label>
@@ -763,8 +825,8 @@ $this->controller('ExamController');
                 <!-- Max Attempts -->
                 <div class="form-group" ng-if="examData.allow_retake">
                     <label for="maxAttempts" class="form-label">Maximum Attempts</label>
-                    <input type="number" id="maxAttempts" ng-model="examData.max_attempts" min="1" class="form-input"
-                        placeholder="e.g., 3">
+                    <input type="number" id="maxAttempts" name="maxAttempts" ng-model="examData.max_attempts"
+                        ng-change="examData.isSettingsDone = false" min="1" class="form-input" placeholder="e.g., 3">
                 </div>
 
                 <!-- Security Settings -->
@@ -776,7 +838,8 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.enable_proctoring"
-                            class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                            ng-change="examData.isSettingsDone = false" id="enableProctoring" name="enableProctoring"
+                            required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Enable Proctoring</span>
                     </label>
                 </div>
@@ -785,7 +848,8 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.full_screen_mode"
-                            class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                            ng-change="examData.isSettingsDone = false" id="fullScreenMode" name="fullScreenMode"
+                            required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Force Full Screen Mode</span>
                     </label>
                 </div>
@@ -794,12 +858,13 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.disable_copy_paste"
-                            class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
+                            ng-change="examData.isSettingsDone = false" id="disableCopyPaste" name="disableCopyPaste"
+                            required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Disable Copy/Paste</span>
                     </label>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 
     <!-- Review & Create Section -->
@@ -840,10 +905,10 @@ $this->controller('ExamController');
                             <span class="text-gray-300">Total Marks:</span>
                             <span class="text-cyan-400 font-medium">{{getTotalMarks()}}</span>
                         </div>
-                        <div class="flex justify-between items-center">
+                        <!-- <div class="flex justify-between items-center">
                             <span class="text-gray-300">Question Types:</span>
                             <span class="text-cyan-400 font-medium">{{getQuestionTypesSummary()}}</span>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
@@ -858,12 +923,12 @@ $this->controller('ExamController');
                                     {{section.assignedQuestions || 0}}/{{section.question_count}} questions
                                     assigned
                                 </p>
-                                <p class="text-sm text-gray-400">
+                                <!-- <p class="text-sm text-gray-400">
                                     {{section.marks_per_question}} marks per question |
                                     {{section.question_type}}
-                                </p>
+                                </p> -->
                             </div>
-                            <span class="text-cyan-400 text-sm">Order: {{section.order}}</span>
+                            <!-- <span class="text-cyan-400 text-sm">Order: {{section.order}}</span> -->
                         </div>
                     </div>
                 </div>
@@ -872,16 +937,46 @@ $this->controller('ExamController');
                 <div class="bg-[#0006] rounded-lg p-4">
                     <h3 class="text-lg font-medium text-cyan-400 mb-3">Settings</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div><strong class="text-gray-400">Shuffle Questions:</strong> <span
-                                class="text-gray-100">{{examData.shuffle_questions ? 'Yes' : 'No'}}</span></div>
-                        <div><strong class="text-gray-400">Allow Retake:</strong> <span
-                                class="text-gray-100">{{examData.allow_retake ? 'Yes' : 'No'}}</span></div>
-                        <div><strong class="text-gray-400">Show Results:</strong> <span
-                                class="text-gray-100">{{examData.show_results_immediately ? 'Immediately' :
-                                'Later'}}</span></div>
-                        <div><strong class="text-gray-400">Proctoring:</strong> <span
-                                class="text-gray-100">{{examData.enable_proctoring ? 'Enabled' :
-                                'Disabled'}}</span>
+                        <div>
+                            <strong class="text-gray-400">Schedule Type:</strong>
+                            <span class="text-gray-100">{{examData.schedule_type}}</span>
+                        </div>
+                        <div ng-if="examData.schedule_type === 'scheduled'">
+                            <strong class="text-gray-400">Start Date/Time:</strong>
+                            <span class="text-gray-100">{{examData.start_time | formatDateTime:'DD MMM YYYY - HH:mm'}}</span>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400">Shuffle Questions:</strong>
+                            <span class="text-gray-100">{{examData.shuffle_questions ? 'Yes' : 'No'}}</span>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400">Shuffle Options:</strong>
+                            <span class="text-gray-100">{{examData.shuffle_options ? 'Yes' : 'No'}}</span>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400">Allow Retake:</strong>
+                            <span class="text-gray-100">{{examData.allow_retake ? 'Yes' : 'No'}}</span>
+                        </div>
+                        <div ng-if="examData.allow_retake">
+                            <strong class="text-gray-400">Retake Attempts:</strong>
+                            <span class="text-gray-100">{{examData.max_attempts }}</span>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400">Show Results:</strong>
+                            <span class="text-gray-100">{{examData.show_results_immediately ? 'Immediately' :
+                                'Later'}}</span>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400">Proctoring:</strong>
+                            <span class="text-gray-100">{{examData.enable_proctoring ? 'Enabled' : 'Disabled'}}</span>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400">Full Screen Mode:</strong>
+                            <span class="text-gray-100">{{examData.full_screen_mode ? 'Enabled' : 'Disabled'}}</span>
+                        </div>
+                        <div>
+                            <strong class="text-gray-400">Disable Copy/Paste:</strong>
+                            <span class="text-gray-100">{{examData.disable_copy_paste ? 'Yes' : 'No'}}</span>
                         </div>
                     </div>
                 </div>
@@ -890,27 +985,33 @@ $this->controller('ExamController');
     </div>
 
     <!-- Navigation Buttons -->
-    <div class="flex flex-wrap md:flex-row justify-between gap-2 mt-8 pt-6 border-t border-gray-600">
+    <div class="flex flex-wrap md:flex-row justify-center gap-2 mt-8 pt-6 border-t border-gray-600">
         <button type="button" ng-click="previousStep()" ng-show="currentStep > 1"
             class="bg-gray-600 hover:bg-gray-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
             <i class="fas fa-arrow-left"></i>
             <span>Previous</span>
         </button>
 
-        <div class="flex-1"></div>
+        <!-- <div class="flex-1"></div> -->
 
-        <button type="button" id="basicInfoSubmit" ng-click="saveBasicInfo()"
+        <button type="button" id="basicInfoSave" ng-click="saveBasicInfo()"
             ng-show="currentStep === 1 && !location.exam" ng-disabled="basicInfoForm.$invalid"
             class="bg-green-600 hover:bg-green-700 disabled:bg-green-800 w-full md:w-auto disabled:cursor-not-allowed text-white py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
             <i class="fas fa-save"></i>
             <span>Save Basic Info</span>
         </button>
 
-        <button type="button" id="basicInfoSubmit" ng-click="saveBasicInfo()"
-            ng-show="currentStep === 1 && location.exam"
+        <button type="button" id="basicInfoEdit" ng-click="saveBasicInfo()" ng-show="currentStep === 1 && location.exam"
             class="bg-green-600 hover:bg-green-700 disabled:bg-green-800 w-full md:w-auto disabled:cursor-not-allowed text-white py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
             <i class="fas fa-save"></i>
             <span>Update Basic Info</span>
+        </button>
+
+        <button type="button" id="examSettingsSave" ng-click="saveExamSettings()"
+            ng-show="currentStep === 3 && location.exam"
+            class="bg-green-600 hover:bg-green-700 disabled:bg-green-800 w-full md:w-auto disabled:cursor-not-allowed text-white py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+            <i class="fas fa-save"></i>
+            <span>Save Exam Settings</span>
         </button>
 
         <button type="button" ng-click="nextStep()" ng-show="currentStep < totalSteps"
@@ -919,11 +1020,18 @@ $this->controller('ExamController');
             <i class="fas fa-arrow-right"></i>
         </button>
 
-        <button type="button" ng-click="createExam()" ng-show="currentStep === totalSteps"
+        <!-- <button type="button" ng-click="createExam()" ng-show="currentStep === totalSteps"
             ng-disabled="creatingExam || createdQuestionsCount === 0"
             class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
             <i class="fas fa-save" ng-class="{'fa-spin animate-spin': creatingExam}"></i>
             <span>{{creatingExam ? 'Creating Exam...' : 'Create Exam'}}</span>
+        </button> -->
+
+        <button type="button" ng-click="previewExam()" ng-show="currentStep === totalSteps"
+            ng-disabled="creatingExam || createdQuestionsCount === 0"
+            class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
+            <i class="fas fa-save" ng-class="{'fa-spin animate-spin': creatingExam}"></i>
+            <span>Preview Exam</span>
         </button>
     </div>
 </div>
