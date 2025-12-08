@@ -40,6 +40,7 @@ class QuestionAPI
             $B = !empty($_POST['B']) ? $_POST['B'] : null;
             $C = !empty($_POST['C']) ? $_POST['C'] : null;
             $D = !empty($_POST['D']) ? $_POST['D'] : null;
+            $grid = !empty($_POST['grid']) ? $_POST['grid'] : null;
 
             if (!is_array($examID)) {
                 $examID = [$examID];
@@ -48,8 +49,8 @@ class QuestionAPI
             // Convert array to JSON for DB
             $examID = json_encode($examID);
 
-            $statment = $this->db->prepare("INSERT INTO questions (question, exam_ids, answer, marks, a, b, c, d, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $statment->execute([$questionText, $examID, $answer, $marks, $A, $B, $C, $D, user_id()]);
+            $statment = $this->db->prepare("INSERT INTO questions (question, exam_ids, answer, marks, a, b, c, d, grid, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $statment->execute([$questionText, $examID, $answer, $marks, $A, $B, $C, $D, $grid, user_id()]);
             $questionId = $this->db->lastInsertId();
 
             // // Question image
@@ -96,6 +97,7 @@ class QuestionAPI
                 'examID' => $examID,
                 'isSaved' => true,
                 'options' => $options,
+                'grid' => $grid,
                 'created_at' => date('Y-m-d H:i:s'),
             ];
 
@@ -126,7 +128,8 @@ class QuestionAPI
             $answer = $_POST['answer'] ?? null;
             $marks = $_POST['marks'] ?? null;
             $examID = $_POST['exam_id'] ?? null;
-            $section_ids = $_POST['section_ids'] ?? null; // optional
+            $section_ids = $_POST['section_ids'] ?? null;
+            $grid = $_POST['grid'] ?? null;
 
             // Images
             $a_img = $_POST['a_img'] ?? null;
@@ -164,6 +167,10 @@ class QuestionAPI
             if ($marks !== null) {
                 $fields[] = 'marks = ?';
                 $params[] = $marks + 0;
+            }
+            if ($grid !== null) {
+                $fields[] = 'grid = ?';
+                $params[] = $grid + 0;
             }
 
             // Merge exam_ids
@@ -251,6 +258,7 @@ class QuestionAPI
                 'examIDs' => !empty($q['exam_ids']) ? json_decode($q['exam_ids'], true) : [],
                 'isSaved' => true,
                 'options' => $options,
+                'grid' => $q['grid'] + 0,
                 'created_at' => $q['created_at'],
                 'assignedSections' => $assignedSections
             ];

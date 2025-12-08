@@ -533,7 +533,7 @@ $this->controller('ExamController');
                                 <input type="hidden" name="exam_id" ng-value="examID">
                                 <div class="flex flex-wrap md:flex-row">
                                     <!-- Question Text -->
-                                    <div class="form-group w-full md:w-2/3">
+                                    <div class="form-group w-full">
                                         <label class="form-label">Question Text <span
                                                 class="text-red-700">*</span></label>
                                         <textarea ng-model="currentQuestion.question" required rows="5"
@@ -542,7 +542,7 @@ $this->controller('ExamController');
                                     </div>
 
                                     <!-- Question Image -->
-                                    <div class="w-full md:w-1/3 md:pl-2">
+                                    <!-- <div class="w-full md:w-1/3 md:pl-2">
                                         <div class="form-group">
                                             <label class="form-label">Question Image (Optional)</label>
                                             <div
@@ -571,47 +571,86 @@ $this->controller('ExamController');
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> -->
                                 </div>
 
                                 <!-- Multiple Choice Options -->
                                 <div class="space-y-4">
-                                    <label class="form-label">Options <span class="text-red-700">*</span></label>
+                                    <div class="flex flex-wrap items-center md:justify-between">
+                                        <label class="form-label">Options <span class="text-red-700">*</span></label>
+                                        <div class="hidden md:flex flext-wrap items-center space-x-3">
+                                            <p class="text-gray-300 font-semibold mb-1">Option Layout:</p>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" class="hidden" ng-model="currentQuestion.grid"
+                                                    ng-value="1" name="grid">
+                                                <div class="px-4 py-1 rounded-lg border"
+                                                    ng-class="currentQuestion.grid === 1 ? 'bg-purple-600/30 text-white border-purple-700' : 'bg-gray-700/30 text-gray-300 border-gray-500'">
+                                                    1
+                                                </div>
+                                            </label>
 
-                                    <div ng-repeat="option in currentQuestion.options track by $index"
-                                        class="flex items-center space-x-3">
-                                        <label for="option{{$index}}" class="flex space-x-3">
-                                            <input type="radio" id="option{{$index}}" name="answer"
-                                                ng-model="currentQuestion.answer" ng-value="option.op"
-                                                class="text-cyan-500 cursor-pointer">
-                                            <p>{{ option.op }}&#x29;</p>
-                                        </label>
+                                            <label class="cursor-pointer">
+                                                <input type="radio" class="hidden" ng-model="currentQuestion.grid"
+                                                    ng-value="2" name="grid">
+                                                <div class="px-4 py-1 rounded-lg border"
+                                                    ng-class="currentQuestion.grid === 2 ? 'bg-purple-600/30 text-white border-purple-700' : 'bg-gray-700/30 text-gray-300 border-gray-500'">
+                                                    2
+                                                </div>
+                                            </label>
 
-                                        <div class="flex-1">
-                                            <input type="text" ng-model="option.text" class="form-input mb-2"
-                                                name="{{option.op}}" placeholder="Option {{ option.op }} text">
+                                            <label class="cursor-pointer">
+                                                <input type="radio" class="hidden" ng-model="currentQuestion.grid"
+                                                    ng-value="4" name="grid">
+                                                <div class="px-4 py-1 rounded-lg border"
+                                                    ng-class="currentQuestion.grid === 4 ? 'bg-purple-600/30 text-white border-purple-700' : 'bg-gray-700/30 text-gray-300 border-gray-500'">
+                                                    4
+                                                </div>
+                                            </label>
 
-                                            <div id="{{ option.op }}ImgContainer" ng-if="option.image"
-                                                class="relative inline-block">
-                                                <img ng-src="{{option.image}}" class="max-w-32 max-h-32 rounded">
-                                                <button type="button" ng-click="removeOptionImage(option)"
-                                                    class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full text-xs">
+                                        </div>
+                                    </div>
+                                    <div ng-class="{
+                                            'grid grid-cols-1 gap-4': currentQuestion.grid == 1,
+                                            'grid grid-cols-2 gap-4': currentQuestion.grid == 2,
+                                            'grid grid-cols-4 gap-4': currentQuestion.grid == 4
+                                        }">
+                                        <div ng-repeat="option in currentQuestion.options track by $index"
+                                            class="flex items-center gap-3 rounded-lg">
+                                            <label for=" option{{$index}}" class="flex gap-3">
+                                                <input type="radio" id="option{{$index}}" name="answer"
+                                                    ng-model="currentQuestion.answer" ng-value="option.op"
+                                                    class="text-cyan-500 cursor-pointer">
+                                                <p>{{ option.op }}&#x29;</p>
+                                            </label>
+
+                                            <div class="flex-1 flex items-center gap-3">
+                                                <input type="text" ng-model="option.text"
+                                                    class="w-full rounded-lg px-4 py-3 border border-gray-600 text-gray-100 placeholder-gray-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    ng-class="option.op.toLowerCase() === currentQuestion.answer.toLowerCase() ? 'bg-green-900/30' : 'bg-[#0004]'"
+                                                    name="{{option.op}}" placeholder="Option {{ option.op }} text">
+
+                                                <div id="{{ option.op }}ImgContainer" ng-if="option.image"
+                                                    class="relative inline-block">
+                                                    <img ng-src="{{option.image}}" class="max-w-32 max-h-32 rounded">
+                                                    <button type="button" ng-click="removeOptionImage(option)"
+                                                        class="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full text-xs">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- <div class="flex space-x-2">
+                                                <button type="button" ng-click="uploadOptionImage(option)"
+                                                    class="text-purple-400 hover:text-purple-300">
+                                                    <i class="fas fa-image"></i>
+                                                </button>
+
+                                                <button type="button" ng-click="removeOption(currentQuestion, $index)"
+                                                    ng-disabled="currentQuestion.options.length <= 2"
+                                                    class="text-red-400 hover:text-red-300 disabled:opacity-50">
                                                     <i class="fas fa-times"></i>
                                                 </button>
-                                            </div>
-                                        </div>
-
-                                        <div class="flex space-x-2">
-                                            <button type="button" ng-click="uploadOptionImage(option)"
-                                                class="text-purple-400 hover:text-purple-300">
-                                                <i class="fas fa-image"></i>
-                                            </button>
-
-                                            <!-- <button type="button" ng-click="removeOption(currentQuestion, $index)"
-                                                ng-disabled="currentQuestion.options.length <= 2"
-                                                class="text-red-400 hover:text-red-300 disabled:opacity-50">
-                                                <i class="fas fa-times"></i>
-                                            </button> -->
+                                            </div> -->
                                         </div>
                                     </div>
 
@@ -625,7 +664,7 @@ $this->controller('ExamController');
                                     </div> -->
                                 </div>
                                 <!-- Question Metadata -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-600">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-600 mt-2">
                                     <!-- Marks -->
                                     <div class="form-group">
                                         <label class="form-label">Marks <span class="text-red-700">*</span></label>
@@ -885,7 +924,7 @@ $this->controller('ExamController');
             <!-- Exam Summary -->
             <div class="space-y-6">
                 <!-- Basic Information -->
-                <div class="bg-[#0006] rounded-lg p-4">
+                <div class="md:bg-[#0006] rounded-lg md:p-4">
                     <h3 class="text-lg font-medium text-cyan-400 mb-3">Basic Information</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div><strong class="text-gray-400">Title:</strong> <span
@@ -904,7 +943,7 @@ $this->controller('ExamController');
                 </div>
 
                 <!-- Questions Summary -->
-                <div class="bg-[#0006] rounded-lg p-4">
+                <div class="md:bg-[#0006] rounded-lg md:p-4">
                     <h3 class="text-lg font-medium text-cyan-400 mb-3">Questions Summary</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
@@ -923,7 +962,7 @@ $this->controller('ExamController');
                 </div>
 
                 <!-- Sections Summary -->
-                <div class="bg-[#0006] rounded-lg p-4">
+                <div class="md:bg-[#0006] rounded-lg md:p-4">
                     <h3 class="text-lg font-medium text-cyan-400 mb-3">Sections ({{totalSectionsCount}})</h3>
                     <div ng-repeat="section in savedSections" class="mb-3 last:mb-0 p-3 border border-gray-600 rounded">
                         <div class="flex justify-between items-start">
@@ -944,54 +983,72 @@ $this->controller('ExamController');
                 </div>
 
                 <!-- Settings Summary -->
-                <div class="bg-[#0006] rounded-lg p-4">
+                <div class="md:bg-[#0006] rounded-lg md:p-4">
                     <h3 class="text-lg font-medium text-cyan-400 mb-3">Settings</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Schedule Type:</strong>
-                            <span class="text-gray-100 capitalize">{{examData.schedule_type}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full capitalize"
+                                ng-class="examData.schedule_type === 'scheduled' ? 'bg-green-900/50 text-green-300' : 'bg-yellow-700/50 text-yellow-300'">{{examData.schedule_type}}</span>
                         </div>
-                        <div ng-if="examData.schedule_type === 'scheduled'">
+                        <div class="flex flex-row justify-between items-center"
+                            ng-if="examData.schedule_type === 'scheduled'">
                             <strong class="text-gray-400">Start Date/Time:</strong>
                             <span class="text-gray-100">{{examData.start_time | formatDateTime:'DD MMM YYYY -
                                 HH:mm'}}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Shuffle Questions:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full" ng-class="examData.shuffle_questions ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.shuffle_questions ? 'Yes' : 'No'}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full"
+                                ng-class="examData.shuffle_questions ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.shuffle_questions
+                                ? 'Enabled' : 'Disabled'}}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Shuffle Options:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full" ng-class="examData.shuffle_options ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.shuffle_options ? 'Yes' : 'No'}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full"
+                                ng-class="examData.shuffle_options ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.shuffle_options
+                                ? 'Enabled' : 'Disabled'}}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Allow Retake:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full" ng-class="examData.allow_retake ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.allow_retake ? 'Yes' : 'No'}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full"
+                                ng-class="examData.allow_retake ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.allow_retake
+                                ? 'Enabled' : 'Disabled'}}</span>
                         </div>
-                        <div ng-if="examData.allow_retake">
+                        <div class="flex flex-row justify-between items-center" ng-if="examData.allow_retake">
                             <strong class="text-gray-400">Retake Attempts:</strong>
                             <span class="text-gray-100">{{examData.max_attempts }}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Show Results:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full text-blue-300" ng-class="examData.show_results_immediately ? 'bg-green-900/50 text-green-300' : 'bg-blue-900/50 text-blue-300'">{{examData.show_results_immediately ? 'Immediately' :
+                            <span class="font-medium text-sm py-1 px-4 rounded-full text-blue-300"
+                                ng-class="examData.show_results_immediately ? 'bg-green-900/50 text-green-300' : 'bg-blue-900/50 text-blue-300'">{{examData.show_results_immediately
+                                ? 'Immediately' :
                                 'After Exam'}}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Proctoring:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full" ng-class="examData.enable_proctoring ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.enable_proctoring ? 'Enabled' : 'Disabled'}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full"
+                                ng-class="examData.enable_proctoring ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.enable_proctoring
+                                ? 'Enabled' : 'Disabled'}}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Full Screen Mode:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full" ng-class="examData.full_screen_mode ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.full_screen_mode ? 'Enabled' : 'Disabled'}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full"
+                                ng-class="examData.full_screen_mode ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.full_screen_mode
+                                ? 'Enabled' : 'Disabled'}}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Disable Copy/Paste:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full" ng-class="examData.disable_copy_paste ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.disable_copy_paste ? 'Yes' : 'No'}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full"
+                                ng-class="examData.disable_copy_paste ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.disable_copy_paste
+                                ? 'Enabled' : 'Disabled'}}</span>
                         </div>
-                        <div>
+                        <div class="flex flex-row justify-between items-center">
                             <strong class="text-gray-400">Disable Right Click:</strong>
-                            <span class="font-medium text-sm py-1 px-4 rounded-full" ng-class="examData.disable_right_click ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.disable_right_click ? 'Yes' : 'No'}}</span>
+                            <span class="font-medium text-sm py-1 px-4 rounded-full"
+                                ng-class="examData.disable_right_click ? 'bg-green-900/50 text-green-300' : 'bg-gray-700 text-gray-300'">{{examData.disable_right_click
+                                ? 'Enabled' : 'Disabled'}}</span>
                         </div>
                     </div>
                 </div>
@@ -1042,7 +1099,7 @@ $this->controller('ExamController');
             <span>{{creatingExam ? 'Creating Exam...' : 'Create Exam'}}</span>
         </button> -->
 
-        <a href="<?php echo BASE_URL . '/preview/'?>{{ location.exam }}" ng-show="currentStep === 4"
+        <a href="<?php echo BASE_URL . '/preview/' ?>{{ location.exam }}" ng-show="currentStep === 4"
             class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
             <i class="fas fa-save" ng-class="{'fa-spin animate-spin': creatingExam}"></i>
             <span>Preview Exam</span>

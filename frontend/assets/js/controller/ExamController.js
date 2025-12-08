@@ -107,7 +107,7 @@ app.controller('ExamController', [
                                 const settings = await response.data.exam_settings;
                                 $scope.examData.setting_id = settings.id;
                                 $scope.examData.schedule_type = settings.schedule_type;
-                                $scope.examData.start_time = settings.start_time ? new Date(settings.start_time) : '';
+                                $scope.examData.start_time = settings.start_time ? new Date(settings.start_time) : null;
                                 $scope.examData.shuffle_questions = settings.shuffle_questions;
                                 $scope.examData.shuffle_options = settings.shuffle_options;
                                 $scope.examData.show_results_immediately = settings.immediate_results;
@@ -376,7 +376,8 @@ app.controller('ExamController', [
                                             answer: null,
                                             marks: 1,
                                             isSaved: false,
-                                            assignedSections: []
+                                            assignedSections: [],
+                                            grid: 1
                                         };
                                         $scope.currentQuestionIndex = null;
                                     }
@@ -404,7 +405,8 @@ app.controller('ExamController', [
                                         answer: null,
                                         marks: 1,
                                         isSaved: false,
-                                        assignedSections: []
+                                        assignedSections: [],
+                                        grid: 1
                                     };
                                     $scope.currentQuestionIndex = null;
                                 }
@@ -431,7 +433,8 @@ app.controller('ExamController', [
                 model_answer: '',
                 marks: 1,
                 isSaved: false,
-                assignedSections: []
+                assignedSections: [],
+                grid: 1
             };
             $scope.currentQuestionIndex = null;
 
@@ -1392,7 +1395,7 @@ app.controller('ExamController', [
                 const settings = response.data.exam_settings;
                 $scope.examData.setting_id = settings.id;
                 $scope.examData.schedule_type = settings.schedule_type;
-                $scope.examData.start_time = new Date(settings.start_time);;
+                $scope.examData.start_time = settings.start_time ? new Date(settings.start_time) : null;
                 $scope.examData.shuffle_questions = settings.shuffle_questions;
                 $scope.examData.shuffle_options = settings.shuffle_options;
                 $scope.examData.show_results_immediately = settings.immediate_results;

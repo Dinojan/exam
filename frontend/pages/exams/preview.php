@@ -2,7 +2,7 @@
 <?php $this->controller('ExamPreviewController'); ?>
 <?php $this->start('content'); ?>
 
-<div class="bg-[#0003] p-6 rounded-lg" ng-init="init()" ng-cloak>
+<div class="bg-[#0003] p-6 rounded-lg mb-16" ng-cloak>
     <!-- Header Section -->
     <div class="flex flex-col md:flex-row justify-between md:items-center mb-6">
         <div>
@@ -12,8 +12,8 @@
         <div class="flex items-center space-x-4 mt-4 md:mt-0">
             <!-- Status Badge -->
             <div class="px-4 py-2 rounded-lg border" ng-class="examData.status === 'published' ? 'border-green-500 bg-green-900/20 text-green-400' : 
-                           examData.status === 'draft' ? 'border-yellow-500 bg-yellow-900/20 text-yellow-400' : 
-                           'border-blue-500 bg-blue-900/20 text-blue-400'">
+                examData.status === 'draft' ? 'border-yellow-500 bg-yellow-900/20 text-yellow-400' : 
+                'border-blue-500 bg-blue-900/20 text-blue-400'">
                 <span class="text-sm font-medium capitalize">{{examData.status || 'draft'}}</span>
             </div>
 
@@ -26,12 +26,13 @@
         </div>
     </div>
 
-    <!-- 4-Step Navigation -->
+    <!-- 5-Step Navigation -->
     <div class="mb-8">
         <div class="flex items-center justify-center">
             <div class="flex items-center w-full max-w-4xl mx-auto">
                 <!-- Step 1: Basic Info -->
-                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center">
+                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center cursor-pointer"
+                    ng-click="currentStep = 1; updateStepCompletion()">
                     <div class="flex items-center justify-center w-11 h-11 rounded-full border-2 transition-colors duration-200"
                         ng-class="currentStep === 1 ? 'bg-cyan-600 border-cyan-600 text-white' : 
                                    step1Completed ? 'bg-green-500 border-green-500 text-white' : 
@@ -50,7 +51,8 @@
                 <div class="hidden flex-1 h-1" ng-class="step1Completed ? 'bg-green-500' : 'bg-gray-600'"></div>
 
                 <!-- Step 2: Questions -->
-                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center">
+                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center cursor-pointer"
+                    ng-click="currentStep = 2; updateStepCompletion()">
                     <div class="flex items-center justify-center w-11 h-11 rounded-full border-2 transition-colors duration-200"
                         ng-class="currentStep === 2 ? 'bg-cyan-600 border-cyan-600 text-white' : 
                                    step2Completed ? 'bg-green-500 border-green-500 text-white' : 
@@ -69,7 +71,8 @@
                 <div class="hidden flex-1 h-1" ng-class="step2Completed ? 'bg-green-500' : 'bg-gray-600'"></div>
 
                 <!-- Step 3: Settings -->
-                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center">
+                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center cursor-pointer"
+                    ng-click="currentStep = 3; updateStepCompletion()">
                     <div class="flex items-center justify-center w-11 h-11 rounded-full border-2 transition-colors duration-200"
                         ng-class="currentStep === 3 ? 'bg-cyan-600 border-cyan-600 text-white' : 
                                    step3Completed ? 'bg-green-500 border-green-500 text-white' : 
@@ -87,17 +90,38 @@
                 <!-- Connector Line -->
                 <div class="hidden flex-1 h-1" ng-class="step3Completed ? 'bg-green-500' : 'bg-gray-600'"></div>
 
-                <!-- Step 4: Publish -->
-                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center">
+                <!-- Step 4: Exact Preview  -->
+                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center cursor-pointer"
+                    ng-click="currentStep = 4; updateStepCompletion()">
                     <div class="flex items-center justify-center w-11 h-11 rounded-full border-2 transition-colors duration-200"
                         ng-class="currentStep === 4 ? 'bg-cyan-600 border-cyan-600 text-white' : 
                                    step4Completed ? 'bg-green-500 border-green-500 text-white' : 
                                    'border-gray-500 text-gray-500'">
-                        <i class="fas" ng-class="step4Completed ? 'fa-check' : 'fa-paper-plane'"></i>
+                        <i class="fas fa-solid" ng-class="step4Completed ? 'fa-check' : 'fa-eye'"></i>
                     </div>
                     <div class="text-center">
                         <div class="text-sm font-medium"
                             ng-class="currentStep === 4 ? 'text-cyan-400' : 'text-gray-400'">
+                            Preview
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connector Line -->
+                <div class="hidden flex-1 h-1" ng-class="step4Completed ? 'bg-green-500' : 'bg-gray-600'"></div>
+
+                <!-- Step 5: Publish -->
+                <div class="flex-1 flex flex-wrap gap-4 items-center justify-center cursor-pointer"
+                    ng-click="currentStep = 5; updateStepCompletion()">
+                    <div class="flex items-center justify-center w-11 h-11 rounded-full border-2 transition-colors duration-200"
+                        ng-class="currentStep === 5 ? 'bg-cyan-600 border-cyan-600 text-white' : 
+                                   step5Completed ? 'bg-green-500 border-green-500 text-white' : 
+                                   'border-gray-500 text-gray-500'">
+                        <i class="fas" ng-class="step5Completed ? 'fa-check' : 'fa-paper-plane'"></i>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm font-medium"
+                            ng-class="currentStep === 5 ? 'text-cyan-400' : 'text-gray-400'">
                             Publish
                         </div>
                     </div>
@@ -400,8 +424,7 @@
                                     <span
                                         class="inline-block px-3 py-1 bg-cyan-900/30 text-cyan-300 text-sm font-medium rounded-full border border-cyan-600">ID:
                                         {{question.id}}</span>
-                                    <button type="button"
-                                        ng-click="editQuestion(question.id)"
+                                    <button type="button" ng-click="editQuestion(question.id)"
                                         class="ml-2 px-3 py-1 bg-green-900/30 text-green-300 text-sm font-medium rounded-full border border-green-600 transition-colors duration-200 flex items-center justify-center space-x-2">
                                         <i class="fa-solid fa-pen"></i>
                                         <span>Edit</span>
@@ -424,14 +447,18 @@
                             <!-- Options with Correct Answer -->
                             <div class="mb-6">
                                 <h4 class="text-lg font-medium text-gray-100 mb-2">Options:</h4>
-                                <div class="space-y-2">
+                                <div class="gap-2" ng-class="{
+                                            'grid grid-cols-1 gap-4': question.grid == 1,
+                                            'grid grid-cols-2 gap-4': question.grid == 2,
+                                            'grid grid-cols-4 gap-4': question.grid == 4
+                                        }">
                                     <div ng-repeat="option in question.options track by $index"
-                                        class="p-4 border-2 rounded-lg" ng-class="option.id.toLowerCase() === question.correctAnswer.toLowerCase() ? 
+                                        class="p-4 border-2 rounded-lg" ng-class="option.op.toLowerCase() === question.correctAnswer.toLowerCase() ? 
                                                    'border-green-500 bg-green-900/10' : 
                                                    'border-gray-600 bg-[#0006]'">
                                         <div class="flex items-center">
                                             <div class="w-8 h-8 flex items-center justify-center rounded-full border mr-4"
-                                                ng-class="option.id.toLowerCase() === question.correctAnswer.toLowerCase() ? 
+                                                ng-class="option.op.toLowerCase() === question.correctAnswer.toLowerCase() ? 
                                                           'bg-green-600 border-green-700 text-white' : 
                                                           'bg-gray-700 border-gray-600 text-gray-300'">
                                                 {{$index | letterIndex}}
@@ -441,7 +468,7 @@
                                                 <img ng-src="{{option.image}}" alt="Option image"
                                                     class="w-16 h-16 rounded border border-gray-600">
                                             </div>
-                                            <div ng-if="option.id.toLowerCase() === question.correctAnswer.toLowerCase()"
+                                            <div ng-if="option.op.toLowerCase() === question.correctAnswer.toLowerCase()"
                                                 class="ml-4">
                                                 <i class="fas fa-check-circle text-green-400 text-xl"></i>
                                             </div>
@@ -626,8 +653,159 @@
         </div>
     </div>
 
+    <!-- Step 4: Exam Preview -->
+    <div ng-show="currentStep === 4" class="max-w-4xl mx-auto lg:col-span-2">
+        <!-- Current Section/Page Header -->
+        <div
+            class="bg-gradient-to-r from-gray-900/50 to-gray-800/30 rounded-xl p-6 border border-gray-700 mb-6 shadow-lg">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+                <div class="space-y-2">
+                    <h3 class="text-xl font-semibold text-white">Review Questions</h3>
+                    <p class="text-gray-300 text-sm">
+                        <span class="text-cyan-300 font-medium">{{getCurrentPageQuestions().length}}</span> of
+                        <span class="text-white font-medium">{{displayQuestions.length}}</span> questions
+                    </p>
+                </div>
+                <div class="text-right">
+                    <span
+                        class="px-4 py-2 bg-gradient-to-r from-cyan-900/40 to-teal-900/30 text-cyan-100 rounded-full border border-cyan-500/50 shadow-inner text-sm font-medium">
+                        Page {{currentQuestionPage + 1}}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions List -->
+        <div class="bg-gray-900/40 backdrop-blur-sm rounded-xl p-6 border border-gray-700 shadow-lg">
+            <div ng-repeat="question in getCurrentPageQuestions() track by $index"
+                class="mb-10 pb-8 border-b border-gray-700 last:border-b-0 last:mb-0 last:pb-0">
+
+                <!-- Question Number and Text -->
+                <div class="flex flex-row gap-2 mb-6">
+                    <div class="flex items-centermb-4">
+                        <div
+                            class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-cyan-900/50 to-teal-900/30 rounded-full border border-cyan-500/30">
+                            <span class="text-cyan-200 font-bold">{{(currentQuestionPage * questionsPerPage) + $index +
+                                1}}</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-200 text-lg leading-relaxed">
+                        {{question.question}}
+                    </p>
+                    <!-- <div ng-if="question.image" class="mt-6 pl-14">
+                        <div class="relative group">
+                            <img ng-src="{{question.image}}" alt="Question visual aid"
+                                class="rounded-xl max-w-full h-auto border-2 border-gray-600/50 shadow-lg group-hover:border-cyan-500/50 transition-all duration-300">
+                            <div
+                                class="absolute inset-0 bg-cyan-900/10 group-hover:bg-cyan-900/5 rounded-xl transition-all duration-300">
+                            </div>
+                        </div>
+                    </div> -->
+                </div>
+
+                <!-- Options with Correct Answer -->
+                <div class="mb-6">
+                    <div class="gap-2" ng-class="{
+                        'grid grid-cols-1 gap-3': question.grid == 1,
+                        'grid grid-cols-1 md:grid-cols-2 gap-4': question.grid == 2,
+                        'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4': question.grid == 4
+                    }">
+                        <div ng-repeat="option in question.options track by $index" class="group relative">
+                            <div class="flex items-center p-2 border border-gray-700 bg-gray-900/30 hover:bg-gray-800/50 hover:border-cyan-500/30 transition-all duration-200 cursor-pointer"
+                                ng-class="{
+                                    'rounded-full': question.grid == 1,
+                                    'rounded-full': question.grid == 2,
+                                    'rounded-lg': question.grid == 4
+                                }">
+                                <div
+                                    class="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-600 group-hover:border-cyan-500/50 transition-all duration-200 mr-4">
+                                    <span
+                                        class="text-gray-300 group-hover:text-cyan-200 font-bold transition-colors duration-200">
+                                        {{$index | letterIndex: 'A'}}
+                                    </span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-gray-100 group-hover:text-white transition-colors duration-200">
+                                        {{option.text}}
+                                    </p>
+                                </div>
+                                <!-- <div ng-if="option.image" class="ml-4">
+                                    <div class="relative group">
+                                        <img ng-src="{{option.image}}" alt="Option visual"
+                                            class="w-20 h-20 rounded-lg border border-gray-600/50 object-cover group-hover:border-cyan-500/50 transition-all duration-200">
+                                        <div
+                                            class="absolute inset-0 bg-cyan-900/5 group-hover:bg-transparent rounded-lg transition-all duration-200">
+                                        </div>
+                                    </div>
+                                </div> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional Metadata Section (commented out but styled) -->
+                <!-- <div class="pt-6 mt-6 border-t border-gray-700">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
+                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Type</p>
+                        <p class="text-gray-200 font-medium">{{question.type || 'MCQ'}}</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
+                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Difficulty</p>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium" ng-class="{
+                            'bg-gradient-to-r from-green-900/40 to-emerald-900/30 text-green-300 border border-green-500/50': question.difficulty === 'easy',
+                            'bg-gradient-to-r from-yellow-900/40 to-amber-900/30 text-yellow-300 border border-yellow-500/50': question.difficulty === 'medium',
+                            'bg-gradient-to-r from-red-900/40 to-rose-900/30 text-red-300 border border-red-500/50': question.difficulty === 'hard'
+                        }">
+                            {{question.difficulty || 'medium'}}
+                        </span>
+                    </div>
+                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
+                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Sections</p>
+                        <p class="text-gray-200 font-medium">{{question.sectionIds.length || 0}}</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
+                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Has Image</p>
+                        <p class="font-medium" ng-class="question.image ? 'text-cyan-300' : 'text-gray-400'">
+                            {{question.image ? 'Yes' : 'No'}}
+                        </p>
+                    </div>
+                </div>
+            </div> -->
+            </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mt-8 pt-8 border-t border-gray-700">
+            <button ng-click="previousQuestionPage()" ng-disabled="currentQuestionPage === 0"
+                class="px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-600 text-gray-200 rounded-xl font-medium flex items-center space-x-3 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-4 sm:mb-0 w-full sm:w-auto justify-center">
+                <i class="fas fa-arrow-left text-cyan-300"></i>
+                <span>Previous Page</span>
+            </button>
+
+            <div class="mb-4 sm:mb-0">
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:block h-2 w-24 bg-gray-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-cyan-500 to-teal-500"
+                            ng-style="{'width': ((currentQuestionPage + 1) / questionPages.length) * 100 + '%'}"></div>
+                    </div>
+                    <span class="text-gray-300 font-medium">
+                        <span class="text-cyan-200">{{currentQuestionPage + 1}}</span> /
+                        <span class="text-white">{{questionPages.length}}</span>
+                    </span>
+                </div>
+            </div>
+
+            <button ng-click="nextQuestionPage()" ng-disabled="currentQuestionPage === questionPages.length - 1"
+                class="px-6 py-3 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-600 text-gray-200 rounded-xl font-medium flex items-center space-x-3 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center">
+                <span>Next Page</span>
+                <i class="fas fa-arrow-right text-cyan-300"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- Step 4: Publish Exam -->
-    <div ng-show="currentStep === 4" class="max-w-4xl mx-auto">
+    <div ng-show="currentStep === 5" class="max-w-4xl mx-auto">
         <div class="bg-[#0004] rounded-lg p-6 border border-gray-600">
             <h2 class="text-xl font-semibold text-gray-100 mb-6">Publish Exam</h2>
 
@@ -804,25 +982,25 @@
     </div>
 
     <!-- Navigation Buttons -->
-    <div class="flex justify-between mt-8 pt-6 border-t border-gray-600">
+    <div class="flex justify-center gap-4 mt-8 pt-6 border-t border-gray-600">
         <button ng-click="previousStep()" ng-show="currentStep > 1"
-            class="px-6 py-3 border border-gray-600 text-gray-300 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-700 transition-colors duration-200">
+            class="px-6 py-2 border border-gray-600 text-gray-300 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-700 transition-colors duration-200">
             <i class="fas fa-arrow-left"></i>
             <span>Previous</span>
         </button>
 
-        <div class="flex-1"></div>
+        <!-- <div class="flex-1"></div> -->
 
-        <button ng-click="nextStep()" ng-show="currentStep < 4"
-            class="px-6 py-3 bg-cyan-600 text-white rounded-lg font-medium flex items-center space-x-2 hover:bg-cyan-700 transition-colors duration-200">
+        <button ng-click="nextStep()" ng-show="currentStep < 5"
+            class="px-6 py-2 bg-cyan-600 text-white rounded-lg font-medium flex items-center space-x-2 hover:bg-cyan-700 transition-colors duration-200">
             <span>Next</span>
             <i class="fas fa-arrow-right"></i>
         </button>
 
         <!-- Publish Button on Last Step -->
         <button ng-click="publishExam()"
-            ng-show="currentStep === 4 && isReadyToPublish() && examData.status !== 'published'"
-            class="px-6 py-3 bg-green-600 text-white rounded-lg font-medium flex items-center space-x-2 hover:bg-green-700 transition-colors duration-200">
+            ng-show="currentStep === 5 && isReadyToPublish() && examData.status !== 'published'"
+            class="px-6 py-2 bg-green-600 text-white rounded-lg font-medium flex items-center space-x-2 hover:bg-green-700 transition-colors duration-200">
             <i class="fas fa-paper-plane"></i>
             <span>Publish Exam</span>
         </button>

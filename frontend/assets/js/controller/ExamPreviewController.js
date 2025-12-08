@@ -1,6 +1,6 @@
 app.controller('ExamPreviewController', [
-    "$scope", "$http", "$compile", "$timeout", "window",
-    function ($scope, $http, $compile, $timeout, window) {
+    "$scope", "$http", "$compile", "$timeout", "window", "questionEditorModalController",
+    function ($scope, $http, $compile, $timeout, window, questionEditorModalController) {
         $scope.location = $scope.location || {};
         $scope.location.exam = window.getIdFromUrl();
         $scope.dropdownOpen = false;
@@ -59,8 +59,6 @@ app.controller('ExamPreviewController', [
 
                     $scope.sections = sections || [];
                     $scope.allQuestions = questions || [];
-
-                    console.log($scope.examData);
 
                     $scope.processQuestions();
                     $scope.calculateTotals();
@@ -213,31 +211,50 @@ app.controller('ExamPreviewController', [
 
         // Question edit
         $scope.editQuestion = function (questionId) {
+            if (!$scope.questionEditiorModalCtrl) {
+                $scope.questionEditiorModalCtrl = questionEditorModalController($scope);
+            }
+            const question = $scope.allQuestions.find(q => q.id === questionId);
+            $scope.questionEditiorModalCtrl.init(question);
+
             Toast.popover({
                 type: 'apiContent',
                 title: 'Edit Question',
-                titleColor: '#0099ff',
+                titleColor: '#0e7490',
                 apiConfig: {
-                    endpoint: 'section_editor',
+                    endpoint: 'question_editor',
                     method: 'GET'
                 },
                 background: '#0003',
                 position: 'center',
-                confirm: {
-                    text: 'Save changes',
-                    background: '#0099ff',
-                    onConfirm: function () {
-                        console.log('Editing Question')
+                buttons: [
+                    {
+                        text: 'Save changes',
+                        background: '#0e7490',
+                        onClick: function () {
+                            $scope.questionEditiorModalCtrl.save();
+                        }
+                    },
+                    {
+                        text: 'Cancel',
+                        background: '#dc2626',
+                        onClick: function () {
+                            Toast.popover({ type: 'close' })
+                        }
                     }
-                },
-                cancel: {
-                    text: 'Cancel',
-                    background: '#ff0000',
-                    onCancel: function () {
-                        Toast.popover({ type: 'close' })
+                ],
+            }).then(popoverInstance => {
+                $timeout(() => {
+                    const modal = document.getElementById('question_editor_modal');
+                    if (modal) {
+                        $compile(modal)($scope);
+                        $(modal).find('.select2').select2()
+                        $scope.$apply();
+                    } else {
+                        console.error('#question_editor_modal not found');
                     }
-                }
-            })
+                }, 150);
+            });
         }
 
         // Question page navigation
@@ -259,9 +276,14 @@ app.controller('ExamPreviewController', [
 
         // Step navigation
         $scope.nextStep = function () {
-            if ($scope.currentStep < 4) {
+            if ($scope.currentStep < 5) {
                 $scope.currentStep++;
                 $scope.updateStepCompletion();
+                if ($scope.currentStep === 3) {
+                    $scope.questionsDisplayMode = 'all';
+                    $scope.getCurrentPageQuestions();
+                    $scope.updateQuestionsDisplay();
+                }
             }
         };
 
@@ -276,7 +298,8 @@ app.controller('ExamPreviewController', [
             $scope.step1Completed = $scope.isBasicInfoComplete();
             $scope.step2Completed = $scope.totalQuestions > 0;
             $scope.step3Completed = $scope.areSettingsValid();
-            $scope.step4Completed = $scope.examData && $scope.examData.status === 'published';
+            $scope.step4Completed = $scope.step1Completed && $scope.step2Completed && $scope.step3Completed;
+            $scope.step5Completed = $scope.examData && $scope.examData.status === 'published';
         };
 
         // Validation functions

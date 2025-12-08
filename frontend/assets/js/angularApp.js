@@ -163,10 +163,18 @@ app.filter('remainingTime', function () {
 //   };
 // })
 app.filter('letterIndex', function () {
-  return function (index) {
-    return String.fromCharCode(65 + index); // A, B, C, D...
+  return function (index, mode) {
+    if (mode === 'A') {
+      return String.fromCharCode(65 + index);
+    } else if (mode === 'a') {
+      return String.fromCharCode(97 + index);
+    } else {
+      return index + 1; 
+    }
   };
-})
+});
+
+
 app.run([
   "$rootScope",
   function ($rootScope) {

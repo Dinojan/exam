@@ -237,7 +237,8 @@ class ExamAPI
             }
             $question['assignedSections'] = $sectionIds;
             $question['exam_ids'] = $examIDs;
-            $questions[$question['id']] = $question; // key by id
+            $question['grid'] = $question['grid'] + 0;
+            $questions[$question['id']] = $question;
             $questionIds[] = $question['id'];
         }
 
@@ -554,6 +555,7 @@ class ExamAPI
                     'created_at' => $question['created_at'],
                     'created_by' => $question['created_by'],
                     'options' => $options,
+                    'grid' => $question['grid'],
                     'answer' => $question['answer'] ?? null
                 ];
 
@@ -677,7 +679,7 @@ class ExamAPI
                 $options = [];
                 foreach ($optionsKeys as $order => $key) {
                     $options[] = [
-                        'id' => $key, // Use lowercase for consistency
+                        // 'id' => $key,
                         'text' => $question[$key] ?? '',
                         'image' => $question[$key . '_img'] ?? null,
                         'order' => $order + 1,
@@ -710,9 +712,8 @@ class ExamAPI
                     'created_by' => $question['created_by'],
                     'options' => $options,
                     'correctAnswer' => strtolower($question['answer'] ?? 'a'), // Default to 'a' if empty
-                    'sectionIds' => $sectionIdsForQuestion, // Add section IDs
-                    'type' => $question['type'] ?? 'multiple_choice',
-                    'difficulty' => $question['difficulty'] ?? 'medium',
+                    'sectionIds' => $sectionIdsForQuestion,
+                    'grid' => $question['grid'] + 0,
                     'image' => $question['image'] ?? null
                 ];
 

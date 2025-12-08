@@ -1022,7 +1022,7 @@ app.factory("unassignFromSectionModalController", [
 
 
 // Question edior modal controller
-app.controller('questionEditorModalController', [
+app.factory('questionEditorModalController', [
     "API_URL",
     "window",
     "jQuery",
@@ -1043,60 +1043,58 @@ app.controller('questionEditorModalController', [
     ) {
         return function ($scope) {
 
+            const initQuestionEditorModal = (question) => {
+                question.correctAnswer = question.correctAnswer.toUpperCase();
+                $scope.currentQuestion = question;
+                console.log($scope.currentQuestion);
+            }
+
             const save = async function (id) {
-                if (!$scope.currentSection.title) {
-                    Toast.fire({
-                        type: 'error',
-                        title: 'Validation Error!',
-                        msg: 'Please enter the section title'
-                    });
-                    return;
+                if (!$scope.currentQuestion.question) {
+                    Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'Please enter question text' });
+                    return false;
                 }
 
-                if (!$scope.currentSection.question_count) {
-                    Toast.fire({
-                        type: 'error',
-                        title: 'Validation Error!',
-                        msg: 'Please enter the number of questions'
-                    });
-                    return;
+                const validOptions = $scope.currentQuestion.options.filter(opt => opt.text || opt.image);
+                if (validOptions.length < 4) {
+                    Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'All options are required' });
+                    return false;
                 }
 
-                const endpoint = $scope.currentSection.id ? 'API/sections/edit/' + $scope.currentSection.id : 'API/sections/add';
-                await $http({
-                    url: endpoint,
-                    method: 'POST',
-                    data: $('#section_form').serialize()
-                }).then(function (response) {
+                if ($scope.currentQuestion.correctAnswer === null || $scope.currentQuestion.correctAnswer === undefined) {
+                    Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'Please select a correct answer' });
+                    return false;
+                }
+
+                // API URI
+                const apiUrl = window.baseUrl + '/API/questions/edit_question/' + $scope.currentQuestion.id;
+                const formData = $(`#questionForm${$scope.currentQuestion.id}`).serialize();
+                try {
+                    const response = await $http({
+                        url: apiUrl,
+                        data: formData,
+                        method: 'POST',
+                    });
+
                     if (response.data.status === 'success') {
-                        $scope.currentSection = response.data.section;
-                        if ($scope.editingSectionIndex === null) {
-                            $scope.savedSections.push(angular.copy(response.data.section));
-                            Toast.fire({
-                                type: 'success',
-                                title: 'Success!',
-                                msg: 'Section created successfully'
-                            });
-                        } else {
-                            // Update existing section
-                            $scope.savedSections[$scope.editingSectionIndex] = angular.copy(response.data.section);
-                            Toast.fire({
-                                type: 'success',
-                                title: 'Success!',
-                                msg: 'Section updated successfully'
-                            });
-                        }
+                        Toast.popover({ type: 'close' })
+                        Toast.fire({ type: 'success', title: 'Success!', msg: response.data.msg || 'Question updated successfully' });
 
-                        $scope.currentSection = {};
-                        $scope.editingSectionIndex = null;
-                        $scope.closeSectionEditorModal()
+                        let updated = response.data.question;
+                        updated.correctAnswer = updated.answer;
+
+                        // Update currentQuestion
+                        $scope.currentQuestion = updated;
+                        $scope.currentQuestionIndex = $scope.allQuestions.findIndex(q => q.id === updated.id);
+                        $scope.allQuestions[$scope.currentQuestionIndex] = angular.copy(updated);
+                        $scope.currentQuestion = null
+                    } else {
+                        Toast.fire({ type: 'error', title: 'Error!', msg: response.data.msg });
                     }
-                })
-                $scope.showSectionModal = false;
-                $scope.showSecondDescription = false;
-                $scope.updateBaseDatas();
-                $scope.updateSectionQuestionCounts();
-                $scope.$apply();
+                } catch (error) {
+                    Toast.fire({ type: 'error', title: 'Error!', msg: 'Something went wrong. Failed to update the question.' });
+                    console.error(error);
+                };
             };
 
             $scope.closeSectionEditorModal = () => {
@@ -1108,6 +1106,9 @@ app.controller('questionEditorModalController', [
             }
 
             return {
+                init: function (question) {
+                    initQuestionEditorModal(question);
+                },
                 save: function () {
                     save();
                 },

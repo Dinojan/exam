@@ -1,7 +1,7 @@
 // PHP API Content Loader
 const PHPAPILoader = {
     config: {
-        baseUrl: 'modal/',
+        baseUrl: window.baseUrl +'/modal/',
         timeout: 10000,
         retryAttempts: 3,
         defaultHeaders: {
