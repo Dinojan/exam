@@ -5,6 +5,8 @@ app.controller('ExamPreviewController', [
         $scope.location.exam = window.getIdFromUrl();
         $scope.dropdownOpen = false;
         $scope.questionsDisplayMode = 'all';
+        $scope.editingQuestionId = null;
+        $scope.selectedOptionIndex = null;
 
         // Initialize arrays to prevent undefined errors
         $scope.allQuestions = [];
@@ -210,52 +212,114 @@ app.controller('ExamPreviewController', [
         };
 
         // Question edit
-        $scope.editQuestion = function (questionId) {
-            if (!$scope.questionEditiorModalCtrl) {
-                $scope.questionEditiorModalCtrl = questionEditorModalController($scope);
-            }
-            const question = $scope.allQuestions.find(q => q.id === questionId);
-            $scope.questionEditiorModalCtrl.init(question);
+        // $scope.editQuestion = function (questionId) {
+        //     if (!$scope.questionEditiorModalCtrl) {
+        //         $scope.questionEditiorModalCtrl = questionEditorModalController($scope);
+        //     }
+        //     const question = $scope.allQuestions.find(q => q.id === questionId);
+        //     $scope.questionEditiorModalCtrl.init(question);
 
-            Toast.popover({
-                type: 'apiContent',
-                title: 'Edit Question',
-                titleColor: '#0e7490',
-                apiConfig: {
-                    endpoint: 'question_editor',
-                    method: 'GET'
-                },
-                background: '#0003',
-                position: 'center',
-                buttons: [
-                    {
-                        text: 'Save changes',
-                        background: '#0e7490',
-                        onClick: function () {
-                            $scope.questionEditiorModalCtrl.save();
-                        }
-                    },
-                    {
-                        text: 'Cancel',
-                        background: '#dc2626',
-                        onClick: function () {
-                            Toast.popover({ type: 'close' })
-                        }
-                    }
-                ],
-            }).then(popoverInstance => {
-                $timeout(() => {
-                    const modal = document.getElementById('question_editor_modal');
-                    if (modal) {
-                        $compile(modal)($scope);
-                        $(modal).find('.select2').select2()
-                        $scope.$apply();
-                    } else {
-                        console.error('#question_editor_modal not found');
-                    }
-                }, 150);
-            });
-        }
+        //     Toast.popover({
+        //         type: 'apiContent',
+        //         title: 'Edit Question',
+        //         titleColor: '#0e7490',
+        //         apiConfig: {
+        //             endpoint: 'question_editor',
+        //             method: 'GET'
+        //         },
+        //         background: '#0003',
+        //         position: 'center',
+        //         buttons: [
+        //             {
+        //                 text: 'Save changes',
+        //                 background: '#0e7490',
+        //                 onClick: function () {
+        //                     $scope.questionEditiorModalCtrl.save();
+        //                 }
+        //             },
+        //             {
+        //                 text: 'Cancel',
+        //                 background: '#dc2626',
+        //                 onClick: function () {
+        //                     Toast.popover({ type: 'close' })
+        //                 }
+        //             }
+        //         ],
+        //         size:'xxl'
+        //     }).then(popoverInstance => {
+        //         $timeout(() => {
+        //             const modal = document.getElementById('question_editor_modal');
+        //             if (modal) {
+        //                 $compile(modal)($scope);
+        //                 $(modal).find('.select2').select2()
+        //                 $scope.$apply();
+        //             } else {
+        //                 console.error('#question_editor_modal not found');
+        //             }
+        //         }, 150);
+        //     });
+        // }
+
+        $scope.editQuestion = function (id) {
+            $scope.editingQuestionId = id;
+            let question = $scope.allQuestions.find(q => q.id === id);
+            question.correctAnswer = question.correctAnswer.toUpperCase();
+            $scope.currentQuestion = question;
+        };
+
+        $scope.saveQuestion = async function () {
+            if (!$scope.currentQuestion.question) {
+                Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'Please enter question text' });
+                return false;
+            }
+
+            const validOptions = $scope.currentQuestion.options.filter(opt => opt.text || opt.image);
+            if (validOptions.length < 4) {
+                Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'All options are required' });
+                return false;
+            }
+
+            if ($scope.currentQuestion.correctAnswer === null || $scope.currentQuestion.correctAnswer === undefined) {
+                Toast.fire({ type: 'error', title: 'Validation Error!', msg: 'Please select a correct answer' });
+                return false;
+            }
+
+            // API URI
+            const apiUrl = window.baseUrl + '/API/questions/edit_question/' + $scope.currentQuestion.id;
+            const formData = $(`#questionForm${$scope.currentQuestion.id}`).serialize();
+            try {
+                const response = await $http({
+                    url: apiUrl,
+                    data: formData,
+                    method: 'POST',
+                });
+
+                if (response.data.status === 'success') {
+                    Toast.popover({ type: 'close' })
+                    Toast.fire({ type: 'success', title: 'Success!', msg: response.data.msg || 'Question updated successfully' });
+
+                    let updated = response.data.question;
+                    updated.correctAnswer = updated.answer;
+
+                    // Update currentQuestion
+                    $scope.currentQuestion = updated;
+                    $scope.currentQuestionIndex = $scope.allQuestions.findIndex(q => q.id === updated.id);
+                    $scope.allQuestions[$scope.currentQuestionIndex] = angular.copy(updated);
+                    $scope.currentQuestion = null
+                    $scope.editingQuestionId = null;
+                    $scope.$applyAsync();
+                } else {
+                    Toast.fire({ type: 'error', title: 'Error!', msg: response.data.msg });
+                }
+            } catch (error) {
+                Toast.fire({ type: 'error', title: 'Error!', msg: 'Something went wrong. Failed to update the question.' });
+                console.error(error);
+            };
+        };
+
+        $scope.cancelEdit = function () {
+            $scope.editingQuestionId = null;
+        };
 
         // Question page navigation
         $scope.goToQuestionPage = function (pageIndex) {
@@ -271,6 +335,15 @@ app.controller('ExamPreviewController', [
         $scope.nextQuestionPage = function () {
             if ($scope.currentQuestionPage < $scope.questionPages.length - 1) {
                 $scope.currentQuestionPage++;
+            }
+        };
+
+        $scope.selectOption = function (questionId, oIndex) {
+            const question = $scope.allQuestions.find(q => q.id === questionId);
+            question.selectedOption = oIndex;
+            let realIndex = $scope.allQuestions.findIndex(q => q.id === question.id);
+            if (realIndex !== -1) {
+                $scope.allQuestions[realIndex].selectedOption = oIndex;
             }
         };
 
@@ -325,33 +398,158 @@ app.controller('ExamPreviewController', [
                 $scope.areSettingsValid();
         };
 
-        // Publish exam (dummy function)
+        // Publish exam
         $scope.publishExam = function () {
             if (!$scope.isReadyToPublish()) {
-                alert('Please complete all requirements before publishing.');
+                Toast.fire({
+                    type: 'error',
+                    title: 'Cannot publish exam',
+                    msg: 'Please complete all requirements before publishing.'
+                });
                 return;
             }
 
-            if (confirm('Are you sure you want to publish this exam? It will be available to candidates.')) {
-                // Simulate API call
-                $timeout(function () {
-                    $scope.examData.status = 'published';
-                    $scope.examData.published_at = new Date().toISOString();
-                    $scope.step4Completed = true;
-                    alert('Exam published successfully!');
-                }, 500);
-            }
+            Toast.popover({
+                type: 'confirm',
+                title: 'Publish!',
+                titleColor: '#65deff',
+                content: `
+                    <i class="fa-solid fa-circle-info" style="font-size: 3rem; color: #0e7490"></i><br><br>
+                    <p>Are you sure you want to publish this exam? It will be available to candidates.</p>
+                `,
+                contentColor: '#fff',
+                options: {
+                    confirm: {
+                        text: 'Yes, publish it!',
+                        background: '#0e7490',
+
+                        onConfirm: async function () {
+                            try {
+                                const response = await $http.post(
+                                    window.baseUrl + '/API/publish_exam/' + $scope.location.exam
+                                );
+
+                                if (response.data.status === 'success') {
+
+                                    Toast.fire({
+                                        type: 'success',
+                                        title: 'Exam Published!',
+                                        msg: 'Exam published successfully!'
+                                    });
+
+                                    $scope.examData.status = 'published';
+                                    $scope.examData.published_at = new Date().toISOString();
+                                    $scope.step5Completed = true;
+
+                                } else {
+                                    Toast.fire({
+                                        type: 'error',
+                                        title: 'Failed!',
+                                        msg: response.data.msg || 'Something went wrong.'
+                                    });
+                                }
+                                $scope.$applyAsync()
+
+                            } catch (e) {
+                                Toast.fire({
+                                    type: 'error',
+                                    title: 'Server Error',
+                                    msg: 'API not response'
+                                });
+                            }
+
+                            Toast.popover({ type: 'close' });
+                        }
+                    },
+
+                    cancel: {
+                        text: 'Cancel',
+                        background: '#dc2626',
+                        onCancel: function () {
+                            Toast.popover({ type: 'close' });
+                        }
+                    }
+                }
+            });
         };
 
-        // Unpublish exam (dummy function)
+        // Unpublish exam
         $scope.unpublishExam = function () {
-            if (confirm('Are you sure you want to unpublish this exam? Candidates will no longer have access.')) {
-                // Simulate API call
-                $timeout(function () {
-                    $scope.examData.status = 'draft';
-                    $scope.step4Completed = false;
-                    alert('Exam unpublished successfully!');
-                }, 500);
+            Toast.popover({
+                type: 'confirm',
+                title: 'Unpublish!',
+                titleColor: '#ff6b6b',
+                content: `
+                    <i class="fa-solid fa-circle-exclamation" style="font-size: 3rem; color: #dc2626"></i><br><br>
+                    <p>Are you sure you want to unpublish this exam? Candidates will no longer have access.</p>
+                `,
+                contentColor: '#fff',
+                options: {
+                    confirm: {
+                        text: 'Yes, unpublish it!',
+                        background: '#dc2626',
+                        onConfirm: async function () {
+                            try {
+                                const response = await $http.post(
+                                    window.baseUrl + '/API/unpublish_exam/' + $scope.location.exam
+                                );
+
+                                if (response.data.status === 'success') {
+                                    Toast.fire({
+                                        type: 'success',
+                                        title: 'Exam Unpublished!',
+                                        msg: 'Exam unpublished successfully!'
+                                    });
+
+                                    $scope.examData.status = 'draft';
+                                    $scope.examData.published_at = null;
+                                    $scope.step5Completed = false;
+
+                                } else {
+                                    Toast.fire({
+                                        type: 'error',
+                                        title: 'Failed!',
+                                        msg: response.data.msg || 'Something went wrong.'
+                                    });
+                                }
+
+                                $scope.$applyAsync()
+                            } catch (e) {
+                                Toast.fire({
+                                    type: 'error',
+                                    title: 'Server Error',
+                                    msg: 'Check your API!'
+                                });
+                            }
+
+                            Toast.popover({ type: 'close' });
+                        }
+                    },
+                    cancel: {
+                        text: 'Cancel',
+                        background: '#0e7490',
+                        onCancel: function () {
+                            Toast.popover({ type: 'close' });
+                        }
+                    }
+                }
+            });
+        };
+
+        // Copy to clipboard
+        $scope.copyToClipboard = function (inputElement) {
+            try {
+                if ($scope.examData.status === 'published') {
+                    inputElement.select();
+                    inputElement.setSelectionRange(0, 99999);
+                    document.execCommand("copy");
+                    Toast.fire({ type: 'success', title: 'Success!', msg: 'Link copied to clipboard!' });
+                } else {
+                    Toast.fire({ type: 'error', title: 'Error', msg: 'Exam is not published.' });
+                }
+            } catch (e) {
+                Toast.fire({ type: 'error', title: 'Error', msg: 'Failed to copy link.' });
+                console.error(e);
             }
         };
 

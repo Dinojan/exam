@@ -746,7 +746,7 @@ class ExamAPI
                 'full_screen_mode' => $settings['full_screen_mode'] == 1,
                 'disable_copy_paste' => $settings['disable_copy_paste'] == 1,
                 'disable_right_click' => $settings['disable_right_click'] == 1,
-                'allow_navigation' =>  true // Add if exists
+                'allow_navigation' => true // Add if exists
             ];
 
             return json_encode([
@@ -757,6 +757,42 @@ class ExamAPI
                 'settings' => $settings_info
             ]);
 
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function publishExam($exam_id)
+    {
+        try {
+            $statement = $this->db->prepare("UPDATE exam_info SET status = ?, published_by = ?, published_at = CURDATE() WHERE id = ?");
+            $statement->execute(params: [1, user_id(), $exam_id]);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Exam published successfully'
+            ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function unpublishExam($exam_id)
+    {
+        try {
+            $statement = $this->db->prepare("UPDATE exam_info SET status = ?, published_by = ?, published_at = null WHERE id = ?");
+            $statement->execute(params: [0, 0, $exam_id]);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Exam unpublished successfully'
+            ]);
         } catch (Exception $e) {
             return json_encode([
                 'status' => 'error',

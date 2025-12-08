@@ -87,6 +87,8 @@ Router::group(['prefix' => 'API'], function () {
     Router::post('/user_groups/{id}', 'UserGroupAPI@updateUserGroup', 'update_user_group', ['auth']);
     Router::patch('/questions/remove/{id}', 'QuestionAPI@removeQuestionFromExam',  'remove_question', ['auth']);
     Router::post('/exams/settings/{id}', 'ExamAPI@editExamSettings', 'edit_exam_settings', ['auth']);
+    Router::post('/publish_exam/{id}', 'ExamAPI@publishExam', 'publish_exam', ['auth']);
+    Router::post('/unpublish_exam/{id}', 'ExamAPI@unpublishExam', 'unpublish_exam', ['auth']);
 
     Router::delete('/user_groups/{id}', 'UserGroupAPI@deleteUserGroup', 'delete_user_group', ['auth']);
     Router::delete('/questions/delete_question/{id}', 'QuestionAPI@deleteQuestion', 'delete_question', ['auth']);
