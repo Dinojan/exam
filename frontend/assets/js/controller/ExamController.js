@@ -255,6 +255,14 @@ app.controller('ExamController', [
         $scope.saveBasicInfo = async function () {
             const formData = $('#basicInfoForm').serialize();
 
+            if ($scope.isPastStartTime()) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Validation Error!',
+                    msg: 'Since the exam has already started, you cannot change the exam basic information.'
+                })
+                return;
+            }
 
             $http({
                 url: 'API/exams/basic_info' + ($scope.location.exam ? '/' + $scope.location.exam : 'save'),
@@ -441,6 +449,14 @@ app.controller('ExamController', [
         };
 
         $scope.saveCurrentQuestion = async function () {
+            if ($scope.isPastStartTime()) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Validation Error!',
+                    msg: 'Since the exam has already started, you cannot save the question.'
+                })
+                return;
+            }
             const formId = 'questionForm' + ($scope.currentQuestion.id || 'New');
             const formElement = document.getElementById(formId);
             if (!formElement) return;
@@ -1354,6 +1370,15 @@ app.controller('ExamController', [
 
         // Save exam settings
         $scope.saveExamSettings = async function () {
+            if ($scope.isPastStartTime()) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Validation Error!',
+                    msg: 'Since the exam has already started, you cannot save the exam settings.'
+                })
+                return false;
+            }
+
             if ($scope.examData.schedule_type === 'scheduled' && !$scope.examData.start_time) {
                 Toast.fire({
                     type: 'error',
@@ -1438,6 +1463,17 @@ app.controller('ExamController', [
                 }
             }
         };
+
+        // Check is start time passed
+        $scope.isPastStartTime = function () {
+            if ($scope.examData.schedule_type === 'anytime') {
+                return true;
+            }
+            const startTime = $scope.examData.start_time;
+            const now = new Date();
+            const examStart = new Date(startTime);
+            return now >= examStart;
+        }
 
         // Initialize the controller
         $scope.init();

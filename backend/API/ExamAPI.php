@@ -188,18 +188,6 @@ class ExamAPI
             ]);
         }
 
-        // Fix status
-        switch ($exam['status']) {
-            case '0':
-                $exam['status'] = 'draft';
-                break;
-            case '1':
-                $exam['status'] = 'published';
-                break;
-            default:
-                $exam['status'] = 'scheduled';
-                break;
-        }
         $exam['duration'] = $exam['duration'] + 0;
 
         $questions = [];
@@ -332,6 +320,16 @@ class ExamAPI
                 'disable_right_click' => $settings['disable_right_click'] == 1 ? true : false,
                 'isDone' => true
             ];
+        }
+
+        if ($exam['status'] == 0) {
+            $exam['status'] = 'draft';
+        } else if ($settings['schedule_type'] == 'scheduled' && $exam['status'] == 1) {
+            $exam['status'] = 'scheduled';
+        } else if ($exam['status'] == 1) {
+            $exam['status'] = 'published';
+        } else if ($exam['status'] == 2) {
+            $exam['status'] = 'canceled';
         }
 
         usort($questions, function ($a, $b) {
@@ -721,6 +719,17 @@ class ExamAPI
                 $finalQuestions[] = $qData;
             }
 
+
+            if ($exam['status'] == 0) {
+                $exam['status'] = 'draft';
+            } else if ($settings['schedule_type'] == 'scheduled' && $exam['status'] == 1) {
+                $exam['status'] = 'scheduled';
+            } else if ($exam['status'] == 1) {
+                $exam['status'] = 'published';
+            } else if ($exam['status'] == 2) {
+                $exam['status'] = 'canceled';
+            }
+
             $exam_info = [
                 'id' => (int) $id,
                 'code' => $exam['code'],
@@ -730,7 +739,7 @@ class ExamAPI
                 'duration' => (int) $exam['duration'],
                 'instructions' => $exam['instructions'],
                 'passing_marks' => (int) $exam['passing_marks'],
-                'status' => $exam['status'] == 0 ? 'draft' : 'published',
+                'status' => $exam['status']
             ];
 
             $settings_info = [
@@ -787,12 +796,35 @@ class ExamAPI
     public function unpublishExam($exam_id)
     {
         try {
+            $statement = $this->db->prepare("SELECT schedule_type, start_time FROM  exam_settings  WHERE exam_id = ?");
+            $statement->execute(params: [$exam_id]);
+            $schedule_type = $statement->fetch()['schedule_type'];
+            $start_time = $statement->fetch()['start_time'];
+
             $statement = $this->db->prepare("UPDATE exam_info SET status = ?, published_by = ?, published_at = null WHERE id = ?");
-            $statement->execute(params: [0, 0, $exam_id]);
+            $statement->execute(params: [2, 0, $exam_id]);
 
             return json_encode([
                 'status' => 'success',
                 'msg' => 'Exam unpublished successfully'
+            ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function cancelExam($exam_id)
+    {
+        try {
+            $statement = $this->db->prepare("UPDATE exam_info SET status = ?, published_at = null  WHERE id = ?");
+            $statement->execute(params: [2, $exam_id]);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'The exam was suddenly stopped for all candidates.'
             ]);
         } catch (Exception $e) {
             return json_encode([

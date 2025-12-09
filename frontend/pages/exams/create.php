@@ -165,13 +165,13 @@ $this->controller('ExamController');
                 <div class="flex flex-wrap justify-between gap-2 items-center mb-4">
                     <h2 class="text-xl font-semibold text-gray-100">Questions & Sections Management</h2>
                     <div class="flex flex-wrap md:flex-row gap-2">
-                        <button type="button" ng-click="addNewSection()"
-                            class="bg-cyan-600 hover:bg-cyan-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+                        <button type="button" ng-click="addNewSection()" ng-disabled="isPastStartTime()"
+                            class="bg-cyan-600 hover:bg-cyan-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:bg-opacity-50 disabled:cursor-not-allowed">
                             <i class="fas fa-layer-group"></i>
                             <span>Add Section</span>
                         </button>
-                        <button type="button" ng-click="startNewQuestion()"
-                            class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2">
+                        <button type="button" ng-click="startNewQuestion()" ng-disabled="isPastStartTime()"
+                            class="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:bg-opacity-50 disabled:cursor-not-allowed">
                             <i class="fas fa-question-circle"></i>
                             <span>Create Question</span>
                         </button>
@@ -379,20 +379,20 @@ $this->controller('ExamController');
                                 <!-- 2) IF SHOWING MORE → SHOW "HIDE MORE" BUTTON BEFORE ADD -->
                                 <button ng-if="createdQuestionsCount > 8 && showMoreQuestions"
                                     ng-click="toggleMoreQuestions()"
-                                    class="w-10 h-10 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all duration-300">
+                                    class="w-10 h-10 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:bg-opacity-50">
                                     -{{ createdQuestionsCount - 8 }}
                                 </button>
 
                                 <!-- 4) MORE BUTTON – ONLY IF NOT EXPANDED -->
                                 <button ng-if="createdQuestionsCount > 8 && !showMoreQuestions"
                                     ng-click="toggleMoreQuestions()"
-                                    class="w-10 h-10 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all duration-300">
+                                    class="w-10 h-10 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:bg-opacity-50">
                                     +{{ createdQuestionsCount - 8 }}
                                 </button>
 
                                 <!-- 5) ADD NEW QUESTION BUTTON (ALWAYS LAST) -->
-                                <button ng-click="startNewQuestion()"
-                                    class="w-10 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
+                                <button ng-click="startNewQuestion()" ng-disabled="isPastStartTime()"
+                                    class="w-10 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:cursor-not-allowed disabled:bg-opacity-50">
                                     <i class="fas fa-plus"></i>
                                 </button>
 
@@ -430,7 +430,9 @@ $this->controller('ExamController');
                                                 {{getAssignedSectionNames(question)}}
                                             </span>
                                             <button title="Remove assign question to section"
-                                                ng-click="openUnassignSectionModal(question.id)">
+                                            class="cursor-pointer disabled:cursor-not-allowed"
+                                                ng-click="openUnassignSectionModal(question.id)"
+                                                ng-disabled="isPastStartTime()">
                                                 <i
                                                     class="fa-solid fa-link-slash absolute top-3 right-3 text-red-400 text-sm"></i>
                                             </button>
@@ -462,11 +464,13 @@ $this->controller('ExamController');
                                         Section'}}</h4>
                                     <div class="flex space-x-1">
                                         <button type="button" ng-click="editSection($index)"
-                                            class="text-blue-400 hover:text-blue-300 transition-colors text-sm">
+                                            ng-disabled="isPastStartTime()"
+                                            class="text-blue-400 hover:text-blue-300 transition-colors text-sm disabled:cursor-not-allowed">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button type="button" ng-click="removeSection(section.id)"
-                                            class="text-red-400 hover:text-red-300 transition-colors text-sm">
+                                            ng-disabled="isPastStartTime()"
+                                            class="text-red-400 hover:text-red-300 transition-colors text-sm disabled:cursor-not-allowed">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -503,22 +507,22 @@ $this->controller('ExamController');
                             <div class="flex flex-wrap md:flex-row gap-2">
                                 <button type="button" ng-click="saveCurrentQuestion()"
                                     title="{{currentQuestion.isSaved ? 'Update' : 'Save'}} this question"
-                                    ng-disabled="!currentQuestion.question"
-                                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 w-full md:w-auto rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
+                                    ng-disabled="!currentQuestion.question || isPastStartTime()"
+                                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 w-full md:w-auto rounded-lg cursor-pointer transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fas fa-save"></i>
                                     <span>{{currentQuestion.isSaved ? 'Update' : 'Save'}}</span>
                                 </button>
                                 <button type="button" ng-click="assignToSection()"
                                     title="Assign this question to a section"
-                                    ng-disabled="!currentQuestion.isSaved || totalSectionsCount === 0"
-                                    class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 w-full md:w-auto rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
+                                    ng-disabled="!currentQuestion.isSaved || totalSectionsCount === 0 || isPastStartTime()"
+                                    class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 w-full md:w-auto rounded-lg cursor-pointer transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fas fa-layer-group"></i>
                                     <span>Assign to Section</span>
                                 </button>
                                 <button type="button" ng-click="removeCurrentQuestionFromExam()"
                                     title="Remove this question from this exam"
-                                    ng-disabled="currentQuestionIndex === null"
-                                    class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 w-full md:w-auto rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50">
+                                    ng-disabled="currentQuestionIndex === null || isPastStartTime()"
+                                    class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 w-full md:w-auto rounded-lg cursor-pointer transition-colors duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fas fa-trash"></i>
                                     <span>Remove</span>
                                 </button>
@@ -753,7 +757,7 @@ $this->controller('ExamController');
                         <!-- Any Time Option -->
                         <label class="flex-1 min-w-[200px] cursor-pointer">
                             <input type="radio" name="scheduleType" required ng-model="examData.schedule_type"
-                                ng-change="examData.isSettingsDone = false" value="anytime" class="hidden">
+                                ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" value="anytime" class="hidden">
                             <div class="h-full p-4 border-2 rounded-lg transition-all duration-200" ng-class="examData.schedule_type === 'anytime' ? 
                                      'border-cyan-500 bg-cyan-900/20' : 
                                      'border-gray-600 hover:border-gray-500 bg-[#0006]'">
@@ -778,7 +782,7 @@ $this->controller('ExamController');
                         <!-- Scheduled Option -->
                         <label class="flex-1 min-w-[200px] cursor-pointer">
                             <input type="radio" name="scheduleType" required ng-model="examData.schedule_type"
-                                ng-change="examData.isSettingsDone = false" value="scheduled" class="hidden">
+                                ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" value="scheduled" class="hidden">
                             <div class="h-full p-4 border-2 rounded-lg transition-all duration-200" ng-class="examData.schedule_type === 'scheduled' ? 
                                      'border-cyan-500 bg-cyan-900/20' : 
                                      'border-gray-600 hover:border-gray-500 bg-[#0006]'">
@@ -806,13 +810,13 @@ $this->controller('ExamController');
                 <div class="form-group" ng-if="examData.schedule_type === 'scheduled'">
                     <label for="startDateTime" class="form-label">Start Date & Time</label>
                     <input type="datetime-local" id="startDateTime" name="startDateTime" required
-                        ng-model="examData.start_time" ng-change="examData.isSettingsDone = false" class="form-input">
+                        ng-model="examData.start_time" ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" class="form-input">
                 </div>
 
                 <!-- End Date & Time (Conditional) -->
                 <!-- <div class="form-group" ng-if="examData.schedule_type === 'scheduled'">
                     <label for="endDateTime" class="form-label">End Date & Time</label>
-                    <input type="datetime-local" id="endDateTime" name="endDateTime" required ng-model="examData.end_time" ng-change="examData.isSettingsDone = false" class="form-input">
+                    <input type="datetime-local" id="endDateTime" name="endDateTime" required ng-model="examData.end_time" ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" class="form-input">
                 </div> -->
 
                 <!-- Exam Settings -->
@@ -824,7 +828,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.shuffle_questions"
-                            ng-change="examData.isSettingsDone = false" id="shuffleQuestions" name="shuffleQuestions"
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="shuffleQuestions" name="shuffleQuestions"
                             required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Shuffle Questions</span>
                     </label>
@@ -834,7 +838,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.shuffle_options"
-                            ng-change="examData.isSettingsDone = false" id="shuffleOptions" name="shuffleOptions"
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="shuffleOptions" name="shuffleOptions"
                             required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Shuffle Options</span>
                     </label>
@@ -844,7 +848,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.show_results_immediately"
-                            ng-change="examData.isSettingsDone = false" id="showResultsImmediately"
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="showResultsImmediately"
                             name="showResultsImmediately" required
                             class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Show Results Immediately</span>
@@ -855,7 +859,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.allow_retake"
-                            ng-change="examData.isSettingsDone = false" id="allowRetake" name="allowRetake" required
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="allowRetake" name="allowRetake" required
                             class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Allow Retake</span>
                     </label>
@@ -865,7 +869,7 @@ $this->controller('ExamController');
                 <div class="form-group" ng-if="examData.allow_retake">
                     <label for="maxAttempts" class="form-label">Maximum Attempts</label>
                     <input type="number" id="maxAttempts" name="maxAttempts" ng-model="examData.max_attempts"
-                        ng-change="examData.isSettingsDone = false" min="1" class="form-input" placeholder="e.g., 3">
+                        ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" min="1" class="form-input" placeholder="e.g., 3">
                 </div>
 
                 <!-- Security Settings -->
@@ -877,7 +881,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.enable_proctoring"
-                            ng-change="examData.isSettingsDone = false" id="enableProctoring" name="enableProctoring"
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="enableProctoring" name="enableProctoring"
                             required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Enable Proctoring</span>
                     </label>
@@ -887,7 +891,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.full_screen_mode"
-                            ng-change="examData.isSettingsDone = false" id="fullScreenMode" name="fullScreenMode"
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="fullScreenMode" name="fullScreenMode"
                             required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Force Full Screen Mode</span>
                     </label>
@@ -897,7 +901,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.disable_copy_paste"
-                            ng-change="examData.isSettingsDone = false" id="disableCopyPaste" name="disableCopyPaste"
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="disableCopyPaste" name="disableCopyPaste"
                             required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Disable Copy/Paste</span>
                     </label>
@@ -907,7 +911,7 @@ $this->controller('ExamController');
                 <div class="form-group">
                     <label class="flex items-center space-x-3 cursor-pointer">
                         <input type="checkbox" ng-model="examData.disable_right_click"
-                            ng-change="examData.isSettingsDone = false" id="disableRightClick" name="disableRightClick"
+                            ng-change="isPastStartTime() ? examData.isSettingsDone = true : examData.isSettingsDone = false" id="disableRightClick" name="disableRightClick"
                             required class="rounded bg-[#0006] border-gray-600 text-cyan-500 focus:ring-cyan-500">
                         <span class="text-gray-300">Disable Right Click</span>
                     </label>

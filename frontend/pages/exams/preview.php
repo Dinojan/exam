@@ -11,9 +11,10 @@
         </div>
         <div class="flex items-center space-x-4 mt-4 md:mt-0">
             <!-- Status Badge -->
-            <div class="px-4 py-2 rounded-lg border" ng-class="examData.status === 'published' ? 'border-green-500 bg-green-900/20 text-green-400' : 
-                examData.status === 'draft' ? 'border-yellow-500 bg-yellow-900/20 text-yellow-400' : 
-                'border-blue-500 bg-blue-900/20 text-blue-400'">
+            <div class="px-4 py-2 rounded-lg border"
+                ng-class="examData.status === 'published' ? 'border-green-500 bg-green-900/20 text-green-400' : 
+                    examData.status === 'scheduled' ? 'border-blue-500 bg-blue-900/20 text-blue-400' : 
+                    examData.status === 'canceled' ? 'border-red-500 bg-red-900/20 text-red-400' : 'border-yellow-500 bg-yellow-900/20 text-yellow-400'">
                 <span class="text-sm font-medium capitalize">{{examData.status || 'draft'}}</span>
             </div>
 
@@ -401,7 +402,8 @@
 
                     <!-- Questions List -->
                     <div class="space-y-4">
-                        <div ng-if="activeSection && activeSection.description" class="bg-[#0004] rounded-lg p-6 border border-gray-600">
+                        <div ng-if="activeSection && activeSection.description"
+                            class="bg-[#0004] rounded-lg p-6 border border-gray-600">
                             <p class="text-white">{{activeSection.description || ''}}</p><br>
                             <p class="text-white">{{activeSection.second_description || ''}}</p>
                         </div>
@@ -826,20 +828,77 @@
 
     <!-- Step 4: Exam Preview -->
     <div ng-show="currentStep === 4" class="max-w-4xl mx-auto lg:col-span-2">
+        <!-- Check Settings -->
+        <div class="flex flex-wrap w-full md:w-auto items-center justify-center md:justify-end mb-10 gap-4">
+            <!-- Display Mode Toggle -->
+            <div>
+                <button ng-click="togglePreviewDisplayMode()"
+                    ng-class="{'bg-gradient-to-r from-cyan-900 to-teal-800 text-cyan-100 border-cyan-500 hover:from-cyan-800 hover:to-teal-700 hover:bg-cyan-700': previewDisplayMode === 'sections', 'bg-gradient-to-r from-gray-800 to-gray-900 border-gray-600 text-gray-200 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white hover:bg-gray-700': previewDisplayMode === 'all'}"
+                    class="flex items-center justify-center gap-2 px-4 py-2 font-medium rounded-lg border transition-all duration-300">
+                    <i class="fas" ng-class="previewDisplayMode === 'sections' ? 'fa-layer-group' : 'fa-list'"></i>
+                    <span>{{previewDisplayMode === 'sections' ? 'Section View' : 'All Questions'}}</span>
+                </button>
+            </div>
+
+            <!-- Shuffle Questions -->
+            <div>
+                <button ng-click="examData.shuffle_questions = !examData.shuffle_questions; shufflePreviewQuestions()"
+                    ng-class="{'bg-gradient-to-r from-cyan-900 to-teal-800 text-cyan-100 border-cyan-500 hover:from-cyan-800 hover:to-teal-700 hover:bg-cyan-700': examData.shuffle_questions, 'bg-gradient-to-r from-gray-800 to-gray-900 border-gray-600 text-gray-200 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white hover:bg-gray-700': !examData.shuffle_questions}"
+                    class="flex items-center justify-center gap-2 px-4 py-2 font-medium rounded-lg border transition-all duration-300">
+                    <i class="fas" ng-class="examData.shuffle_questions ? 'fa-check-circle' : 'fa-random'"></i>
+                    <span>Shuffle Questions</span>
+                </button>
+            </div>
+
+            <!-- Shuffle Options -->
+            <div>
+                <button ng-click="examData.shuffle_options = !examData.shuffle_options; shufflePreviewOptions()"
+                    ng-class="{'bg-gradient-to-r from-cyan-900 to-teal-800 text-cyan-100 border-cyan-500 hover:from-cyan-800 hover:to-teal-700 hover:bg-cyan-700': examData.shuffle_options, 'bg-gradient-to-r from-gray-800 to-gray-900 border-gray-600 text-gray-200 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white hover:bg-gray-700': !examData.shuffle_options}"
+                    class="flex items-center justify-center gap-2 px-4 py-2 font-medium rounded-lg border transition-all duration-300">
+                    <i class="fas" ng-class="examData.shuffle_options ? 'fa-check-circle' : 'fa-random'"></i>
+                    <span>Shuffle Options</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Current Section/Page Header -->
         <div
             class="bg-gradient-to-r from-black/50 to-black/30 backdrop-blur rounded-xl p-6 border border-gray-700 mb-6 shadow-lg">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
                 <div class="space-y-2">
+                    <h3 class="text-lg font-medium text-gray-100">
+                        <span ng-if="previewDisplayMode === 'sections' && activePreviewSection">
+                            {{activePreviewSection.title}} - Preview
+                        </span>
+                        <span ng-if="previewDisplayMode === 'all'">
+                            All Questions Preview
+                        </span>
+                    </h3>
                     <p class="text-gray-300 text-sm">
-                        Showing <span class="text-cyan-300 font-medium">{{getCurrentPageQuestions().length}}</span> of
-                        <span class="text-white font-medium">{{displayQuestions.length}}</span> questions
+                        Showing <span
+                            class="text-cyan-300 font-medium">{{getCurrentPreviewPageQuestions().length}}</span> of
+                        <span class="text-white font-medium">{{previewDisplayQuestions.length}}</span> questions
                     </p>
                 </div>
                 <div class="text-right">
                     <span
                         class="px-4 py-1 bg-gradient-to-r from-cyan-900/40 to-teal-900/30 text-cyan-100 rounded-full border border-cyan-500/50 shadow-inner text-sm font-medium">
-                        Page {{currentQuestionPage + 1}}
+                        Page {{currentPreviewQuestionPage + 1}}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Navigation (for section mode) -->
+        <div ng-if="previewDisplayMode === 'sections'" class="mb-6">
+            <div class="flex flex-wrap gap-2">
+                <div ng-repeat="section in reviewSections track by section.id" ng-click="selectPreviewSection(section)"
+                    class="px-3 py-2 rounded-lg border cursor-pointer transition-colors duration-200 text-sm" ng-class="activePreviewSection && activePreviewSection.id === section.id ? 
+                           'bg-cyan-900/20 border-cyan-600 text-cyan-300' : 
+                           'bg-gray-800/30 border-gray-600 text-gray-300 hover:bg-gray-700/30'">
+                    <span class="font-medium">{{section.title}}</span>
+                    <span class="ml-2 text-xs bg-gray-700/50 px-2 py-1 rounded">
+                        {{section.questions.length || 0}} Q
                     </span>
                 </div>
             </div>
@@ -847,7 +906,7 @@
 
         <!-- Pagination Controls -->
         <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8 pb-8 border-b border-gray-700">
-            <button ng-click="previousQuestionPage()" ng-disabled="currentQuestionPage === 0"
+            <button ng-click="previousPreviewQuestionPage()" ng-disabled="currentPreviewQuestionPage === 0"
                 class="px-6 py-2 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-600 text-gray-200 rounded-lg font-medium flex items-center space-x-3 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-4 sm:mb-0 w-full sm:w-auto justify-center">
                 <i class="fas fa-arrow-left text-cyan-300"></i>
                 <span>Previous Page</span>
@@ -857,16 +916,18 @@
                 <div class="flex items-center space-x-4">
                     <div class="hidden sm:block h-2 w-24 bg-gray-800 rounded-full overflow-hidden">
                         <div class="h-full bg-gradient-to-r from-cyan-500 to-teal-500"
-                            ng-style="{'width': ((currentQuestionPage + 1) / questionPages.length) * 100 + '%'}"></div>
+                            ng-style="{'width': ((currentPreviewQuestionPage + 1) / previewQuestionPages.length) * 100 + '%'}">
+                        </div>
                     </div>
                     <span class="text-gray-300 font-medium">
-                        <span class="text-cyan-200">{{currentQuestionPage + 1}}</span> /
-                        <span class="text-white">{{questionPages.length}}</span>
+                        <span class="text-cyan-200">{{currentPreviewQuestionPage + 1}}</span> /
+                        <span class="text-white">{{previewQuestionPages.length}}</span>
                     </span>
                 </div>
             </div>
 
-            <button ng-click="nextQuestionPage()" ng-disabled="currentQuestionPage === questionPages.length - 1"
+            <button ng-click="nextPreviewQuestionPage()"
+                ng-disabled="currentPreviewQuestionPage === previewQuestionPages.length - 1"
                 class="px-6 py-2 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-600 text-gray-200 rounded-lg font-medium flex items-center space-x-3 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center">
                 <span>Next Page</span>
                 <i class="fas fa-arrow-right text-cyan-300"></i>
@@ -875,122 +936,166 @@
 
         <!-- Questions List -->
         <div>
-            <div ng-repeat="question in getCurrentPageQuestions() track by $index"
-                class="relative bg-gradient-to-tl from-black/50 to-black/30 backdrop-blur rounded-lg p-6 border border-gray-700 mb-10 pb-8 last:mb-0 last:pb-0">
-
-                <!-- Question Number and Text -->
-                <div class="flex flex-row gap-2 mb-6 relative before:absolute before:inset-x-0 before:bottom-0 before:h-px
-                    before:bg-gradient-to-r before:from-transparent before:via-gray-600 before:to-transparent
-                    before:content-['']
-                    [&>span]:relative">
-                    <div class="flex items-centermb-4">
-                        <div
-                            class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-cyan-900/50 to-teal-900/30 rounded-full border border-cyan-500/30">
-                            <span class="text-cyan-200 font-bold">{{(currentQuestionPage * questionsPerPage) + $index +
-                                1}}</span>
-                        </div>
-                    </div>
-                    <p class="text-gray-200 text-lg leading-relaxed">
-                        {{question.question}}
-                    </p>
-                    <!-- <div ng-if="question.image" class="mt-6 pl-14">
-                        <div class="relative group">
-                            <img ng-src="{{question.image}}" alt="Question visual aid"
-                                class="rounded-xl max-w-full h-auto border-2 border-gray-600/50 shadow-lg group-hover:border-cyan-500/50 transition-all duration-300">
-                            <div
-                                class="absolute inset-0 bg-cyan-900/10 group-hover:bg-cyan-900/5 rounded-xl transition-all duration-300">
-                            </div>
-                        </div>
-                    </div> -->
-                </div>
-
-                <!-- Options with Correct Answer -->
-                <div class="mb-6">
-                    <div class="gap-2" ng-class="{
-                            'grid grid-cols-1 gap-3': question.grid == 1,
-                            'grid grid-cols-1 md:grid-cols-2 gap-4': question.grid == 2,
-                            'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4': question.grid == 4
-                        }">
-                        <div ng-repeat="option in question.options track by $index" class="group relative"
-                            ng-click="selectOption(question.id, $index)">
-                            <div class="flex items-center py-2 px-4 border-cyan/100 hover:border-cyan-500/30 rounded-lg transition-all duration-200 cursor-pointer"
-                                ng-class="{
-                                    'border-2 border-cyan-400 bg-cyan-300/10': question.selectedOption === $index,
-                                    'hover:border-cyan-500/30': question.selectedOption !== $index
-                                }">
-                                <div class=" w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br
-                                from-gray-800 to-gray-900 border border-gray-600 group-hover:border-cyan-500/50
-                                transition-all duration-200 mr-4" ng-class="{
-                                    'border-cyan-400': question.selectedOption === $index,
-                                    'border-gray-600 group-hover:border-cyan-500/50': question.selectedOption !== $index
-                                }">
-                                    <span
-                                        class="text-gray-300 group-hover:text-cyan-200 font-bold transition-colors duration-200"
-                                        ng-class="{
-                                            'text-cyan-300': question.selectedOption === $index,
-                                            'text-gray-300 group-hover:text-cyan-200': question.selectedOption !== $index
-                                        }">
-                                        {{$index | letterIndex: 'A'}}
-                                    </span>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-gray-100 group-hover:text-cyan-300 transition-colors duration-200"
-                                        ng-class="{
-                                            'text-cyan-300': question.selectedOption === $index,
-                                            'text-gray-100 group-hover:text-cyan-300': question.selectedOption !== $index
-                                        }">
-                                        {{option.text}}
-                                    </p>
-                                </div>
-                                <!-- <div ng-if="option.image" class="ml-4">
-                                    <div class="relative group">
-                                        <img ng-src="{{option.image}}" alt="Option visual"
-                                            class="w-20 h-20 rounded-lg border border-gray-600/50 object-cover group-hover:border-cyan-500/50 transition-all duration-200">
-                                        <div
-                                            class="absolute inset-0 bg-cyan-900/5 group-hover:bg-transparent rounded-lg transition-all duration-200">
-                                        </div>
-                                    </div>
-                                </div> -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Optional Metadata Section (commented out but styled) -->
-                <!-- <div class="pt-6 mt-6 border-t border-gray-700">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
-                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Type</p>
-                        <p class="text-gray-200 font-medium">{{question.type || 'MCQ'}}</p>
-                    </div>
-                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
-                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Difficulty</p>
-                        <span class="px-3 py-1 rounded-full text-sm font-medium" ng-class="{
-                            'bg-gradient-to-r from-green-900/40 to-emerald-900/30 text-green-300 border border-green-500/50': question.difficulty === 'easy',
-                            'bg-gradient-to-r from-yellow-900/40 to-amber-900/30 text-yellow-300 border border-yellow-500/50': question.difficulty === 'medium',
-                            'bg-gradient-to-r from-red-900/40 to-rose-900/30 text-red-300 border border-red-500/50': question.difficulty === 'hard'
-                        }">
-                            {{question.difficulty || 'medium'}}
-                        </span>
-                    </div>
-                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
-                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Sections</p>
-                        <p class="text-gray-200 font-medium">{{question.sectionIds.length || 0}}</p>
-                    </div>
-                    <div class="p-3 rounded-lg bg-gray-800/30 border border-gray-700">
-                        <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Has Image</p>
-                        <p class="font-medium" ng-class="question.image ? 'text-cyan-300' : 'text-gray-400'">
-                            {{question.image ? 'Yes' : 'No'}}
+            <!-- All Questions Mode -->
+            <div ng-if="previewDisplayMode === 'all'">
+                <div class="mb-10" ng-repeat="section in currentPreviewPageSections track by section.id">
+                    <!-- Section Header -->
+                    <div ng-if="section.description"
+                        class="bg-gradient-to-r from-cyan-900/20 to-teal-900/10 backdrop-blur rounded-lg p-4 border border-cyan-500/30 mb-6">
+                        <p class="text-gray-300" ng-if="section.description">
+                            {{section.description}}
+                        </p>
+                        <br>
+                        <p class="text-gray-300" ng-if="section.second_description">
+                            {{section.second_description}}
                         </p>
                     </div>
+
+                    <div ng-repeat="question in section.questions track by question.id"
+                        ng-if="!question.isSectionHeader"
+                        class="relative bg-gradient-to-tl from-black/50 to-black/30 backdrop-blur rounded-lg p-6 border border-gray-700 mb-10 pb-8 last:mb-0 last:pb-0">
+
+                        <!-- Question Number and Text -->
+                        <div
+                            class="flex flex-row gap-2 mb-6 relative before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-gray-600 before:to-transparent before:content-[''] [&>span]:relative">
+                            <div class="flex items-center mb-4">
+                                <div
+                                    class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-cyan-900/50 to-teal-900/30 rounded-full border border-cyan-500/30">
+                                    <span class="text-cyan-200 font-bold">{{question._globalNumber}}</span>
+                                </div>
+                            </div>
+                            <p class="text-gray-200 text-lg leading-relaxed">
+                                {{question.question}}
+                            </p>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="mb-6">
+                            <div class="gap-2" ng-class="{
+                                'grid grid-cols-1 gap-3': question.grid == 1,
+                                'grid grid-cols-1 md:grid-cols-2 gap-4': question.grid == 2,
+                                'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4': question.grid == 4
+                            }">
+                                <div ng-repeat="option in question.options track by $index" class="group relative"
+                                    ng-click="selectPreviewOption(question.id, $index)">
+                                    <div class="flex items-center py-2 px-4 border-cyan/100 hover:border-cyan-500/30 rounded-lg transition-all duration-200 cursor-pointer"
+                                        ng-class="{
+                                           'border-2 border-cyan-400 bg-cyan-300/10': question.selectedOption === $index,
+                                           'hover:border-cyan-500/30': question.selectedOption !== $index
+                                        }">
+                                        <div class="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-600 group-hover:border-cyan-500/50 transition-all duration-200 mr-4"
+                                            ng-class="{
+                                        'border-cyan-400': question.selectedOption === $index,
+                                        'border-gray-600 group-hover:border-cyan-500/50': question.selectedOption !== $index
+                                     }">
+                                            <span
+                                                class="text-gray-300 group-hover:text-cyan-200 font-bold transition-colors duration-200"
+                                                ng-class="{
+                                            'text-cyan-300': question.selectedOption === $index,
+                                            'text-gray-300 group-hover:text-cyan-200': question.selectedOption !== $index
+                                          }">
+                                                {{$index | letterIndex: 'A'}}
+                                            </span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-gray-100 group-hover:text-cyan-300 transition-colors duration-200"
+                                                ng-class="{
+                                        'text-cyan-300': question.selectedOption === $index,
+                                        'text-gray-100 group-hover:text-cyan-300': question.selectedOption !== $index
+                                       }">
+                                                {{option.text}}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div> -->
+            </div>
+
+            <!-- Sections Mode -->
+            <div ng-if="previewDisplayMode === 'sections' && activePreviewSection">
+                <!-- Section Header -->
+                <div
+                    class="bg-gradient-to-r from-cyan-900/20 to-teal-900/10 backdrop-blur rounded-lg p-4 border border-cyan-500/30 mb-6">
+                    <h3 class="text-xl font-bold text-cyan-200">{{activePreviewSection.title}}</h3>
+                    <p class="text-gray-300 text-sm mt-1" ng-if="activePreviewSection.description">
+                        {{activePreviewSection.description}}
+                    </p>
+                    <p class="text-gray-300 text-sm mt-1" ng-if="activePreviewSection.second_description">
+                        {{activePreviewSection.second_description}}
+                    </p>
+                </div>
+
+                <!-- Questions in this section -->
+                <div ng-repeat="question in getCurrentPreviewPageQuestions() track by question.id"
+                    ng-if="!question.isSectionHeader"
+                    class="relative bg-gradient-to-tl from-black/50 to-black/30 backdrop-blur rounded-lg p-6 border border-gray-700 mb-10 pb-8 last:mb-0 last:pb-0">
+
+                    <!-- Question Number and Text -->
+                    <div
+                        class="flex flex-row gap-2 mb-6 relative before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-gray-600 before:to-transparent before:content-[''] [&>span]:relative">
+                        <div class="flex items-center mb-4">
+                            <div
+                                class="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-cyan-900/50 to-teal-900/30 rounded-full border border-cyan-500/30">
+                                <span class="text-cyan-200 font-bold">{{(currentPreviewQuestionPage *
+                                    previewQuestionsPerPage) + $index + 1}}</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-200 text-lg leading-relaxed">
+                            {{question.question}}
+                        </p>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="mb-6">
+                        <div class="gap-2" ng-class="{
+                        'grid grid-cols-1 gap-3': question.grid == 1,
+                        'grid grid-cols-1 md:grid-cols-2 gap-4': question.grid == 2,
+                        'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4': question.grid == 4
+                    }">
+                            <div ng-repeat="option in question.options track by $index" class="group relative"
+                                ng-click="selectPreviewOption(question.id, $index)">
+                                <div class="flex items-center py-2 px-4 border-cyan/100 hover:border-cyan-500/30 rounded-lg transition-all duration-200 cursor-pointer"
+                                    ng-class="{
+                                    'border-2 border-cyan-400 bg-cyan-300/10': question.selectedOption === $index,
+                                    'hover:border-cyan-500/30': question.selectedOption !== $index
+                                 }">
+                                    <div class="w-8 h-8 flex items-center justify-center rounded-full bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-600 group-hover:border-cyan-500/50 transition-all duration-200 mr-4"
+                                        ng-class="{
+                                        'border-cyan-400': question.selectedOption === $index,
+                                        'border-gray-600 group-hover:border-cyan-500/50': question.selectedOption !== $index
+                                     }">
+                                        <span
+                                            class="text-gray-300 group-hover:text-cyan-200 font-bold transition-colors duration-200"
+                                            ng-class="{
+                                            'text-cyan-300': question.selectedOption === $index,
+                                            'text-gray-300 group-hover:text-cyan-200': question.selectedOption !== $index
+                                          }">
+                                            {{$index | letterIndex: 'A'}}
+                                        </span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-gray-100 group-hover:text-cyan-300 transition-colors duration-200"
+                                            ng-class="{
+                                        'text-cyan-300': question.selectedOption === $index,
+                                        'text-gray-100 group-hover:text-cyan-300': question.selectedOption !== $index
+                                       }">
+                                            {{option.text}}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Pagination Controls -->
         <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 pt-8 border-t border-gray-700">
-            <button ng-click="previousQuestionPage()" ng-disabled="currentQuestionPage === 0"
+            <button ng-click="previousPreviewQuestionPage()" ng-disabled="currentPreviewQuestionPage === 0"
                 class="px-6 py-2 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-600 text-gray-200 rounded-lg font-medium flex items-center space-x-3 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-4 sm:mb-0 w-full sm:w-auto justify-center">
                 <i class="fas fa-arrow-left text-cyan-300"></i>
                 <span>Previous Page</span>
@@ -1000,16 +1105,18 @@
                 <div class="flex items-center space-x-4">
                     <div class="hidden sm:block h-2 w-24 bg-gray-800 rounded-full overflow-hidden">
                         <div class="h-full bg-gradient-to-r from-cyan-500 to-teal-500"
-                            ng-style="{'width': ((currentQuestionPage + 1) / questionPages.length) * 100 + '%'}"></div>
+                            ng-style="{'width': ((currentPreviewQuestionPage + 1) / previewQuestionPages.length) * 100 + '%'}">
+                        </div>
                     </div>
                     <span class="text-gray-300 font-medium">
-                        <span class="text-cyan-200">{{currentQuestionPage + 1}}</span> /
-                        <span class="text-white">{{questionPages.length}}</span>
+                        <span class="text-cyan-200">{{currentPreviewQuestionPage + 1}}</span> /
+                        <span class="text-white">{{previewQuestionPages.length}}</span>
                     </span>
                 </div>
             </div>
 
-            <button ng-click="nextQuestionPage()" ng-disabled="currentQuestionPage === questionPages.length - 1"
+            <button ng-click="nextPreviewQuestionPage()"
+                ng-disabled="currentPreviewQuestionPage === previewQuestionPages.length - 1"
                 class="px-6 py-2 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-600 text-gray-200 rounded-lg font-medium flex items-center space-x-3 hover:from-gray-700 hover:to-gray-800 hover:border-cyan-500/50 hover:text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center">
                 <span>Next Page</span>
                 <i class="fas fa-arrow-right text-cyan-300"></i>
@@ -1023,16 +1130,21 @@
             <h2 class="text-xl font-semibold text-gray-100 mb-6">Publish Exam</h2>
 
             <!-- Publish Status -->
-            <div class="bg-[#0006] rounded-lg p-6 border"
-                ng-class="examData.status === 'published' ? 'border-green-500' : 'border-yellow-500'">
+            <div class="bg-[#0006] rounded-lg p-6 border" ng-class="{
+                   'border-green-500': examData.status === 'published',
+                   'border-yellow-500': examData.status === 'draft',
+                   'border-red-500': examData.status === 'canceled',
+                   'border-blue-500': examData.status === 'scheduled'
+                }">
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <h3 class="text-lg font-medium text-gray-100">Current Status</h3>
                         <p class="text-gray-400">Exam publication status</p>
                     </div>
-                    <div class="px-4 py-2 rounded-lg capitalize" ng-class="examData.status === 'published' ? 'bg-green-900/30 text-green-400' : 
-                                   examData.status === 'draft' ? 'bg-yellow-900/30 text-yellow-400' : 
-                                   'bg-blue-900/30 text-blue-400'">
+                    <div class="px-4 py-2 rounded-lg capitalize"
+                        ng-class="examData.status === 'published' ? 'bg-green-900/20 text-green-400' : 
+                            examData.status === 'scheduled' ? 'bg-blue-900/20 text-blue-400' : 
+                            examData.status === 'canceled' ? 'bg-red-900/20 text-red-400' : 'bg-yellow-900/20 text-yellow-400'">
                         <span class="font-medium">{{examData.status || 'draft'}}</span>
                     </div>
                 </div>
@@ -1046,13 +1158,34 @@
                         <p class="text-gray-300">Published on: {{examData.published_at | date:'fullDate'}}</p>
                     </div>
 
-                    <div ng-if="examData.status !== 'published'">
+                    <div ng-if="examData.status === 'draft'">
                         <div class="flex items-center text-yellow-400 mb-2">
                             <i class="fas fa-exclamation-triangle mr-2"></i>
                             <span class="font-medium">This exam is in draft mode</span>
                         </div>
                         <p class="text-gray-300">Ready to be published. Review all details before publishing.</p>
                     </div>
+
+                    <div ng-if="examData.status === 'cancelled'">
+                        <div class="flex items-center text-red-400 mb-2">
+                            <i class="fas fa-times-circle mr-2"></i>
+                            <span class="font-medium">This exam has been cancelled</span>
+                        </div>
+                        <p class="text-gray-300">Candidates can no longer access this exam.</p>
+                    </div>
+
+                    <div ng-if="examData.status === 'scheduled'">
+                        <div class="flex items-center text-blue-400 mb-2">
+                            <i class="fas fa-clock mr-2"></i>
+                            <span class="font-medium">This exam is scheduled</span>
+                        </div>
+                        <p class="text-gray-300">
+                            Starts on:
+                            {{ examData.start_time | date:'fullDate' }}
+                            at {{ examData.start_time | date:'shortTime' }}
+                        </p>
+                    </div>
+
                 </div>
             </div>
 
@@ -1139,7 +1272,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Publish Button -->
                     <button ng-click="publishExam()"
-                        ng-disabled="!isReadyToPublish() || examData.status === 'published'"
+                        ng-disabled="!isReadyToPublish() || examData.status === 'published' || examData.status === 'scheduled'"
                         class="bg-green-600 hover:bg-green-700 text-white rounded-lg p-4 flex flex-col items-center justify-center transition-colors duration-200 disabled:opacity-50">
                         <i class="fas fa-paper-plane text-2xl mb-2"></i>
                         <span class="font-medium">Publish Exam</span>
@@ -1147,7 +1280,8 @@
                     </button>
 
                     <!-- Unpublish Button -->
-                    <button ng-click="unpublishExam()" ng-disabled="examData.status !== 'published'"
+                    <button ng-click="unpublishExam()"
+                        ng-disabled="!(examData.status === 'published' || examData.status === 'scheduled')"
                         class="bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg p-4 flex flex-col items-center justify-center transition-colors duration-200 disabled:opacity-50">
                         <i class="fas fa-undo text-2xl mb-2"></i>
                         <span class="font-medium">Unpublish Exam</span>
