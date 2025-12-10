@@ -173,6 +173,115 @@ class ExamAPI
         }
     }
 
+    public function getAllExams()
+    {
+        try {
+            /** Get all exams */
+            $sql = "SELECT id, title, code, duration, status, total_num_of_ques AS total_questions 
+                FROM exam_info ORDER BY id DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!$exams) {
+                return json_encode([
+                    'status' => 'success',
+                    'exams' => []
+                ]);
+            }
+
+            /** Load all settings */
+            $statement = $this->db->prepare("SELECT * FROM exam_settings");
+            $statement->execute();
+            $settings = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+            /** Convert settings to map: exam_id → settings row */
+            $settingsMap = [];
+            foreach ($settings as $st) {
+                $settingsMap[$st['exam_id']] = $st;
+            }
+
+            /** Attach each exam with its settings & compute status */
+            foreach ($exams as &$exam) {
+
+                /** Attach settings data */
+                $setting = $settingsMap[$exam['id']] ?? null;
+
+                $exam['start_time'] = $setting['start_time'] ?? null;
+
+                /** Convert duration to number */
+                $exam['duration'] = $exam['duration'] + 0;
+
+                /** Determine Exam Status */
+                $now = time();
+                $startDateTime = $exam['start_time'] ? strtotime($exam['start_time']) : null;
+
+                if ($exam['status'] === 'draft') {
+                    $exam['status'] = "draft";
+
+                } elseif ($startDateTime && $now < $startDateTime) {
+                    $exam['status'] = "upcoming";
+
+                }
+                //  elseif ($startDateTime && $now >= $startDateTime) {
+
+                //     /** Check exam completed? */
+                //     $compCheck = $this->db->prepare("
+                //     SELECT COUNT(*) FROM exam_attempts 
+                //     WHERE exam_id = ? AND completed = 1
+                // ");
+                //     $compCheck->execute([$exam['id']]);
+                //     $completed = $compCheck->fetchColumn();
+
+                //     if ($completed > 0) {
+                //         $exam['status'] = "completed";
+                //     } else {
+                //         $exam['status'] = "active";
+                //     }
+                // }
+
+                // /** Participants Count */
+                // $stmt2 = $this->db->prepare("SELECT COUNT(*) FROM exam_attempts WHERE exam_id = ?");
+                // $stmt2->execute([$exam['id']]);
+                // $exam['participants_count'] = $stmt2->fetchColumn() + 0;
+
+                // /** Completed Count */
+                // $stmt3 = $this->db->prepare("SELECT COUNT(*) FROM exam_attempts WHERE exam_id = ? AND completed = 1");
+                // $stmt3->execute([$exam['id']]);
+                // $exam['completed_count'] = $stmt3->fetchColumn() + 0;
+
+                // /** Actual Question Count */
+                // $stmt4 = $this->db->prepare("SELECT COUNT(*) FROM questions WHERE JSON_CONTAINS(exam_ids, JSON_QUOTE(?))");
+                // $stmt4->execute([$exam['id']]);
+                // $exam['total_questions'] = $stmt4->fetchColumn() + 0;
+            }
+
+            return json_encode([
+                'status' => 'success',
+                'exams' => $exams
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+
+    public function getExamById($id)
+    {
+        $statement = $this->db->prepare("SELECT * FROM exam_info WHERE id = ?");
+        $statement->execute([$id]);
+        return json_encode([
+            'status' => 'success',
+            'msg' => 'Exam retrieved successfully',
+            'exam' => $statement->fetch(PDO::FETCH_ASSOC)
+        ]);
+    }
+
     public function getExamData($id)
     {
         $sql = "SELECT id, title, duration, code, total_marks, passing_marks, instructions, status, total_num_of_ques as total_questions 

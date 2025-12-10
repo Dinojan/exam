@@ -13,9 +13,9 @@
         <i class="fa-solid fa-angle-left"></i>
     </button>
     <div class="flex flex-row">
-        <button id="notification"
+        <!-- <button id="notification"
             class="relative text-white rounded md:rounded-full hover:bg-[#fff2] transition-all duration-300 px-2 md:px-3 py-1 after:content-['99+'] after:bg-red-600 after:text-white after:absolute after:top-0 after:right-0 after:h-4 after:rounded-full after:text-xs after:font-bold after:px-1">
-            <i class="fa-solid fa-bell"></i></button>
+            <i class="fa-solid fa-bell"></i></button> -->
         <button id="full-screen"
             class="hidden md:inline-block text-white rounded md:rounded-full hover:bg-[#fff2] transition-all duration-300 px-2 md:px-3 py-1">
             <span class="hidden md:inline-block">Full screen</span> <i class="fa-solid fa-maximize"></i></button>

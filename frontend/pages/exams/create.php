@@ -1,5 +1,5 @@
 <?php $this->extend('frontend');
-$this->controller('ExamController');
+$this->controller('CreateExamController');
 ?>
 <?php $this->start('content'); ?>
 
@@ -10,11 +10,11 @@ $this->controller('ExamController');
             <h1 class="text-2xl font-bold">Create New Exam</h1>
             <p class="text-gray-400">Set up a new examination with sections and questions</p>
         </div>
-        <a href="exams"
+        <!-- <a href="exams"
             class="bg-gray-600 hover:bg-gray-700 mt-4 md:mt-0 w-fit text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2">
             <i class="fas fa-arrow-left"></i>
             <span>Back to Exams</span>
-        </a>
+        </a> -->
     </div>
 
     <!-- Progress Steps -->

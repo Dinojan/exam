@@ -66,43 +66,115 @@ app.filter("formatNIC", function () {
 // });
 
 app.filter('formatDateTime', function () {
-  return function (datetimeStr, format = 'DD/MM/YYYY HH:mm:ss') {
-    if (!datetimeStr) return '';
-    var dt = new Date(datetimeStr);
-    if (isNaN(dt)) return datetimeStr;
+  return function (input, format) {
+    format = format || 'DD/MM/YYYY HH:mm:ss';
+    if (!input) return '';
 
-    var day = String(dt.getDate()).padStart(2, '0');
-    var monthNum = String(dt.getMonth() + 1).padStart(2, '0');
-    var year = dt.getFullYear();
+    // Normalize input to string
+    var s = String(input).trim();
 
-    var hours24 = dt.getHours();
-    var hours12 = hours24 % 12 || 12; // 0 => 12
-    var minutes = String(dt.getMinutes()).padStart(2, '0');
-    var seconds = String(dt.getSeconds()).padStart(2, '0');
-    var ampm = hours24 >= 12 ? 'PM' : 'AM';
-    var hours12Str = String(hours12).padStart(2, '0');
-    var hours24Str = String(hours24).padStart(2, '0');
+    // If already looks like "hh:mm am/pm" and format requests only time, try to return normalized
+    var ampmMatch = s.match(/^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm|AM|PM)\s*$/);
+    if (ampmMatch) {
+      // convert to 24-hour Date object using today as date
+      var hh = parseInt(ampmMatch[1], 10);
+      var mm = parseInt(ampmMatch[2], 10);
+      var ss = ampmMatch[3] ? parseInt(ampmMatch[3], 10) : 0;
+      var ampm = ampmMatch[4].toLowerCase();
+      if (ampm === 'pm' && hh < 12) hh += 12;
+      if (ampm === 'am' && hh === 12) hh = 0;
+      var dt = new Date();
+      dt.setHours(hh, mm, ss, 0);
+      return formatDate(dt, format);
+    }
 
-    // Month names
-    var shortMonthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    var fullMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    var shortMonth = shortMonthNames[dt.getMonth()];
-    var fullMonth = fullMonthNames[dt.getMonth()];
+    // Time-only like "10:30" or "10:30:00"
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
+      var parts = s.split(':');
+      var hh = parseInt(parts[0], 10);
+      var mm = parseInt(parts[1], 10);
+      var ss = parts[2] ? parseInt(parts[2], 10) : 0;
+      var dt = new Date();
+      dt.setHours(hh, mm, ss, 0);
+      return formatDate(dt, format);
+    }
 
-    // Replace longer tokens first
-    return format
-      .replace('MMMM', fullMonth)       // full month name
-      .replace('MMM', shortMonth)       // short month name
-      .replace('MM', monthNum)          // numeric month
-      .replace('DD', day)
-      .replace('YYYY', year)
-      .replace('HH', hours24Str)        // 24-hour
-      .replace('hh', hours12Str)        // 12-hour
-      .replace('mm', minutes)
-      .replace('ss', seconds)
-      .replace('A', ampm);              // AM/PM
+    // If format "YYYY-MM-DD HH:MM:SS" convert space to T for safer parsing
+    var isoCand = s;
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(s)) {
+      isoCand = s.replace(' ', 'T');
+    }
+
+    var dt = new Date(isoCand);
+
+    // If parsing failed, attempt fallback parsing for other common formats (DD/MM/YYYY HH:MM)
+    if (isNaN(dt.getTime())) {
+      // try DD/MM/YYYY HH:MM(:SS)?
+      var alt = s.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (alt) {
+        var day = parseInt(alt[1], 10);
+        var mon = parseInt(alt[2], 10) - 1;
+        var yr = parseInt(alt[3], 10);
+        var hh = parseInt(alt[4], 10);
+        var mm = parseInt(alt[5], 10);
+        var ss = alt[6] ? parseInt(alt[6], 10) : 0;
+        dt = new Date(yr, mon, day, hh, mm, ss);
+      }
+    }
+
+    if (isNaN(dt.getTime())) {
+      // give up, return original input so user can see it
+      return input;
+    }
+
+    return formatDate(dt, format);
+
+
+    // ---------- helpers ----------
+    function pad(n){ return String(n).padStart(2, '0'); }
+
+    function formatDate(dt, fmt) {
+      var day = pad(dt.getDate());
+      var month = pad(dt.getMonth() + 1);
+      var year = String(dt.getFullYear());
+      var H = dt.getHours();
+      var hh = pad(H % 12 || 12);
+      var HH = pad(H);
+      var mm = pad(dt.getMinutes());
+      var ss = pad(dt.getSeconds());
+      var A = H >= 12 ? 'PM' : 'AM';
+      var a = H >= 12 ? 'pm' : 'am';
+
+      var shortMonthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      var fullMonthNames  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      var MMM = shortMonthNames[dt.getMonth()];
+      var MMMM = fullMonthNames[dt.getMonth()];
+
+      // token map (longest keys first)
+      var map = {
+        'MMMM': MMMM,
+        'MMM' : MMM,
+        'MM'  : month,
+        'DD'  : day,
+        'YYYY': year,
+        'HH'  : HH,
+        'hh'  : hh,
+        'mm'  : mm,
+        'ss'  : ss,
+        'A'   : A,
+        'a'   : a
+      };
+
+      var tokens = Object.keys(map).sort(function(a,b){ return b.length - a.length; });
+      var out = fmt;
+      tokens.forEach(function(tok){
+        out = out.replace(new RegExp(tok, 'g'), map[tok]);
+      });
+      return out;
+    }
   };
 });
+
 app.filter('fromNow', function () {
   return function (datetimeStr) {
     if (!datetimeStr) return '';
@@ -169,7 +241,7 @@ app.filter('letterIndex', function () {
     } else if (mode === 'a') {
       return String.fromCharCode(97 + index);
     } else {
-      return index + 1; 
+      return index + 1;
     }
   };
 });

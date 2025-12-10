@@ -95,7 +95,7 @@ $menuData = [
                 'id' => 'all_exams',
                 'title' => 'All Exams',
                 'icon' => '<i class="fa-solid fa-list"></i>',
-                'url' => 'exams',
+                'url' => 'exam/all',
                 'role' => [1,2,3,4,5],
                 'permissions' => ['exams.view','exams.all'],
                 'children' => []
@@ -104,7 +104,7 @@ $menuData = [
                 'id' => 'create_exam',
                 'title' => 'Create Exam',
                 'icon' => '<i class="fa-solid fa-plus"></i>',
-                'url' => 'create_exam',
+                'url' => 'exam/create',
                 'role' => [1,2,5],
                 'permissions' => ['exams.create'],
                 'children' => []
@@ -113,7 +113,7 @@ $menuData = [
                 'id' => 'my_exams',
                 'title' => 'My Exams',
                 'icon' => '<i class="fa-solid fa-clipboard-list"></i>',
-                'url' => 'my_exams',
+                'url' => 'exam/my',
                 'role' => [1,3,5,6,7],
                 'permissions' => ['exams.attempt','exams.view','exams.my'],
                 'children' => []
@@ -121,44 +121,44 @@ $menuData = [
         ]
     ],
 
-    // QUESTIONS SECTION
-    [
-        'id' => 'questions',
-        'title' => 'Questions',
-        'icon' => '<i class="fa-solid fa-book-bookmark"></i>',
-        'url' => '#',
-        'role' => [1,2,3,4,5],
-        'permissions' => ['questions.create','questions.view','questions.edit','questions.delete','questions.bank','questions.my'],
-        'children' => [
-            [
-                'id' => 'question_bank',
-                'title' => 'Question Bank',
-                'icon' => '<i class="fa-solid fa-book"></i>',
-                'url' => 'question_bank',
-                'role' => [1,2,3,4,5],
-                'permissions' => ['questions.bank'],
-                'children' => []
-            ],
-            [
-                'id' => 'create_questions',
-                'title' => 'Create Question',
-                'icon' => '<i class="fa-solid fa-plus"></i>',
-                'url' => 'create_questions',
-                'role' => [1,5],
-                'permissions' => ['questions.create'],
-                'children' => []
-            ],
-            [
-                'id' => 'my_questions',
-                'title' => 'My Questions',
-                'icon' => '<i class="fa-solid fa-book-open-reader"></i>',
-                'url' => 'my_questions',
-                'role' => [1,5],
-                'permissions' => ['questions.my'],
-                'children' => []
-            ]
-        ]
-    ],
+    // // QUESTIONS SECTION
+    // [
+    //     'id' => 'questions',
+    //     'title' => 'Questions',
+    //     'icon' => '<i class="fa-solid fa-book-bookmark"></i>',
+    //     'url' => '#',
+    //     'role' => [1,2,3,4,5],
+    //     'permissions' => ['questions.create','questions.view','questions.edit','questions.delete','questions.bank','questions.my'],
+    //     'children' => [
+    //         [
+    //             'id' => 'question_bank',
+    //             'title' => 'Question Bank',
+    //             'icon' => '<i class="fa-solid fa-book"></i>',
+    //             'url' => 'question_bank',
+    //             'role' => [1,2,3,4,5],
+    //             'permissions' => ['questions.bank'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'create_questions',
+    //             'title' => 'Create Question',
+    //             'icon' => '<i class="fa-solid fa-plus"></i>',
+    //             'url' => 'create_questions',
+    //             'role' => [1,5],
+    //             'permissions' => ['questions.create'],
+    //             'children' => []
+    //         ],
+    //         [
+    //             'id' => 'my_questions',
+    //             'title' => 'My Questions',
+    //             'icon' => '<i class="fa-solid fa-book-open-reader"></i>',
+    //             'url' => 'my_questions',
+    //             'role' => [1,5],
+    //             'permissions' => ['questions.my'],
+    //             'children' => []
+    //         ]
+    //     ]
+    // ],
 
     // PAST PAPERS SECTION
     // [
@@ -241,15 +241,15 @@ $menuData = [
     // ],
 
     // NOTIFICATIONS SECTION
-    [
-        'id' => 'notifications',
-        'title' => 'Notifications',
-        'icon' => '<i class="fa-solid fa-bell"></i>',
-        'url' => 'notifications',
-        'role' => [1,2,3,4,5,6,7],
-        'permissions' => ['notifications.view'],
-        'children' => []
-    ],
+    // [
+    //     'id' => 'notifications',
+    //     'title' => 'Notifications',
+    //     'icon' => '<i class="fa-solid fa-bell"></i>',
+    //     'url' => 'notifications',
+    //     'role' => [1,2,3,4,5,6,7],
+    //     'permissions' => ['notifications.view'],
+    //     'children' => []
+    // ],
 
     // USER MANAGEMENT SECTION
     [

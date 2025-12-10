@@ -152,6 +152,11 @@ class PageAPI
         return view('reports.student', ['title' => 'Student Performance']);
     }
 
+    public function profile()
+    {
+        return view('profile.index', ['title' => 'Settings']);
+    }
+
     public function settings()
     {
         return view('settings.index', ['title' => 'Settings']);

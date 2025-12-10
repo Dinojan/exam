@@ -25,7 +25,7 @@ Router::group(['middleware' => ['auth']], function () {
         Router::get('/all', 'PageAPI@exams', 'all_exams');
         Router::get('/create', 'PageAPI@createExam', 'create_exam');
         Router::get('/edit/{exam_id}', 'PageAPI@editExam', 'edit_exam');
-        Router::get('/my/{user_id}', 'PageAPI@myExams', 'my_exams');
+        Router::get('/my', 'PageAPI@myExams', 'my_exams');
         Router::get('/preview/{exam_id}', 'PageAPI@previewExam', 'exam');
         Router::get('/attempt/{hased_rest_url}', 'PageAPI@attemptExam', 'attempt_exam');
     });
@@ -34,6 +34,7 @@ Router::group(['middleware' => ['auth']], function () {
     Router::get('/questions', 'PageAPI@questionBank', 'question_bank');
     Router::get('/my_questions', 'PageAPI@myQuestions', 'my_questions');
     Router::get('/create_questions', 'PageAPI@createQuestions', 'create_questions');
+    Router::get('/question_bank', 'PageAPI@questionBank', 'question_bank');
 
     // 🔹 Past Papers
     Router::get('/past_papers', 'PageAPI@pastPapers', 'past_papers');
@@ -58,6 +59,9 @@ Router::group(['middleware' => ['auth']], function () {
     // 🔹 Reports
     Router::get('/exam_reports', 'PageAPI@examReports', 'exam_reports');
     Router::get('/student_performance', 'PageAPI@studentPerformance', 'student_performance');
+
+    // 🔹 Profile
+    Router::get('/profile', 'PageAPI@profile', 'profile');
 
     // 🔹 Settings
     Router::get('/settings', 'PageAPI@settings', 'settings');
@@ -85,6 +89,7 @@ Router::group(['prefix' => 'API'], function () {
     Router::get('/auth/logged_user', 'UserAPI@getLoggedUserAccesses', 'get_logged_user_accesses', ['auth']);
     Router::get('/exams/{id}', 'ExamAPI@getExamData', 'get_exam', ['auth']);
     Router::get('/exam/data/{id}', 'ExamAPI@getExamDataForPreview', 'get_exam', ['auth']);
+    Router::get('/exam/all', 'ExamAPI@getAllExams', 'get_all_exams', ['auth']);
 
     Router::put('/user_groups/{id}/permissions', 'UserGroupAPI@setPermissions', 'set_group_permissions', ['auth']);
     Router::post('/user_groups/{id}', 'UserGroupAPI@updateUserGroup', 'update_user_group', ['auth']);
