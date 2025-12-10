@@ -22,10 +22,12 @@ app.controller('ExamPreviewController', [
         // Initialize arrays to prevent undefined errors
         $scope.allQuestions = [];
         $scope.sections = [];
+        $scope.originalSections = [];
         $scope.displayQuestions = [];
         $scope.previewDisplayQuestions = [];
         $scope.previewDisplaySections = [];
         $scope.currentPreviewPageSections = [];
+        $scope.cachedPreviewSections = [];
 
 
         // Initialize function
@@ -75,6 +77,7 @@ app.controller('ExamPreviewController', [
                     };
 
                     $scope.sections = sections || [];
+                    $scope.originalSections = angular.copy(sections || []);
                     $scope.allQuestions = questions || [];
 
                     $scope.processQuestions();
@@ -134,6 +137,19 @@ app.controller('ExamPreviewController', [
                             section.questions = section.questions || [];
                             if (!section.questions.find(q => q.id === question.id)) {
                                 section.questions.push(question);
+                            }
+                        }
+
+                        var originalSection = $scope.originalSections.find(function (s) {
+                            return s.id === sectionId;
+                        });
+
+                        if (originalSection) {
+
+                            // Add question to section
+                            originalSection.questions = originalSection.questions || [];
+                            if (!originalSection.questions.find(q => q.id === question.id)) {
+                                originalSection.questions.push(question);
                             }
                         }
                     });
@@ -308,12 +324,15 @@ app.controller('ExamPreviewController', [
             if (!$scope.allQuestions || $scope.allQuestions.length === 0) {
                 $scope.reviewSections = $scope.sections;
                 $scope.updatePreviewQuestionsDisplay();
-                $scope.updatePreviewQuestionPagination();
                 return;
             }
 
             let reviewSectionsMap = {};
             let reviewSectionsOrder = [];
+
+            // Reset original data for shuffle
+            $scope.originalAllPreviewSections = null;
+            $scope.originalSectionQuestions = {};
 
             $scope.allQuestions.forEach(question => {
                 let sectionNames = [];
@@ -329,7 +348,6 @@ app.controller('ExamPreviewController', [
                             sectionNames.push(section.title);
                             assigned = true;
 
-                            // Add to reviewSections in first occurrence order
                             if (!reviewSectionsMap[section.id]) {
                                 reviewSectionsMap[section.id] = section;
                                 reviewSectionsOrder.push(section);
@@ -355,7 +373,6 @@ app.controller('ExamPreviewController', [
                     $scope.sections.push(newSection);
                     sectionNames.push(newSection.title);
 
-                    // Add new section to reviewSections in order
                     reviewSectionsMap[newSection.id] = newSection;
                     reviewSectionsOrder.push(newSection);
                 }
@@ -363,7 +380,6 @@ app.controller('ExamPreviewController', [
                 question.sectionNames = sectionNames.join(', ');
             });
 
-            // Assign reviewSections in the order of sections
             $scope.reviewSections = reviewSectionsOrder;
 
             // Sort questions inside each section by original question order
@@ -376,32 +392,17 @@ app.controller('ExamPreviewController', [
             });
 
             $scope.updatePreviewQuestionsDisplay();
-            $scope.updatePreviewQuestionPagination();
-        };
-
-        // Toggle preview display mode
-        $scope.togglePreviewDisplayMode = function () {
-            $scope.previewDisplayMode = $scope.previewDisplayMode === 'all' ? 'sections' : 'all';
-            $scope.updatePreviewQuestionsDisplay();
-        };
-
-        // Select section in preview mode
-        $scope.selectPreviewSection = function (section) {
-            $scope.activePreviewSection = section;
-            $scope.previewDisplayMode = 'sections';
-            $scope.currentPreviewQuestionPage = 0;
-            $scope.updatePreviewQuestionsDisplay();
         };
 
         // Update preview display based on current mode
         $scope.updatePreviewQuestionsDisplay = function () {
             if ($scope.previewDisplayMode === 'sections' && $scope.activePreviewSection) {
-                // Show only questions from active section
+                // Single section mode
                 $scope.previewDisplayQuestions = $scope.activePreviewSection.questions || [];
+                $scope.previewDisplaySections = [$scope.activePreviewSection];
             } else {
-                // Show all questions (flatten all preview sections)
+                // All sections mode
                 $scope.previewDisplayQuestions = [];
-                // Use a copy instead of direct assignment
                 $scope.previewDisplaySections = angular.copy($scope.reviewSections);
 
                 $scope.previewDisplaySections.forEach(section => {
@@ -409,18 +410,129 @@ app.controller('ExamPreviewController', [
                         $scope.previewDisplayQuestions.push(...section.questions);
                     }
                 });
-
-                $scope.storeOriginalPreviewOrder();
             }
 
-            $scope.currentPreviewPageSections = $scope.getCurrentPreviewPageSections()
+            // Store original order for shuffle restoration
+            if (!$scope.originalAllPreviewSections) {
+                $scope.originalAllPreviewSections = angular.copy($scope.previewDisplaySections);
+            }
+
+            // Initialize original section questions
+            $scope.previewDisplaySections.forEach(section => {
+                if (!section.id || $scope.originalSectionQuestions[section.id]) return;
+                $scope.originalSectionQuestions[section.id] = angular.copy(section.questions);
+            });
+
+            // Apply shuffle if needed
+            $scope.applyShuffleToPreview();
+
             $scope.updatePreviewQuestionPagination();
-
-            // Force AngularJS to update UI
-            if (!$scope.$$phase) {
-                $scope.$apply();
-            }
+            $scope.getCurrentPreviewPageSections();
         };
+
+        // Apply shuffle logic to preview display
+        $scope.applyShuffleToPreview = function () {
+            if (!$scope.examData.shuffle_questions) {
+                // Restore original order
+                if ($scope.originalAllPreviewSections) {
+                    $scope.previewDisplaySections = angular.copy($scope.originalAllPreviewSections);
+                }
+            } else {
+                // Apply shuffle based on mode
+                if ($scope.previewDisplayMode === 'sections' && $scope.activePreviewSection) {
+                    // Shuffle questions within active section
+                    let questions = $scope.activePreviewSection.questions;
+                    for (let i = questions.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [questions[i], questions[j]] = [questions[j], questions[i]];
+                    }
+                } else {
+                    // Shuffle sections (but keep questions within sections in order)
+                    let sections = $scope.previewDisplaySections;
+                    for (let i = sections.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [sections[i], sections[j]] = [sections[j], sections[i]];
+                    }
+                }
+            }
+
+            // Update global numbering
+            $scope.updateGlobalNumbering();
+        };
+
+        // Update global question numbering
+        $scope.updateGlobalNumbering = function () {
+            let globalCounter = 1;
+
+            $scope.previewDisplaySections.forEach(section => {
+                section.questions.forEach(question => {
+                    question._globalNumber = globalCounter++;
+                });
+            });
+        };
+
+        $scope.getCurrentPreviewPageQuestions = function () {
+            if (!$scope.previewDisplayQuestions || $scope.previewDisplayQuestions.length === 0) {
+                return [];
+            }
+
+            var start = $scope.currentPreviewQuestionPage * $scope.previewQuestionsPerPage;
+            var end = start + parseInt($scope.previewQuestionsPerPage);
+            return $scope.previewDisplayQuestions.slice(start, end);
+        };
+
+        // Get sections for current preview page
+        $scope.getCurrentPreviewPageSections = function () {
+            if (!$scope.previewDisplaySections || $scope.previewDisplaySections.length === 0) {
+                $scope.currentPreviewPageSections = [];
+                return;
+            }
+
+            // Clear cache on page change
+            $scope.cachedPreviewSections = null;
+            $scope.cachedPage = null;
+
+            let start = $scope.currentPreviewQuestionPage * $scope.previewQuestionsPerPage;
+            let end = start + parseInt($scope.previewQuestionsPerPage);
+
+            let resultSections = [];
+            let questionCounter = 0;
+
+            for (let sectionIndex = 0; sectionIndex < $scope.previewDisplaySections.length; sectionIndex++) {
+                let section = $scope.previewDisplaySections[sectionIndex];
+                let totalQuestions = section.questions.length;
+
+                if (questionCounter + totalQuestions <= start) {
+                    questionCounter += totalQuestions;
+                    continue;
+                }
+
+                let sectionCopy = angular.copy(section);
+                sectionCopy.questions = [];
+
+                // Determine slice range for this section
+                let sectionStart = Math.max(0, start - questionCounter);
+                let sectionEnd = Math.min(totalQuestions, end - questionCounter);
+
+                // Slice questions for this section
+                let slicedQuestions = section.questions.slice(sectionStart, sectionEnd);
+                sectionCopy.questions = slicedQuestions;
+
+                // Only add section if it has questions
+                if (slicedQuestions.length > 0) {
+                    resultSections.push(sectionCopy);
+                }
+
+                questionCounter += totalQuestions;
+
+                if (questionCounter >= end) {
+                    break;
+                }
+            }
+
+            $scope.currentPreviewPageSections = resultSections;
+        };
+
         // Update preview question pagination
         $scope.updatePreviewQuestionPagination = function () {
             if (!$scope.previewDisplayQuestions || $scope.previewDisplayQuestions.length === 0) {
@@ -437,126 +549,18 @@ app.controller('ExamPreviewController', [
             }
         };
 
-        // Get questions for current preview page
-        $scope.getCurrentPreviewPageQuestions = function () {
-            if (!$scope.previewDisplayQuestions || $scope.previewDisplayQuestions.length === 0) {
-                return [];
-            }
-
-            var start = $scope.currentPreviewQuestionPage * $scope.previewQuestionsPerPage;
-            var end = start + parseInt($scope.previewQuestionsPerPage);
-            return $scope.previewDisplayQuestions.slice(start, end);
-        };
-
-        $scope.cachedPreviewSections = [];
-
-        // Get sections for current preview page
-        $scope.getCurrentPreviewPageSections = function () {
-            if (!$scope.previewDisplaySections || $scope.previewDisplaySections.length === 0) {
-                return [];
-            }
-
-            var start = $scope.currentPreviewQuestionPage * $scope.previewQuestionsPerPage;
-            var end = start + parseInt($scope.previewQuestionsPerPage);
-
-            // Use cache if available
-            if ($scope.cachedPage === $scope.currentPreviewQuestionPage && $scope.cachedPreviewSections.length) {
-                return $scope.cachedPreviewSections;
-            }
-
-            var resultSections = [];
-            var questionCounter = 0;
-            var globalCounter = 0;
-
-            // Loop through sections
-            for (var s = 0; s < $scope.previewDisplaySections.length; s++) {
-                var section = $scope.previewDisplaySections[s];
-                var totalQuestions = section.questions.length;
-
-                // Skip sections before current page
-                if (questionCounter + totalQuestions <= start) {
-                    questionCounter += totalQuestions;
-                    globalCounter += totalQuestions;
-                    continue;
-                }
-
-                var sectionCopy = angular.copy(section);
-
-                // Determine slice range for this section
-                var sectionStart = Math.max(0, start - questionCounter);
-                var sectionEnd = Math.min(totalQuestions, end - questionCounter);
-
-                // Slice questions for this page
-                var slicedQuestions = section.questions.slice(sectionStart, sectionEnd);
-
-                // Shuffle questions if needed
-                if ($scope.examData.shuffle_questions) {
-                    for (let i = slicedQuestions.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [slicedQuestions[i], slicedQuestions[j]] = [slicedQuestions[j], slicedQuestions[i]];
-                    }
-                }
-
-                // Assign global numbering
-                slicedQuestions.forEach((q, index) => {
-                    q._globalNumber = globalCounter + sectionStart + index + 1;
-                });
-
-                sectionCopy.questions = slicedQuestions;
-                resultSections.push(sectionCopy);
-
-                globalCounter += totalQuestions;
-                questionCounter += totalQuestions;
-
-                if (questionCounter >= end) break;
-            }
-
-            // Cache result
-            $scope.cachedPreviewSections = resultSections;
-            $scope.cachedPage = $scope.currentPreviewQuestionPage;
-
-            // Shuffle options for the sliced questions
-            resultSections.forEach(sec => {
-                sec.questions.forEach(q => {
-                    if (q.options) {
-                        const prevSelected = q.selectedOption !== undefined ? q.options[q.selectedOption] : null;
-
-                        if ($scope.examData.shuffle_options) {
-                            const shuffledOptions = [...q.options];
-                            for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                                const j = Math.floor(Math.random() * (i + 1));
-                                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-                            }
-                            q.options = shuffledOptions;
-                        } else {
-                            q.options.sort((a, b) => a.order - b.order);
-                        }
-
-                        // Restore selected option
-                        if (prevSelected !== null) {
-                            const newIndex = q.options.findIndex(o => o === prevSelected);
-                            q.selectedOption = newIndex !== -1 ? newIndex : undefined;
-                        }
-                    }
-                });
-            });
-
-            console.log(resultSections)
-            return resultSections;
-        };
-
         // Preview navigation functions
         $scope.previousPreviewQuestionPage = function () {
             if ($scope.currentPreviewQuestionPage > 0) {
                 $scope.currentPreviewQuestionPage--;
-                $scope.currentPreviewPageSections = $scope.getCurrentPreviewPageSections()
+                $scope.getCurrentPreviewPageSections();
             }
         };
 
         $scope.nextPreviewQuestionPage = function () {
             if ($scope.currentPreviewQuestionPage < $scope.previewQuestionPages.length - 1) {
                 $scope.currentPreviewQuestionPage++;
-                $scope.currentPreviewPageSections = $scope.getCurrentPreviewPageSections()
+                $scope.getCurrentPreviewPageSections();
             }
         };
 
@@ -574,105 +578,107 @@ app.controller('ExamPreviewController', [
             }
         };
 
-        $scope.storeOriginalPreviewOrder = function () {
-            $scope.originalPreviewSections = angular.copy($scope.previewDisplaySections);
-        };
-
-
-        // Shuffle questions for preview
+        // Toggle shuffle and update display
         $scope.shufflePreviewQuestions = function () {
-
-            if (!$scope.originalAllPreviewSections) {
-                $scope.originalAllPreviewSections = angular.copy($scope.previewDisplaySections);
-            }
-
-            $scope.previewDisplaySections.forEach(sec => {
-                if (!$scope.originalSectionQuestions[sec.id]) {
-                    $scope.originalSectionQuestions[sec.id] = angular.copy(sec.questions);
-                }
-            });
-
-            if (!$scope.examData.shuffle_questions) {
-
-                if ($scope.previewDisplayMode === 'sections' && $scope.activePreviewSection) {
-
-                    // Restore ONLY that section's original questions
-                    const original = $scope.originalSectionQuestions[$scope.activePreviewSection.id];
-                    if (original) {
-                        $scope.activePreviewSection.questions =
-                            angular.copy(original);
-                    }
-
-                } else {
-
-                    // Restore entire set
-                    if ($scope.originalAllPreviewSections) {
-                        $scope.previewDisplaySections =
-                            angular.copy($scope.originalAllPreviewSections);
-                    }
-                }
-                $scope.currentPreviewPageSections = $scope.getCurrentPreviewPageSections()
-                $scope.updatePreviewQuestionsDisplay();
-                return;
-            }
-
-            // Shuffle ON
-            if ($scope.previewDisplayMode === 'sections' && $scope.activePreviewSection) {
-
-                let questions = $scope.activePreviewSection.questions;
-                for (let counter = questions.length - 1; counter > 0; counter--) {
-                    const randomIndex = Math.floor(Math.random() * (counter + 1));
-                    [questions[counter], questions[randomIndex]] = [questions[randomIndex], questions[counter]];
-                }
-
-            } else {
-                let sections = $scope.previewDisplaySections;
-                for (let counter = sections.length - 1; counter > 0; counter--) {
-                    const randomIndex = Math.floor(Math.random() * (counter + 1));
-                    [sections[counter], sections[randomIndex]] = [sections[randomIndex], sections[counter]];
-                }
-            }
-
-            $scope.currentPreviewPageSections = $scope.getCurrentPreviewPageSections()
+            // Just update the display which will apply shuffle logic
             $scope.updatePreviewQuestionsDisplay();
         };
 
+        // Select section in preview mode
+        $scope.selectPreviewSection = function (section) {
+            $scope.activePreviewSection = section;
+            $scope.previewDisplayMode = 'sections';
+            $scope.currentPreviewQuestionPage = 0;
+            $scope.updatePreviewQuestionsDisplay();
+        };
 
+        // Toggle preview display mode
+        $scope.togglePreviewDisplayMode = function () {
+            $scope.previewDisplayMode = $scope.previewDisplayMode === 'all' ? 'sections' : 'all';
+            if ($scope.previewDisplayMode === 'all') {
+                $scope.activePreviewSection = null;
+            }
+            $scope.currentPreviewQuestionPage = 0;
+            $scope.updatePreviewQuestionsDisplay();
+        };
 
         // Shuffle options for preview
         $scope.shufflePreviewOptions = function () {
+            if (!$scope.previewDisplayQuestions || !$scope.previewDisplayQuestions.length) return;
+
+            // Store original order if not already stored
+            if (!$scope.originalQuestionOptions) {
+                $scope.originalQuestionOptions = {};
+            }
+
             $scope.previewDisplayQuestions.forEach(question => {
-                if (question.options) {
-                    // Store the previously selected option
-                    const prevSelected = question.selectedOption !== undefined ? question.options[question.selectedOption] : null;
-                    if ($scope.examData.shuffle_options) {
+                if (!question.options || !question.options.length) return;
 
-                        // Shuffle options
-                        const shuffledOptions = [...question.options];
-                        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-                        }
-                        question.options = shuffledOptions;
+                // Initialize original options storage for this question if needed
+                if (!$scope.originalQuestionOptions[question.id]) {
+                    $scope.originalQuestionOptions[question.id] = angular.copy(question.options);
+                }
+
+                if ($scope.examData.shuffle_options) {
+                    // Store previous selection
+                    const prevSelectedOption = question.selectedOption !== undefined
+                        ? angular.copy(question.options[question.selectedOption])
+                        : null;
+
+                    // Shuffle options
+                    const shuffledOptions = [...question.options];
+                    for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
                     }
+                    question.options = shuffledOptions;
 
-                    if (!$scope.examData.shuffle_options) {
-                        const reOrderedOptions = [...question.options];
-                        let orderedOptions = [];
-                        for (let index = 0; index < reOrderedOptions.length; index++) {
-                            const option = reOrderedOptions.find(o => o.order === index + 1);
-                            orderedOptions[index] = option;
-                        }
-                        question.options = orderedOptions;
-                    }
-
-                    // Restore selected option
-                    if (prevSelected !== null) {
-                        const newIndex = question.options.findIndex(o => o === prevSelected);
+                    // Restore selection if exists
+                    if (prevSelectedOption !== null) {
+                        const newIndex = question.options.findIndex(o =>
+                            o.text === prevSelectedOption.text &&
+                            o.id === prevSelectedOption.id
+                        );
                         question.selectedOption = newIndex !== -1 ? newIndex : undefined;
+                    }
+                } else {
+                    // Restore original order
+                    const originalOptions = $scope.originalQuestionOptions[question.id];
+                    if (originalOptions) {
+                        // Store current selection before restoring
+                        const currentSelectedOption = question.selectedOption !== undefined
+                            ? angular.copy(question.options[question.selectedOption])
+                            : null;
+
+                        // Restore original order
+                        question.options = angular.copy(originalOptions);
+
+                        // Restore selection if exists
+                        if (currentSelectedOption !== null) {
+                            const newIndex = question.options.findIndex(o =>
+                                o.text === currentSelectedOption.text &&
+                                o.id === currentSelectedOption.id
+                            );
+                            question.selectedOption = newIndex !== -1 ? newIndex : undefined;
+                        }
                     }
                 }
             });
+
+            // Also update options in current page sections for consistency
+            if ($scope.currentPreviewPageSections) {
+                $scope.currentPreviewPageSections.forEach(section => {
+                    if (section.questions && section.questions.length) {
+                        section.questions.forEach(q => {
+                            const updatedQuestion = $scope.previewDisplayQuestions.find(pq => pq.id === q.id);
+                            if (updatedQuestion) {
+                                q.options = angular.copy(updatedQuestion.options);
+                                q.selectedOption = updatedQuestion.selectedOption;
+                            }
+                        });
+                    }
+                });
+            }
         };
 
         // Initialize Step 4
@@ -686,8 +692,10 @@ app.controller('ExamPreviewController', [
             }
 
             // Update display
+            $scope.getCurrentPreviewPageSections();
             $scope.updatePreviewQuestionsDisplay();
             $scope.updatePreviewQuestionPagination();
+            console.log($scope.currentPreviewPageSections)
         };
 
         // Question page navigation
@@ -704,15 +712,6 @@ app.controller('ExamPreviewController', [
         $scope.nextQuestionPage = function () {
             if ($scope.currentQuestionPage < $scope.questionPages.length - 1) {
                 $scope.currentQuestionPage++;
-            }
-        };
-
-        $scope.selectOption = function (questionId, oIndex) {
-            const question = $scope.allQuestions.find(q => q.id === questionId);
-            question.selectedOption = oIndex;
-            let realIndex = $scope.allQuestions.findIndex(q => q.id === question.id);
-            if (realIndex !== -1) {
-                $scope.allQuestions[realIndex].selectedOption = oIndex;
             }
         };
 
@@ -737,7 +736,6 @@ app.controller('ExamPreviewController', [
             $scope.step3Completed = $scope.areSettingsValid();
             $scope.step4Completed = $scope.step1Completed && $scope.step2Completed && $scope.step3Completed;
             $scope.step5Completed = $scope.examData && $scope.examData.status === 'published';
-
             if ($scope.currentStep === 4) {
                 $scope.initializeStep4();
             }
@@ -808,6 +806,15 @@ app.controller('ExamPreviewController', [
                     type: 'error',
                     title: 'Cannot publish exam',
                     msg: 'Please complete all requirements before publishing.'
+                });
+                return;
+            }
+
+            if (!isPastStartTime($scope.examData.start_time)) {
+                Toast.fire({
+                    type: 'error',
+                    title: 'Cannot publish exam',
+                    msg: 'Exam start time must be in the future.'
                 });
                 return;
             }
