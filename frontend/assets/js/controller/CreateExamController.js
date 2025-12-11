@@ -74,7 +74,7 @@ app.controller('CreateExamController', [
             if (exam && exam !== undefined) {
                 // $scope.creatingExam = false;
                 await $http({
-                    url: window.baseUrl + '/API/exams/' + exam,
+                    url: window.baseUrl + '/API/exam/' + exam,
                     method: 'GET'
                 }).then(async function (response) {
                     if (response.data.status === 'success') {
@@ -114,7 +114,7 @@ app.controller('CreateExamController', [
                                 $scope.examData.shuffle_options = settings.shuffle_options;
                                 $scope.examData.show_results_immediately = settings.immediate_results;
                                 $scope.examData.allow_retake = settings.retake;
-                                $scope.examData.max_attempts = settings.max_attempts;
+                                $scope.examData.max_attempts = settings.max_attempts ? settings.max_attempts : 1;
                                 $scope.examData.enable_proctoring = settings.enable_proctoring;
                                 $scope.examData.full_screen_mode = settings.full_screen_mode;
                                 $scope.examData.disable_copy_paste = settings.disable_copy_paste;
@@ -133,6 +133,9 @@ app.controller('CreateExamController', [
                                 $scope.nextStep();
                             }
                         }
+                    } else if (getPath() === '/exam/edit/' + getIdFromUrl()) {
+                        console.log(getPath() === '/exam/edit/' + getIdFromUrl())
+                        window.location.href = window.baseUrl + '/exam/create'
                     }
                 }, function (error) {
                     const errorMsg = error.data?.message || 'Failed to fetch exam data';
@@ -276,7 +279,7 @@ app.controller('CreateExamController', [
             }
 
             $http({
-                url: window.baseUrl + '/API/exams/basic_info' + ($scope.location.exam ? '/' + $scope.location.exam : 'save'),
+                url: window.baseUrl + '/API/exams/basic_info/' + ($scope.location.exam ? $scope.location.exam : 'save'),
                 method: 'POST',
                 data: formData
             }).then(function (response) {
@@ -287,7 +290,7 @@ app.controller('CreateExamController', [
                         msg: 'Exam basic info ' + ($scope.location.exam ? 'updated' : 'saved') + ' successfully'
                     });
                     setTimeout(() => {
-                        window.location.href = window.baseUrl + '/create_exam?exam=' + response.data.exam.id;
+                        window.location.href = window.baseUrl + '/exam/edit/' + response.data.exam.id;
                     }, 500);
                 } else {
                     Toast.fire({
@@ -460,12 +463,9 @@ app.controller('CreateExamController', [
         };
 
         $scope.saveCurrentQuestion = async function () {
+            console.log($scope.isPastStartTime())
             if ($scope.isPastStartTime()) {
-                Toast.fire({
-                    type: 'error',
-                    title: 'Validation Error!',
-                    msg: 'Since the exam has already started, you cannot save the question.'
-                })
+                
                 return;
             }
 
@@ -596,6 +596,7 @@ app.controller('CreateExamController', [
                     // Update other properties
                     existingQuestion.answer = $scope.currentQuestion.answer;
                     existingQuestion.marks = $scope.currentQuestion.marks;
+                    existingQuestion.grid = $scope.currentQuestion.grid;
                     existingQuestion.assignedSections = angular.copy($scope.currentQuestion.assignedSections);
                     $scope.updateBaseDatas();
                     if ($scope.savedQuestions.length === $scope.examData.total_questions) {
@@ -649,6 +650,10 @@ app.controller('CreateExamController', [
                                     if ($scope.savedQuestions.length === $scope.examData.total_questions) {
                                         $scope.currentQuestion = null;
                                     }
+
+                                    $scope.currentQuestion = $scope.toLoadQuestion;
+                                    $scope.currentQuestionIndex = $scope.toLoadQuestionIndex;
+                                    $scope.$apply();
                                 }
                             },
                             cancel: {
@@ -656,6 +661,9 @@ app.controller('CreateExamController', [
                                 background: '#dc2626',
                                 onCancel: function () {
                                     $scope.closePopover();
+                                    $scope.currentQuestion = $scope.toLoadQuestion;
+                                    $scope.currentQuestionIndex = $scope.toLoadQuestionIndex;
+                                    $scope.$apply();
                                 }
                             }
                         }
@@ -691,13 +699,13 @@ app.controller('CreateExamController', [
                         cancel: {
                             text: 'No, Cancel',
                             background: '#dc2626',
-                            onCancel: function () {
+                            onCancel: async function () {
                                 // Load the new question without saving
-                                $scope.storeUnsavedQuestions();
-                                $scope.currentQuestion = angular.copy($scope.savedQuestions[index]);
-                                $scope.currentQuestionIndex = index;
-                                $scope.$apply();
+                                await $scope.storeUnsavedQuestions();
                                 $scope.closePopover()
+                                $scope.toLoadQuestion = angular.copy($scope.savedQuestions[index]);
+                                $scope.toLoadQuestionIndex = index;
+                                $scope.$apply();
                             }
                         }
                     }
@@ -1391,7 +1399,7 @@ app.controller('CreateExamController', [
 
         // Save exam settings
         $scope.saveExamSettings = async function () {
-            if ($scope.isPastStartTime()) {
+            if ($scope.isPastStartTime() && $scope.settings) {
                 Toast.fire({
                     type: 'error',
                     title: 'Validation Error!',
@@ -1400,7 +1408,7 @@ app.controller('CreateExamController', [
                 return false;
             }
 
-            if ($scope.isExamComplete()) {
+            if ($scope.isExamComplete() && $scope.settings) {
                 Toast.fire({
                     type: 'error',
                     title: 'Validation Error!',
@@ -1469,7 +1477,7 @@ app.controller('CreateExamController', [
                 $scope.examData.enable_proctoring = settings.enable_proctoring;
                 $scope.examData.full_screen_mode = settings.full_screen_mode;
                 $scope.examData.disable_copy_paste = settings.disable_copy_paste;
-                $scope.examData.isSettingsDone = settings.isDone
+                $scope.examData.isSettingsDone = settings.isDone;
                 return true;
             }
 
@@ -1506,6 +1514,9 @@ app.controller('CreateExamController', [
 
         // Check is start time passed
         $scope.isPastStartTime = function () {
+            if (!$scope.examData.schedule_type) {
+                return false;
+            }
             if ($scope.examData.schedule_type === 'anytime') {
                 return true;
             }
@@ -1517,6 +1528,9 @@ app.controller('CreateExamController', [
 
         // Check is exam complete
         $scope.isExamComplete = () => {
+            if (!$scope.examData.schedule_type) {
+                return false;
+            }
             if ($scope.examData.schedule_type === 'anytime') {
                 return false;
             }

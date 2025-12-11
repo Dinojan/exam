@@ -61,14 +61,25 @@ function getParameterByName(name, url) {
     return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-function getIdFromUrl( indexFromEnd = 1, url) {
-    var fullUrl = url || window.location.href;
-    var pathParts = new URL(fullUrl).pathname.split('/').filter(Boolean);
-    var idIndex = pathParts.length - indexFromEnd;
-    return pathParts[idIndex] || null;
+function getIdFromUrl(indexFromEnd = 1, url) {
+    const fullUrl = url || window.location.href;
+    const pathParts = new URL(fullUrl).pathname.split('/').filter(Boolean);
+    const idStr = pathParts[pathParts.length - indexFromEnd];
+
+    // Check if it's a number
+    const id = parseInt(idStr, 10);
+    return isNaN(id) ? null : id;
+}
+
+
+function getPathAfterBase() {
+    const baseUrl = window.baseUrl
+    const fullUrl = window.location.href;
+    return fullUrl.replace(baseUrl, '') || '/';
 }
 
 window.getParameterByName = getParameterByName;
 window.getIdFromUrl = getIdFromUrl;
+window.getPath = getPathAfterBase;
 //Initialize Select2 Elements
 $('.select2').select2()

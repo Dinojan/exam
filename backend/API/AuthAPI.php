@@ -11,7 +11,6 @@ class AuthAPI
         }
         return view('auth.login', ['title' => 'User Login']);
     }
-
     public function login()
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -54,11 +53,11 @@ class AuthAPI
                 'status' => 'success',
                 'msg' => 'Login successful',
                 'user' => [
-                        'id' => $user['id'],
-                        'role' =>  $user['user_group'],
-                        'username' => $user['name'],
-                        'email' => $email
-                    ]
+                    'id' => $user['id'],
+                    'role' => $user['user_group'],
+                    'username' => $user['name'],
+                    'email' => $email
+                ]
             ]);
 
         } catch (Exception $e) {
@@ -68,7 +67,6 @@ class AuthAPI
             ]);
         }
     }
-
     public function logout()
     {
         if (session_status() === PHP_SESSION_NONE) {
@@ -85,5 +83,35 @@ class AuthAPI
             'status' => 'success',
             'msg' => 'Logged out successfully'
         ]);
+    }
+    public function getSession()
+    {
+        if (!isset($_SESSION)) {
+            session_start();
+        }
+        header('Content-Type: application/json');
+
+        try {
+            if (!isset($_SESSION)) {
+                throw new Exception('No session started.');
+            }
+
+            echo json_encode([
+                'status' => 'success',
+                'msg' => 'Session retrieved successfully',
+                'user' => $_SESSION
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage(),
+                'user' => new stdClass()
+            ]);
+        }
+        exit;
+    }
+
+    public function registerStudentsForExam() {
+        return true;
     }
 }

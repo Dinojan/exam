@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-gray-100">Exam Review & Preview</h1>
             <p class="text-gray-400">Review exam before publishing</p>
         </div>
-        <div class="flex items-center space-x-4 mt-4 md:mt-0">
+        <div ng-show="isExamFullySetup()" class="flex items-center space-x-4 mt-4 md:mt-0">
             <!-- Status Badge -->
             <div class="px-4 py-2 rounded-lg border"
                 ng-class="examData.status === 'published' ? 'border-green-500 bg-green-900/20 text-green-400' : 
@@ -27,8 +27,102 @@
         </div>
     </div>
 
+    <!-- Exam Not Fully Setup Alert -->
+    <div ng-show="!isExamFullySetup() && (isBasicInfoComplete() || areQuestionsComplete() || areSettingsComplete())"
+        class="bg-yellow-900/20 border border-yellow-700 rounded-lg p-6 mb-6">
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-yellow-400 mb-2">Exam Setup Incomplete</h3>
+                <p class="text-gray-300 mb-3">You cannot review, preview, or publish this exam because some required
+                    setup steps are missing.</p>
+
+                <!-- Setup Checklist -->
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center"
+                        ng-class="isBasicInfoComplete() ? 'text-green-400' : 'text-yellow-400'">
+                        <i class="fas fa-fw mr-2"
+                            ng-class="isBasicInfoComplete() ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
+                        <span>Basic Information: {{isBasicInfoComplete() ? 'Complete' : 'Incomplete'}}</span>
+                    </div>
+
+                    <div class="flex items-center"
+                        ng-class="areQuestionsComplete() ? 'text-green-400' : 'text-yellow-400'">
+                        <i class="fas fa-fw mr-2"
+                            ng-class="areQuestionsComplete() ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
+                        <span>Questions & Sections: {{areQuestionsComplete() ? 'Complete' : 'Incomplete'}}</span>
+                    </div>
+
+                    <div class="flex items-center"
+                        ng-class="areSettingsComplete() ? 'text-green-400' : 'text-yellow-400'">
+                        <i class="fas fa-fw mr-2"
+                            ng-class="areSettingsComplete() ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
+                        <span>Schedule & Settings: {{areSettingsComplete() ? 'Complete' : 'Incomplete'}}</span>
+                    </div>
+                </div>
+
+                <!-- Missing Requirements Details -->
+                <div class="bg-black/30 rounded-lg p-4 mb-4" ng-show="getMissingRequirements().length > 0">
+                    <h4 class="text-sm font-medium text-yellow-400 mb-2">Missing Requirements:</h4>
+                    <ul class="list-disc list-inside text-sm text-gray-300 space-y-1">
+                        <li ng-repeat="requirement in getMissingRequirements() track by $index">{{requirement}}</li>
+                    </ul>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap justify-end gap-3">
+                    <a href="<?php echo BASE_URL; ?>/exam/edit/{{location.exam}}"
+                        class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                        <i class="fas fa-edit"></i>
+                        <span>Complete Setup</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam does NOT exist or no setup started -->
+    <div ng-show="!isExamFullySetup() && !isBasicInfoComplete() && !areQuestionsComplete() && !areSettingsComplete()"
+        class="bg-yellow-900/20 border border-yellow-700 rounded-lg p-6 mb-6">
+
+        <div class="flex items-start space-x-4">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-yellow-500 text-3xl"></i>
+            </div>
+
+            <div class="flex-1">
+                <h3 class="text-xl font-semibold text-yellow-400 mb-2">Exam Not Created</h3>
+
+                <p class="text-gray-300 mb-4">
+                    This exam has not been created yet. Please create a new exam before adding questions,
+                    settings, or publishing.
+                </p>
+
+                <div class="bg-black/30 p-4 rounded-lg mb-4">
+                    <h4 class="text-sm font-medium text-yellow-400 mb-2">Steps Required:</h4>
+                    <ul class="list-disc list-inside text-sm text-gray-300 space-y-1">
+                        <li>Create a new exam</li>
+                        <li>Complete basic information</li>
+                        <li>Add sections and questions</li>
+                        <li>Configure schedule & settings</li>
+                    </ul>
+                </div>
+
+                <div class="flex flex-wrap justify-end gap-3">
+                    <a href="<?php echo BASE_URL; ?>/exam/create"
+                        class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                        <i class="fas fa-plus"></i>
+                        <span>Create New Exam</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 5-Step Navigation -->
-    <div class="mb-8">
+    <div ng-show="isExamFullySetup()" class="mb-8">
         <div class="flex items-center justify-center">
             <div class="flex items-center w-full max-w-4xl mx-auto">
                 <!-- Step 1: Basic Info -->
@@ -132,7 +226,7 @@
     </div>
 
     <!-- Step 1: Basic Exam Information -->
-    <div ng-show="currentStep === 1" class="max-w-4xl mx-auto">
+    <div ng-show="isExamFullySetup() && currentStep === 1" class="max-w-4xl mx-auto">
         <div class="md:bg-[#0004] rounded-lg md:p-6 md:border border-gray-600">
             <h2 class="text-xl font-semibold text-gray-100 mb-6">Exam Basic Information</h2>
 
@@ -272,7 +366,7 @@
     </div>
 
     <!-- Step 2: Questions Review -->
-    <div ng-show="currentStep === 2" class="max-w-7xl mx-auto">
+    <div ng-show="isExamFullySetup() && currentStep === 2" class="max-w-7xl mx-auto">
         <div class="md:bg-[#0004] rounded-lg md:p-6 md:border border-gray-600">
             <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                 <h2 class="text-xl font-semibold text-gray-100">Questions Review</h2>
@@ -329,13 +423,13 @@
             </div>
 
             <!-- Two Column Layout -->
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Left Column - Sections/Page Navigation -->
-                <div class="lg:col-span-2">
+                <div class="lg:col-span-1">
                     <!-- Sections List -->
                     <div class="md:bg-[#0004] rounded-lg md:p-4 md:border border-gray-600 mb-4">
                         <h3 class="text-lg font-medium text-gray-100 mb-3">Sections ({{sections.length}})</h3>
-                        <div class="space-y-2 max-h-80 overflow-y-auto">
+                        <div ng-if="sections.length > 0" class="space-y-2 max-h-80 overflow-y-auto">
                             <div ng-repeat="section in originalSections" ng-click="selectSection(section)"
                                 class="p-3 rounded-lg border cursor-pointer transition-colors duration-200" ng-class="(questionsDisplayMode === 'sections' && activeSection && activeSection.id === section.id) ? 
                                            'bg-cyan-900/20 border-cyan-600' : 
@@ -348,6 +442,12 @@
                                 </div>
                                 <p class="text-xs text-gray-400 mt-1 truncate">{{section.title}}</p>
                             </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div ng-if="sections.length === 0"
+                            class="flex justify-center items-center h-40 text-gray-400 text-sm italic">
+                            No sections available.
                         </div>
                     </div>
 
@@ -715,7 +815,7 @@
     </div>
 
     <!-- Step 3: Exam Settings -->
-    <div ng-show="currentStep === 3" class="max-w-4xl mx-auto">
+    <div ng-show="isExamFullySetup() && currentStep === 3" class="max-w-4xl mx-auto">
         <div class="md:bg-[#0004] rounded-lg md:p-6 md:border border-gray-600">
             <h2 class="text-xl font-semibold text-gray-100 mb-6">Exam Settings & Configuration</h2>
 
@@ -834,7 +934,7 @@
     </div>
 
     <!-- Step 4: Exam Preview -->
-    <div ng-show="currentStep === 4" class="max-w-4xl mx-auto lg:col-span-2">
+    <div ng-show="isExamFullySetup() && currentStep === 4" class="max-w-4xl mx-auto lg:col-span-2">
         <!-- Check Settings -->
         <div class="flex flex-wrap w-full md:w-auto items-center justify-center md:justify-end mb-10 gap-4">
             <!-- Display Mode Toggle -->
@@ -1127,7 +1227,7 @@
     </div>
 
     <!-- Step 5: Publish Exam -->
-    <div ng-show="currentStep === 5" class="max-w-4xl mx-auto">
+    <div ng-show="isExamFullySetup() && currentStep === 5" class="max-w-4xl mx-auto">
         <div class="bg-[#0004] rounded-lg p-6 border border-gray-600">
             <h2 class="text-xl font-semibold text-gray-100 mb-6">Publish Exam</h2>
 
@@ -1157,7 +1257,8 @@
                             <i class="fas fa-check-circle mr-2"></i>
                             <span class="font-medium">This exam is already published</span>
                         </div>
-                        <p class="text-gray-300">Published on: {{examData.published_at | date:'fullDate'}}</p>
+                        <p class="text-gray-300">Published on: {{ examData.published_at | date:'fullDate' }}
+                            at {{ examData.published_at | date:'shortTime' }}</p>
                     </div>
 
                     <div ng-if="examData.status === 'draft'">
@@ -1295,7 +1396,7 @@
                 <div class="mt-6 pt-6 border-t border-gray-600">
                     <h4 class="font-medium text-gray-100 mb-2">Entry Link</h4>
                     <div class="flex items-center">
-                        <input type="text" value="<?php echo BASE_URL . '/attempt/'; ?>{{location.exam}}" readonly
+                        <input type="text" value="<?php echo BASE_URL . '/attempt/'; ?>{{location.exam}}/register" readonly
                             class="flex-1 bg-[#0008] border border-gray-600 text-gray-300 rounded-l-lg px-4 py-2">
                         <button ng-click="copyToClipboard($event.target.previousElementSibling)"
                             class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-r-lg">
@@ -1332,7 +1433,7 @@
     </div>
 
     <!-- Navigation Buttons -->
-    <div class="flex justify-center gap-4 mt-8 pt-6 border-t border-gray-600">
+    <div ng-show="isExamFullySetup()" class="flex justify-center gap-4 mt-8 pt-6 border-t border-gray-600">
         <button ng-click="previousStep()" ng-show="currentStep > 1"
             class="px-6 py-2 border border-gray-600 text-gray-300 rounded-lg font-medium flex items-center space-x-2 hover:bg-gray-700 transition-colors duration-200">
             <i class="fas fa-arrow-left"></i>

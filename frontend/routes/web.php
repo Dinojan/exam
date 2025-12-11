@@ -28,6 +28,8 @@ Router::group(['middleware' => ['auth']], function () {
         Router::get('/my', 'PageAPI@myExams', 'my_exams');
         Router::get('/preview/{exam_id}', 'PageAPI@previewExam', 'exam');
         Router::get('/attempt/{hased_rest_url}', 'PageAPI@attemptExam', 'attempt_exam');
+        Router::get('/results/{exam_id}', 'PageAPI@examResults', 'exam_results');
+        Router::get('/exam/attempt/{id}/register', 'PageAPI@examAttemptRegister', 'exam_register_for_students', ['auth']);
     });
 
     // 🔹 Questions
@@ -87,9 +89,13 @@ Router::group(['prefix' => 'API'], function () {
     Router::get('/user_groups/{id}', 'UserGroupAPI@createUserGroup', 'create_user_group', ['auth']);
     Router::get('/user_groups/{id}/permissions', 'UserGroupAPI@getGroupPermissions', 'get_group_permissions', ['auth']);
     Router::get('/auth/logged_user', 'UserAPI@getLoggedUserAccesses', 'get_logged_user_accesses', ['auth']);
-    Router::get('/exams/{id}', 'ExamAPI@getExamData', 'get_exam', ['auth']);
-    Router::get('/exam/data/{id}', 'ExamAPI@getExamDataForPreview', 'get_exam', ['auth']);
     Router::get('/exam/all', 'ExamAPI@getAllExams', 'get_all_exams', ['auth']);
+    Router::get('/exam/my/{user_id}', 'ExamAPI@getUserExams', 'get_user_exams', ['auth']);
+    Router::get('/exam/data/{id}', 'ExamAPI@getExamDataForPreview', 'get_exam', ['auth']);
+    Router::get('/exam/attempt/{id}/register', 'AuthAPI@registerStudentsForExam', 'register_students_for_exam', ['auth']);
+    Router::get('/exam/attempt/{id}', 'ExamAPI@getExamDataForAttempt', 'get_exam_data_for_attempt', ['auth']);
+    Router::get('/exam/{id}', 'ExamAPI@getExamData', 'get_exam', ['auth']);
+    Router::get('/session', 'AuthAPI@getSession', 'get_session', ['auth']);
 
     Router::put('/user_groups/{id}/permissions', 'UserGroupAPI@setPermissions', 'set_group_permissions', ['auth']);
     Router::post('/user_groups/{id}', 'UserGroupAPI@updateUserGroup', 'update_user_group', ['auth']);
@@ -102,6 +108,7 @@ Router::group(['prefix' => 'API'], function () {
     Router::delete('/user_groups/{id}', 'UserGroupAPI@deleteUserGroup', 'delete_user_group', ['auth']);
     Router::delete('/questions/delete_question/{id}', 'QuestionAPI@deleteQuestion', 'delete_question', ['auth']);
     Router::delete('/sections/delete/{id}', 'SectionAPI@deleteSection', 'delete_section', ['auth']);
+    Router::delete('/exam/delete/{id}', 'ExamAPI@deleteExam', 'delete_exam', ['auth']);
 });
 
 Router::group(['prefix' => 'modal'], function () {

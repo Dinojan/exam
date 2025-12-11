@@ -33,6 +33,7 @@ app.controller('ExamPreviewController', [
         // Initialize function
         $scope.init = async function () {
             await $scope.loadExamData();
+            $scope.isExamFullySetup();
             $scope.updateStepCompletion();
         };
 
@@ -57,6 +58,7 @@ app.controller('ExamPreviewController', [
                         passing_marks: examInfo.passing_marks,
                         instructions: formatInstructions(examInfo.instructions),
                         status: examInfo.status,
+                        published_at: examInfo.published_at ? new Date(examInfo.published_at).toISOString() : null,
                         schedule_type: examSettings.schedule_type,
                         start_time: examSettings.start_time,
                         end_time: (function () {
@@ -72,8 +74,7 @@ app.controller('ExamPreviewController', [
                         disable_right_click: examSettings.disable_right_click,
                         allow_retake: examSettings.allow_retake,
                         max_attempts: examSettings.max_attempts,
-                        allow_navigation: true,
-                        published_at: null
+                        allow_navigation: true
                     };
 
                     $scope.sections = sections || [];
@@ -466,6 +467,21 @@ app.controller('ExamPreviewController', [
                 }
             }
 
+            // Shuffle options if needed
+            if ($scope.examData.shuffle_options) {
+                $scope.previewDisplaySections.forEach(section => {
+                    section.questions.forEach(question => {
+                        if (!question.options || !question.options.length) return;
+                        // Shuffle options
+                        for (let i = question.options.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [question.options[i], question.options[j]] = [question.options[j], question.options[i]];
+                        }
+                    });
+                });
+            }
+
+
             // Update global numbering
             $scope.updateGlobalNumbering();
         };
@@ -755,8 +771,9 @@ app.controller('ExamPreviewController', [
             return $scope.examData &&
                 $scope.examData.title &&
                 $scope.examData.code &&
-                ($scope.examData.duration > 0) &&
-                ($scope.totalQuestions > 0);
+                $scope.examData.duration > 0 &&
+                $scope.examData.total_marks > 0 &&
+                $scope.examData.passing_marks > 0;
         };
 
         $scope.areSettingsValid = function () {
@@ -786,7 +803,8 @@ app.controller('ExamPreviewController', [
                         });
 
                         $scope.examData.status = $scope.examData.schedule_type === 'scheduled' ? 'scheduled' : 'published';
-                        $scope.examData.published_at = new Date().toISOString();
+                        // $scope.examData.published_at = new Date().toISOString();
+                        $scope.examData.published_at = new Date(response.data.published_at).toISOString();
                         $scope.step5Completed = true;
 
                     } else {
@@ -819,7 +837,7 @@ app.controller('ExamPreviewController', [
                 return;
             }
 
-            if (!isPastStartTime($scope.examData.start_time)) {
+            if (isPastStartTime($scope.examData.start_time)) {
                 Toast.fire({
                     type: 'error',
                     title: 'Cannot publish exam',
@@ -908,30 +926,35 @@ app.controller('ExamPreviewController', [
 
         // Check is start time passed
         function isPastStartTime(startTime) {
-            if ($scope.examData.schedule_type === 'anytime') {
-                return true;
+            if (($scope.examData.status === 'published' || $scope.examData.status === 'scheduled')) {
+                if ($scope.examData.schedule_type === 'anytime') {
+                    return true;
+                }
+                const now = new Date();
+                const examStart = new Date(startTime);
+                return now >= examStart;
             }
-            const now = new Date();
-            const examStart = new Date(startTime);
-            return now >= examStart;
+            return false;
         }
 
         // Check is exam complete
         function isExamComplete() {
-            if ($scope.examData.schedule_type === 'anytime') {
-                return false;
+            if (($scope.examData.status === 'published' || $scope.examData.status === 'scheduled')) {
+                if ($scope.examData.schedule_type === 'anytime') {
+                    return false;
+                }
+
+                const now = new Date();
+                const examStart = new Date($scope.examData.start_time);
+                const examDurationMinutes = parseInt($scope.examData.duration);
+
+                // Calculate exam end time
+                const examEnd = new Date(examStart.getTime() + examDurationMinutes * 60000);
+
+                // Return true if current time is after exam end
+                return now >= examEnd;
             }
-
-            const now = new Date();
-            const examStart = new Date($scope.examData.start_time);
-            const examDurationMinutes = parseInt($scope.examData.duration);
-            
-            // Calculate exam end time
-            const examEnd = new Date(examStart.getTime() + examDurationMinutes * 60000);
-            console.log(now >= examEnd)
-
-            // Return true if current time is after exam end
-            return now >= examEnd;
+            return false;
         }
 
         // Unpublish exam
@@ -1096,6 +1119,131 @@ app.controller('ExamPreviewController', [
                 Toast.fire({ type: 'error', title: 'Error', msg: 'Failed to copy link.' });
                 console.error(e);
             }
+        };
+
+        $scope.isExamFullySetup = function () {
+            return $scope.isBasicInfoComplete() &&
+                $scope.areQuestionsComplete() &&
+                $scope.areSettingsComplete();
+        };
+
+        $scope.areQuestionsComplete = function () {
+            // For preview, check if we have questions and sections
+            if (!$scope.allQuestions || $scope.allQuestions.length === 0) return false;
+            if (!$scope.originalSections || $scope.originalSections.length === 0) return false;
+
+            // Check if all questions are properly assigned to sections
+            let allQuestionsAssigned = true;
+            // $scope.allQuestions.forEach(function (question) {
+            //     if (!question.sectionIds || question.sectionIds.length === 0) {
+            //         allQuestionsAssigned = false;
+            //     }
+            // });
+
+            $scope.originalSections.forEach(function (section) {
+                if (!section.questions || section.questions.length === 0) {
+                    allQuestionsAssigned = false;
+                }
+
+                if (section.questions.length !== section.questions_count) {
+                    allQuestionsAssigned = false;
+                }
+
+                if (section.questions.length === section.questions_count) {
+                    allQuestionsAssigned = true;
+                }
+            })
+
+            return allQuestionsAssigned;
+        };
+
+        $scope.areSettingsComplete = function () {
+            if (!$scope.examData || !$scope.examData.schedule_type) return false;
+
+            // Check schedule type specific requirements
+            if ($scope.examData.schedule_type === 'scheduled') {
+                if (!$scope.examData.start_time) return false;
+
+                // Check if start time is in the future for scheduled exams
+                const now = new Date();
+                const examStart = new Date($scope.examData.start_time);
+                if (now >= examStart && $scope.examData.status !== 'published' && $scope.examData.status !== 'scheduled') {
+                    return false; // Start time must be in future for unpublished exams
+                }
+            }
+
+            // Check all required settings are defined (not undefined)
+            const requiredSettings = [
+                'shuffle_questions',
+                'shuffle_options',
+                'show_results_immediately',
+                'allow_retake',
+                'full_screen_mode',
+                'disable_copy_paste',
+                'disable_right_click'
+            ];
+
+            for (let setting of requiredSettings) {
+                if ($scope.examData[setting] === undefined) {
+                    return false;
+                }
+            }
+
+            // If retake is allowed, check max attempts is set
+            if ($scope.examData.allow_retake &&
+                (!$scope.examData.max_attempts || $scope.examData.max_attempts < 1)) {
+                return false;
+            }
+
+            return true;
+        };
+
+        $scope.getMissingRequirements = function () {
+            var missing = [];
+
+            if (!$scope.isBasicInfoComplete()) {
+                missing.push("Complete basic exam information (title, code, duration, marks)");
+            }
+
+            if (!$scope.areQuestionsComplete()) {
+                if (!$scope.allQuestions || $scope.allQuestions.length === 0) {
+                    missing.push("Create at least one question");
+                } else if (!$scope.originalSection || $scope.originalSection.length === 0) {
+                    missing.push("Create at least one section");
+                } else {
+                    // Check for unassigned questions
+                    const unassignedQuestions = $scope.allQuestions.filter(q =>
+                        !q.sectionIds || q.sectionIds.length === 0
+                    );
+                    if (unassignedQuestions.length > 0) {
+                        missing.push(`Assign ${unassignedQuestions.length} unassigned question${unassignedQuestions.length > 1 ? 's' : ''} to sections`);
+                    }
+                }
+            }
+
+            if (!$scope.areSettingsComplete()) {
+                if (!$scope.examData.schedule_type) {
+                    missing.push("Select schedule type (anytime or scheduled)");
+                } else if ($scope.examData.schedule_type === 'scheduled') {
+                    if (!$scope.examData.start_time) {
+                        missing.push("Set start date and time for scheduled exam");
+                    } else {
+                        const now = new Date();
+                        const examStart = new Date($scope.examData.start_time);
+                        if (now >= examStart && $scope.examData.status !== 'published') {
+                            missing.push("Start time must be in the future for scheduled exams");
+                        }
+                    }
+                }
+
+                // Check individual settings
+                if ($scope.examData.allow_retake &&
+                    (!$scope.examData.max_attempts || $scope.examData.max_attempts < 1)) {
+                    missing.push("Set maximum attempts when retake is allowed");
+                }
+            }
+
+            return missing;
         };
 
         // Initialize on load

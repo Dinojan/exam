@@ -28,7 +28,7 @@
         <button ng-click="setFilter('active')"
             ng-class="{'bg-green-600 text-white': currentFilter === 'active', 'bg-[#0005] text-gray-300': currentFilter !== 'active'}"
             class="px-4 py-2 rounded-lg transition-colors">
-            Active
+            On live
         </button>
         <button ng-click="setFilter('upcoming')"
             ng-class="{'bg-blue-600 text-white': currentFilter === 'upcoming', 'bg-[#0005] text-gray-300': currentFilter !== 'upcoming'}"
@@ -36,7 +36,7 @@
             Upcoming
         </button>
         <button ng-click="setFilter('completed')"
-            ng-class="{'bg-gray-600 text-white': currentFilter === 'completed', 'bg-[#0005] text-gray-300': currentFilter !== 'completed'}"
+            ng-class="{'bg-teal-600 text-white': currentFilter === 'completed', 'bg-[#0005] text-gray-300': currentFilter !== 'completed'}"
             class="px-4 py-2 rounded-lg transition-colors">
             Completed
         </button>
@@ -44,6 +44,11 @@
             ng-class="{'bg-yellow-600 text-white': currentFilter === 'draft', 'bg-[#0005] text-gray-300': currentFilter !== 'draft'}"
             class="px-4 py-2 rounded-lg transition-colors">
             Draft
+        </button>
+        <button ng-click="setFilter('canceled')"
+            ng-class="{'bg-red-600 text-white': currentFilter === 'canceled', 'bg-[#0005] text-gray-300': currentFilter !== 'canceled'}"
+            class="px-4 py-2 rounded-lg transition-colors">
+            Canceled
         </button>
     </div>
 
@@ -57,7 +62,7 @@
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="font-semibold text-lg text-gray-200 capitalize">{{exam.title}}</h3>
-                        <p class="text-sm text-gray-400 mt-1">{{exam.code}}</p>
+                        <p class="text-sm text-gray-400 mt-1 uppercase">{{exam.code}}</p>
                     </div>
                     <div class="relative">
                         <button ng-click="toggleExamMenu(exam.id)"
@@ -68,26 +73,26 @@
                         <!-- Dropdown Menu -->
                         <div ng-if="activeExamMenu === exam.id"
                             class="absolute right-0 top-8 bg-[#0003] backdrop-blur rounded-lg shadow-lg border border-[#fff2] p-2 z-10 min-w-[200px]">
-                            <button ng-click="editExam(exam)"
+                            <a href="<?php echo BASE_URL . '/exam/edit/' ?>{{exam.id}}"
                                 class="w-full text-left px-4 py-2 text-sm text-cyan-500 hover:bg-[#12aac815] transition-colors duration-300 flex items-center space-x-2 rounded-md">
                                 <i class="fas fa-edit text-cyan-500"></i>
                                 <span>Edit Exam</span>
-                            </button>
-                            <button ng-click="viewExamDetails(exam)"
+                            </a>
+                            <a href="<?php echo BASE_URL . '/exam/preview/' ?>{{exam.id}}"
                                 class="w-full text-left px-4 py-2 text-sm text-blue-500 hover:bg-[#00f3] transition-colors duration-300 flex items-center space-x-2 rounded-md">
                                 <i class="fas fa-eye text-blue-500"></i>
                                 <span>View Details</span>
-                            </button>
-                            <button ng-click="manageQuestions(exam)"
+                            </a>
+                            <!-- <button ng-click="manageQuestions(exam)"
                                 class="w-full text-left px-4 py-2 text-sm text-purple-500 hover:bg-[#f0f3] transition-colors duration-300 flex items-center space-x-2 rounded-md">
                                 <i class="fas fa-question-circle text-purple-500"></i>
                                 <span>Manage Questions</span>
-                            </button>
-                            <button ng-click="viewResults(exam)"
+                            </button> -->
+                            <a href="<?php echo BASE_URL . '/exam/results/' ?>{{exam.id}}"
                                 class="w-full text-left px-4 py-2 text-sm text-green-500 hover:bg-[#0f03] transition-colors duration-300 flex items-center space-x-2 rounded-md">
                                 <i class="fas fa-chart-bar text-green-500"></i>
                                 <span>View Results</span>
-                            </button>
+                            </a>
                             <button
                                 ng-if="theLoggedUser.role === '1' || theLoggedUser.role === '2' || theLoggedUser.role === 1 || theLoggedUser.role === 2"
                                 ng-click="deleteExam(exam)"
@@ -105,17 +110,21 @@
                 <div class="space-y-3">
                     <!-- Status Badge -->
                     <div>
-                        <span ng-switch="exam.status" class="inline-flex items-center px-3 py-1 rounded-full text-sm">
-                            <span ng-switch-when="active" class="bg-green-500/20 text-green-300">
+                        <span ng-switch="exam.status" class="inline-flex items-center rounded-full text-sm">
+                            <span ng-switch-when="active"
+                                class=" px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500">
                                 <i class="fas fa-play-circle mr-1"></i> Active
                             </span>
-                            <span ng-switch-when="upcoming" class="bg-blue-500/20 text-blue-300">
+                            <span ng-switch-when="upcoming"
+                                class=" px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500">
                                 <i class="fas fa-clock mr-1"></i> Upcoming
                             </span>
-                            <span ng-switch-when="completed" class="bg-gray-500/20 text-gray-300">
+                            <span ng-switch-when="completed"
+                                class=" px-2 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500">
                                 <i class="fas fa-check-circle mr-1"></i> Completed
                             </span>
-                            <span ng-switch-when="draft" class="bg-yellow-500/20 text-yellow-300">
+                            <span ng-switch-when="draft"
+                                class=" px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500">
                                 <i class="fas fa-edit mr-1"></i> Draft
                             </span>
                         </span>
@@ -133,14 +142,33 @@
                         </div>
                     </div>
 
-                    <!-- Schedule -->
-                    <div class="bg-[#0005] p-3 rounded-lg">
-                        <p class="text-xs text-gray-400 mb-1">Schedule</p>
+                    <!-- Scheduled Exam -->
+                    <div class="bg-[#0005] p-3 rounded-lg" ng-if="exam.schedule_type === 'scheduled'">
+                        <p class="text-xs text-gray-400 mb-1">Schedule Details</p>
                         <div class="flex items-center text-gray-200">
                             <i class="fas fa-calendar-alt mr-2 text-cyan-400"></i>
                             <span>{{exam.start_time | formatDateTime: 'MMM DD, YYYY'}}</span>
                             <i class="fas fa-clock mx-2 text-cyan-400"></i>
                             <span>{{exam.start_time | formatDateTime: 'hh:mm a'}}</span>
+                        </div>
+                    </div>
+
+                    <!-- Anytime Exam -->
+                    <div class="bg-[#0005] p-3 rounded-lg" ng-if="exam.schedule_type === 'anytime'">
+                        <p class="text-xs text-gray-400 mb-1">Anytime Exam</p>
+                        <div class="flex items-center text-gray-200">
+                            <i class="fas fa-infinity mr-2 text-green-400"></i>
+                            <span>This exam can be taken anytime</span>
+                        </div>
+                    </div>
+
+                    <!-- Not fully ready / setup -->
+                    <div class="bg-[#0005] p-3 rounded-lg"
+                        ng-if="exam.schedule_type !== 'scheduled' && exam.schedule_type !== 'anytime'">
+                        <p class="text-xs text-gray-400 mb-1">Incomplete Setup</p>
+                        <div class="flex items-center text-gray-200">
+                            <i class="fas fa-exclamation-circle mr-2 text-yellow-400"></i>
+                            <span>This exam is not fully ready</span>
                         </div>
                     </div>
 
@@ -162,21 +190,21 @@
 
             <!-- Exam Actions -->
             <div class="p-4 flex items-end space-x-2 border-t border-[#fff2]">
-                <button ng-click="viewExamDetails(exam)"
+                <a href="<?php echo BASE_URL ?>/exam/preview/{{exam.id}}"
                     class="flex-1 bg-[#12aac820] hover:bg-[#12aac850] text-gray-100 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1">
                     <i class="fas fa-eye"></i>
                     <span>View</span>
-                </button>
-                <button ng-click="manageQuestions(exam)"
+                </a>
+                <!-- <button ng-click="manageQuestions(exam)"
                     class="flex-1 bg-[#a012c820] hover:bg-[#a012c850] text-gray-100 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1">
                     <i class="fas fa-question-circle"></i>
                     <span>Questions</span>
-                </button>
-                <button ng-click="viewResults(exam)"
+                </button> -->
+                <a href="<?php echo BASE_URL ?>/exam/results/{{exam.id}}"
                     class="flex-1 bg-[#12c82020] hover:bg-[#12c82050] text-gray-100 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1">
                     <i class="fas fa-chart-bar"></i>
                     <span>Results</span>
-                </button>
+                </a>
             </div>
         </div>
     </div>

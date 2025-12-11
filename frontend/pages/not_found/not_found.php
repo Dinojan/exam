@@ -1,5 +1,4 @@
 <?php $this->extend('frontend'); ?>
-
 <?php $this->start('content'); ?>
 
 <div class="max-w-4xl w-full mx-auto">

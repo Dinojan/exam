@@ -80,9 +80,17 @@ class PageAPI
     {
         return view('exams.preview', ['title' => 'Preview Exam', 'exam_id' => $id]);
     }
+    public function examAttemptRegister($hash)
+    {
+        return view('exams.register', ['title' => 'Register For Exam', 'rest_url_hash' => $hash]);
+    }
     public function attemptExam($hash)
     {
         return view('exams.attempt', ['title' => 'Attempt Exam', 'rest_url_hash' => $hash]);
+    }
+    public function examResults($id)
+    {
+        return view('exams.results', ['title' => 'Exam Results', 'exam_id' => $id]);
     }
 
     public function questionBank()

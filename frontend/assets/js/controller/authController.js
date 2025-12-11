@@ -35,12 +35,14 @@ app.controller('AuthController', [
                             title: 'Success!',
                             msg: data.msg || 'Login successful'
                         });
-                        const params = new URLSearchParams(window.location.search);
-                        const redirect = params.get('redirect');
+                        // const params = new URLSearchParams(window.location.search);
+                        // const redirect = params.get('redirect');
+
+                        const redirect = getParameterByName('redirect');
 
                         setTimeout(() => {
                             if (redirect) {
-                                window.location.href = window.baseUrl +  decodeURIComponent(redirect);
+                                window.location.href = decodeURIComponent(redirect);
                             } else {
                                 window.location.href = window.baseUrl + '/dashboard';
                             }
