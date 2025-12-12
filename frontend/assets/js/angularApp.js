@@ -245,7 +245,11 @@ app.filter('letterIndex', function () {
     }
   };
 });
-
+app.filter('safeHtml', ['$sce', function($sce) {
+    return function(html) {
+        return $sce.trustAsHtml(html);
+    };
+}]);
 
 app.run([
   "$rootScope",

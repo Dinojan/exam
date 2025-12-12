@@ -1396,7 +1396,7 @@
                 <div class="mt-6 pt-6 border-t border-gray-600">
                     <h4 class="font-medium text-gray-100 mb-2">Entry Link</h4>
                     <div class="flex items-center">
-                        <input type="text" value="<?php echo BASE_URL . '/attempt/'; ?>{{location.exam}}/register" readonly
+                        <input type="text" value="<?php echo BASE_URL . '/exam/attempt/'; ?>{{location.exam}}/register" readonly
                             class="flex-1 bg-[#0008] border border-gray-600 text-gray-300 rounded-l-lg px-4 py-2">
                         <button ng-click="copyToClipboard($event.target.previousElementSibling)"
                             class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-r-lg">

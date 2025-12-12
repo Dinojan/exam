@@ -2,7 +2,11 @@
 <?php $this->controller('ExamAttemptController'); ?>
 
 <?php $this->start('content'); ?>
-<div class="bg-[#0003] p-6 rounded-lg mb-16" ng-controller="ExamAttemptController" ng-init="init()" ng-cloak>
+<div class="bg-[#0003] p-6 rounded-lg mb-16" ng-cloak>
+    <button id="fsBtn" ng-click="enterFullscreen()" class="hidden">
+        Hidden Fullscreen Trigger
+    </button>
+
     <!-- Loading State -->
     <div ng-if="loading && !useDummyData" class="text-center py-12">
         <div class="max-w-md mx-auto">
@@ -51,16 +55,17 @@
         <div class="bg-[#0004] rounded-lg p-6 mb-6 border border-gray-600">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-100">{{examData.title}}</h1>
-                    <p class="text-gray-400">{{examData.code}} • {{examData.total_questions}} questions •
-                        {{examData.total_marks}} total marks</p>
-                    <div class="flex items-center mt-2">
+                    <h1 class="text-2xl font-bold text-gray-100 capitalize">{{examData.title}}</h1>
+                    <p class="text-gray-400"><span class="uppercase">{{examData.code}}</span> •
+                        {{examData.total_questions}} Questions •
+                        {{examData.total_marks}} Total marks</p>
+                    <!-- <div class="flex items-center mt-2">
                         <span class="text-sm text-gray-400 mr-4">Instructor: {{examData.instructor || 'Dr. John
                             Smith'}}</span>
                         <span class="text-sm px-2 py-1 rounded-full bg-blue-500/20 text-blue-300">
                             {{examData.course || 'Computer Science 101'}}
                         </span>
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- Timer Section -->
@@ -72,7 +77,7 @@
                         </div>
                         <span class="text-sm px-2 py-1 rounded"
                             ng-class="timerWarning ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'">
-                            {{timerWarning ? 'HURRY UP!' : 'ON TIME'}}
+                            {{timerWarning ? 'Hurry Up!' : 'On Time'}}
                         </span>
                     </div>
                     <div class="text-center">
@@ -116,10 +121,10 @@
                             <i class="fas fa-expand text-blue-400 mr-2"></i>
                             <span>Full screen mode is enabled</span>
                         </div>
-                        <div class="flex items-center text-gray-300" ng-if="examData.negative_marking">
+                        <!-- <div class="flex items-center text-gray-300" ng-if="examData.negative_marking">
                             <i class="fas fa-minus-circle text-red-400 mr-2"></i>
                             <span>Negative marking: -{{examData.negative_mark || 1}} mark per wrong answer</span>
-                        </div>
+                        </div> -->
                         <div class="flex items-center text-gray-300" ng-if="examData.disable_copy_paste">
                             <i class="fas fa-ban text-red-400 mr-2"></i>
                             <span>Copy/paste is disabled</span>
@@ -167,7 +172,7 @@
                         </div>
                         <div class="w-full bg-gray-700 rounded-full h-2 mb-2">
                             <div class="bg-green-500 h-2 rounded-full transition-all duration-300"
-                                ng-style="width: ((answeredCount/examData.total_questions)*100)%"></div>
+                                ng-style="{ width: ((answeredCount / examData.total_questions) * 100) + '%' }"></div>
                         </div>
                         <div class="flex justify-between text-xs text-gray-400">
                             <span>{{Math.round((answeredCount/examData.total_questions)*100)}}% complete</span>
@@ -245,22 +250,22 @@
                                     class="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded-full">
                                     <i class="fas fa-flag mr-1"></i>Flagged for Review
                                 </span>
-                                <span class="text-sm text-gray-400">({{currentQuestion.marks}} marks)</span>
+                                <!-- <span class="text-sm text-gray-400">({{currentQuestion.marks}} marks)</span> -->
                             </div>
-                            <div class="text-sm text-gray-400">
+                            <!-- <div class="text-sm text-gray-400">
                                 {{getQuestionType(currentQuestion)}}
-                            </div>
+                            </div> -->
                         </div>
                         <div class="flex items-center space-x-4">
                             <div class="text-sm">
                                 <span class="text-gray-400">Marks:</span>
                                 <span class="text-yellow-400 font-bold ml-1">{{currentQuestion.marks}}</span>
                             </div>
-                            <div class="text-sm">
+                            <!-- <div class="text-sm">
                                 <span class="text-gray-400">Difficulty:</span>
                                 <span class="text-cyan-400 font-bold ml-1">{{currentQuestion.difficulty ||
                                     'Medium'}}</span>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
 
@@ -284,20 +289,20 @@
                     <!-- Options -->
                     <div class="space-y-4 mb-8">
                         <div ng-repeat="option in currentQuestion.options track by $index"
-                            class="border-2 rounded-lg p-4 transition-all duration-200 cursor-pointer hover:border-cyan-500 hover:bg-cyan-500/5 hover:shadow-lg hover:scale-[1.01]"
+                            class="rounded-lg py-3 px-4 transition-all duration-200 cursor-pointer hover:border-cyan-500 hover:bg-cyan-500/5 hover:shadow-lg hover:scale-[1.01]"
                             ng-class="{
-                                 'border-cyan-500 bg-cyan-500/10 shadow-lg scale-[1.01]': currentQuestion.answer === option.op,
-                                 'border-gray-600': currentQuestion.answer !== option.op
+                                 'border-2 border-cyan-500 bg-cyan-500/10 shadow-lg scale-[1.01]': currentQuestion.answer === option.op,
+                                 'border-2 border-gray-600': currentQuestion.answer !== option.op
                              }" ng-click="selectAnswer(option.op)">
-                            <div class="flex items-start">
-                                <div class="mr-4 mt-1">
+                            <div class="flex items-center">
+                                <div class="mr-4">
                                     <div class="w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-200"
                                         ng-class="currentQuestion.answer === option.op ? 
                                                    'border-cyan-500 bg-cyan-500 shadow-lg' : 
                                                    'border-gray-500 hover:border-cyan-400'">
                                         <span class="text-sm font-medium" ng-class="currentQuestion.answer === option.op ? 
                                                         'text-white' : 'text-gray-300'">
-                                            {{option.op}})
+                                            {{ ["A","B","C","D"][$index] }}
                                         </span>
                                     </div>
                                 </div>
@@ -308,15 +313,6 @@
                                     <div ng-if="option.image" class="mt-3">
                                         <img ng-src="{{option.image}}" alt="Option Image"
                                             class="max-w-48 max-h-48 rounded border border-gray-600">
-                                    </div>
-
-                                    <!-- Explanation (only in demo mode) -->
-                                    <div ng-if="useDummyData && currentQuestion.answer === option.op && option.explanation"
-                                        class="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded">
-                                        <div class="text-sm text-blue-300">
-                                            <i class="fas fa-lightbulb mr-2"></i>
-                                            <strong>Explanation:</strong> {{option.explanation}}
-                                        </div>
                                     </div>
                                 </div>
 

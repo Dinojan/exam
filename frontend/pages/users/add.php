@@ -50,7 +50,7 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <!-- Full Name -->
                 <div class="form-group">
                     <label for="fullName" class="form-label">Full Name <span class="text-red-700">*</span></label>
-                    <input type="text" id="fullName" ng-model="userData.name" class="form-input" name="fullName"
+                    <input type="text" id="fullName" ng-model="userData.name" class="form-input" name="fullname"
                         placeholder="Enter full name">
                     <div class="error-message" ng-show="addUserForm.submitted && addUserForm.fullName.$error.required">
                         Full name is required
@@ -103,33 +103,74 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
                 <!-- User Group -->
-                <div class="form-group">
-                    <label for="userGroup" class="form-label">User Group <span class="text-red-700">*</span></label>
-                    <select id="userGroup" ng-model="userData.user_group" name="userGroup"
-                        class="w-full bg-[#0004] border border-gray-600 rounded px-3 py-2 text-gray-600">
-                        <option class="" value="">Select User Group</option>
+                <div class="form-group relative">
+                    <label class="form-label">User Group <span class="text-red-700">*</span></label>
+
+                    <!-- Selected Box -->
+                    <div class="w-full bg-[#0004] border border-gray-600 rounded px-3 py-2 text-white cursor-pointer flex justify-between items-center"
+                        ng-click="dropdownOpen = !dropdownOpen">
+                        <span>{{ userData.user_group || 'Select User Group' }}</span>
+                        <span class="ml-2">&#9662;</span>
+                    </div>
+
+                    <!-- Dropdown List -->
+                    <div class="absolute w-full bg-[#0004] p-2 backdrop-blur border border-gray-600 rounded mt-1 z-10 max-h-60 overflow-y-auto"
+                        ng-show="dropdownOpen">
                         <?php foreach ($userGroups as $group): ?>
-                            <option value="<?= $group['id'] ?>">
+                            <div class="px-3 py-2 hover:bg-cyan-700/50 text-white cursor-pointer rounded"
+                                ng-click="userData.user_group = '<?= $group['name'] ?>'; dropdownOpen = false; "
+                                ng-class="userData.user_group === '<?= $group['name'] ?>' ? 'bg-cyan-900/50' : ''">
                                 <?= $group['name'] ?>
-                            </option>
+                            </div>
                         <?php endforeach; ?>
-                    </select>
-                    <div class="error-message" ng-show="addUserForm.submitted && addUserForm.userGroup.$error.required">
+                    </div>
+
+                    <!-- Hidden Input (REAL value submitted here) -->
+                    <input type="hidden" name="userGroup" ng-value="userData.user_group">
+
+                    <div class="error-message text-red-500 text-sm"
+                        ng-show="addUserForm.submitted && !userData.user_group">
                         User group is required
                     </div>
                 </div>
 
                 <!-- Status -->
-                <div class="form-group">
-                    <label for="status" class="form-label">Status <span class="text-red-700">*</span></label>
-                    <select id="status" ng-model="userData.status" name="status"
-                        class="w-full bg-[#0004] border border-gray-600 rounded px-3 py-2 text-gray-600">
-                        <option value="">Select Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="suspended">Suspended</option>
-                    </select>
-                    <div class="error-message" ng-show="addUserForm.submitted && addUserForm.status.$error.required">
+                <div class="form-group relative">
+                    <label class="form-label">Status <span class="text-red-700">*</span></label>
+
+                    <!-- Selected Box -->
+                    <div class="w-full bg-[#0004] border border-gray-600 rounded px-3 py-2 text-white cursor-pointer flex justify-between items-center"
+                        ng-click="statusDropdownOpen = !statusDropdownOpen">
+                        <span>{{ userData.status || 'Select Status' }}</span>
+                        <span class="ml-2">&#9662;</span>
+                    </div>
+
+                    <!-- Dropdown List -->
+                    <div class="absolute w-full bg-[#0004] backdrop-blur p-2 border border-gray-600 rounded mt-1 z-10 max-h-60 overflow-y-auto"
+                        ng-show="statusDropdownOpen">
+                        <div class="px-3 py-2 hover:bg-cyan-700/50 text-white cursor-pointer rounded"
+                            ng-click="userData.status = 'active'; statusDropdownOpen = false;"
+                            ng-class="userData.status === 'active' ? 'bg-cyan-900/50' : ''">
+                            Active
+                        </div>
+                        <div class="px-3 py-2 hover:bg-cyan-700/50 text-white cursor-pointer rounded"
+                            ng-click="userData.status = 'inactive'; statusDropdownOpen = false;"
+                            ng-class="userData.status === 'inactive' ? 'bg-cyan-900/50' : ''">
+                            Inactive
+                        </div>
+                        <div class="px-3 py-2 hover:bg-cyan-700/50 text-white cursor-pointer rounded"
+                            ng-click="userData.status = 'suspended'; statusDropdownOpen = false;"
+                            ng-class="userData.status === 'suspended' ? 'bg-cyan-900/50' : ''">
+                            Suspended
+                        </div>
+
+                    </div>
+
+                    <!-- Hidden Input for form submission -->
+                    <input type="hidden" name="status" ng-value="userData.status" required>
+
+                    <div class="error-message text-red-500 text-sm"
+                        ng-show="addUserForm.submitted && addUserForm.status.$error.required">
                         Status is required
                     </div>
                 </div>
@@ -184,24 +225,24 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
 
                 <!-- Additional Information Section -->
-                <div class="md:col-span-2 mt-4">
+                <!-- <div class="md:col-span-2 mt-4">
                     <h2 class="text-lg font-semibold text-gray-100 mb-4 pb-2 border-b border-gray-600">Additional
                         Information</h2>
-                </div>
+                </div> -->
 
                 <!-- Department -->
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label for="department" class="form-label">Department</label>
                     <input type="text" id="department" ng-model="userData.department" class="form-input"
                         name="department" placeholder="Enter department">
-                </div>
+                </div> -->
 
                 <!-- Position -->
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label for="position" class="form-label">Position</label>
                     <input type="text" id="position" ng-model="userData.position" class="form-input" name="position"
                         placeholder="Enter position">
-                </div>
+                </div> -->
 
                 <!-- Notes -->
                 <div class="form-group md:col-span-2">

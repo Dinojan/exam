@@ -580,13 +580,10 @@ class ExamAPI
             $statement->execute([$id]);
             $settings = $statement->fetch(PDO::FETCH_ASSOC);
 
-            // ---------------------------
-            // BUILD SECTIONS CONTAINER
-            // ---------------------------
             $finalSections = [];
 
             foreach ($sections as $section) {
-                $finalSections[$section['id']] = [
+                $finalSections[] = [
                     'id' => $section['id'],
                     'examID' => $id + 0,
                     'description' => $section['s_des'] ?? '',
@@ -600,16 +597,10 @@ class ExamAPI
                 return strtotime($a['created_at']) - strtotime($b['created_at']);
             });
 
-            // ---------------------------
-            // ATTACH QUESTIONS TO SECTIONS
-            // ---------------------------
+            $finalQuestions = [];
             foreach ($questions as $question) {
-
-                $section_ids = $question['section_ids'] ? json_decode($question['section_ids'], true) : [];
-                $code = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-
-                // Build Options
                 $options = [];
+                $o = 0;
                 foreach (['a', 'b', 'c', 'd'] as $order => $key) {
                     $options[] = [
                         'text' => $question[$key] ?? '',
@@ -621,49 +612,17 @@ class ExamAPI
 
                 $qData = [
                     'id' => $question['id'],
+                    'order' => $o++,
                     'question' => $question['question'],
-                    'marks' => $question['marks'],
-                    'created_at' => $question['created_at'],
-                    'created_by' => $question['created_by'],
+                    'marks' => $question['marks'] + 0,
                     'options' => $options,
-                    'grid' => $question['grid']
+                    'grid' => $question['grid'] + 0,
+                    'sectionIds' => $question['section_ids'] ? array_map('intval', json_decode($question['section_ids'], true)) : [],
                 ];
 
-                // If question is mapped to sections
-                if (!empty($section_ids)) {
-                    foreach ($section_ids as $secId) {
-                        if (isset($finalSections[$secId])) {
-                            $finalSections[$secId]['questions'][] = $qData;
-                        } else {
-                            $tempId = 'temp_' . $code;
-                            $finalSections[$tempId] = [
-                                'id' => $tempId,
-                                'questions' => [$qData],
-                                'examID' => $id + 0,
-                                'description' => '',
-                                'secondDescription' => '',
-                            ];
-                        }
-                    }
-                }
-                // No section → assign temp section
-                else {
-                    $tempId = 'temp_' . $code;
-                    $finalSections[$tempId] = [
-                        'id' => $tempId,
-                        'questions' => [$qData],
-                        'examID' => $id + 0,
-                        'description' => '',
-                        'secondDescription' => '',
-                    ];
-                }
+                $finalQuestions[] = $qData;
             }
 
-            $finalSections = array_values($finalSections);
-
-            // ---------------------------
-            // STATUS CALCULATION
-            // ---------------------------
             $status = $exam['status'];
             $schedule_type = $settings['schedule_type'];
 
@@ -696,7 +655,7 @@ class ExamAPI
             // MERGE DATA (DUMMY FORMAT)
             // ---------------------------
             $mergedData = [
-                'id' => "exam-" . $exam['id'],
+                'id' => $exam['id'] + 0,
                 'title' => $exam['title'],
                 'code' => $exam['code'],
 
@@ -722,13 +681,11 @@ class ExamAPI
                 'status' => $finalStatus
             ];
 
-            // ---------------------------
-            // FINAL OUTPUT
-            // ---------------------------
             return json_encode([
                 'status' => 'success',
-                'data' => $mergedData,
-                'sections' => $finalSections
+                'exam_info' => $mergedData,
+                'sections' => $finalSections,
+                'questions' => $finalQuestions
             ]);
 
         } catch (Exception $e) {
@@ -977,6 +934,192 @@ class ExamAPI
                 'status' => 'success',
                 'msg' => 'Exam deleted successfully'
             ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function saveExamRegistrationData($exam_id)
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ? AND student_id = ?");
+            $stmt->execute([$exam_id, $_SESSION['user_id']]);
+            $registration_data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($registration_data) {
+                return json_encode([
+                    'status' => 'error',
+                    'msg' => 'You have already registered for this exam',
+                    'data' => $registration_data
+                ]);
+            }
+
+            $stmt = $this->db->prepare("INSERT INTO exam_registration (`exam_id`, `student_id`, `registration_date`) VALUES (?, ?, ?)");
+            $stmt->execute([$exam_id, user_id(), date('Y-m-d H:i:s')]);
+            $registration_id = $this->db->lastInsertId();
+
+            $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE id = ?");
+            $stmt->execute([$registration_id]);
+            $registration_data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Exam registered successfully'
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function configRegistration($exam_id)
+    {
+        try {
+            $user_id = user_id(); // or $_SESSION['user_id']
+
+            // Exam info
+            $stmt = $this->db->prepare("SELECT id, title, code, duration, instructions, passing_marks, status, total_marks, total_num_of_ques as total_questions FROM exam_info WHERE id = ?");
+            $stmt->execute([$exam_id]);
+            $exam_info = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Exam settings
+            $stmt = $this->db->prepare("SELECT max_attempts, retake, schedule_type, start_time, full_screen_mode, disable_copy_paste, immediate_results as show_results_immediately, retake as allow_retake  FROM exam_settings WHERE exam_id = ?");
+            $stmt->execute([$exam_id]);
+            $exam_settings = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Questions (multiple rows)
+            $stmt = $this->db->prepare("SELECT * FROM questions WHERE JSON_CONTAINS(exam_ids, JSON_QUOTE(?))");
+            $stmt->execute([$exam_id]);
+            $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Sections (multiple rows)
+            $stmt = $this->db->prepare("SELECT * FROM sections WHERE exam_id = ?");
+            $stmt->execute([$exam_id]);
+            $sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Check registration
+            $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ? AND student_id = ?");
+            $stmt->execute([$exam_id, $user_id]);
+            $is_registered = $stmt->rowCount() > 0;
+
+            $status = $exam_info['status'];
+            $schedule_type = $exam_settings['schedule_type'];
+
+            $start_time = $exam_settings['start_time'] ? strtotime($exam_settings['start_time']) : null;
+            $start_time_ts = $exam_settings['start_time'] ? strtotime($exam_settings['start_time']) : null;
+            $duration_minutes = $exam_info['duration'] + 0;
+            $end_time = $start_time_ts ? $start_time_ts + ($duration_minutes * 60) : null;
+            $current_time = time();
+
+            if ($status == 0) {
+                $finalStatus = 'draft';
+            } else if ($status == 2) {
+                $finalStatus = 'canceled';
+            } else if ($status == 1 && $schedule_type == 'anytime') {
+                $finalStatus = 'live';
+            } else if ($status == 1 && $schedule_type == 'scheduled') {
+                if ($start_time > $current_time) {
+                    $finalStatus = 'scheduled';
+                } else if ($current_time >= $start_time && $current_time <= $end_time) {
+                    $finalStatus = 'live';
+                } else if ($current_time > $end_time) {
+                    $finalStatus = 'completed';
+                }
+            }
+
+            // Merge exam info & settings
+            $exam_data = array_merge($exam_info ?: [], $exam_settings ?: []);
+            $exam_data['code'] = str_replace(" ", "_", $exam_data['code']);
+            $exam_data['duration'] = $exam_data['duration'] + 0;
+            $exam_data['already_registered'] = $is_registered;
+            $exam_data['status'] = $finalStatus;
+            // $exam_data['questions'] = $questions;
+            // $exam_data['sections'] = $sections;
+
+            // Insert registration only if not already registered
+            // if (!$is_registered) {
+            //     $stmt = $this->db->prepare("INSERT INTO exam_registration (exam_id, user_id) VALUES (?, ?)");
+            //     $stmt->execute([$exam_id, $user_id]);
+            //     $exam_data['already_registered'] = true;
+            // }
+
+            return json_encode([
+                'status' => 'success',
+                'exam_data' => $exam_data
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getExamRegistrationData($exam_id)
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ?");
+            $stmt->execute([$exam_id]);
+
+            return json_encode([
+                'status' => 'success',
+                'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)
+            ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function saveExamAnswer($exam_id, $attempt_id, $question_id)
+    {
+        try {
+            $answer = $_POST['answer'];
+
+            // Fetch existing answers
+            $stmt = $this->db->prepare("SELECT answers FROM exam_attempts WHERE id = ? AND exam_id = ?");
+            $stmt->execute([$attempt_id, $exam_id]);
+            $attempt = $stmt->fetch(PDO::FETCH_ASSOC);
+            $answers = json_decode($attempt['answers'], true) ?: [];
+
+            $found = false;
+            // Update if question exists
+            foreach ($answers as &$a) {
+                if ($a['question_id'] === $question_id) {
+                    $a['answer'] = $answer;
+                    $found = true;
+                    break;
+                }
+            }
+            unset($a);
+
+            // If question not found, add it
+            if (!$found) {
+                $answers[] = [
+                    'question_id' => $question_id,
+                    'answer' => $answer
+                ];
+            }
+
+            // Save back to DB
+            $update = $this->db->prepare("UPDATE exam_attempts SET answers = ? WHERE exam_id = ? AND id = ?");
+            $update->execute([json_encode($answers), $exam_id, $attempt_id]);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Answer saved',
+                'answer' => $answer
+            ]);
+
         } catch (Exception $e) {
             return json_encode([
                 'status' => 'error',

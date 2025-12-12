@@ -1,6 +1,6 @@
 app.controller('UserController', [
-    "$scope", "$http", "$compile", "$timeout", "permissionModalController", "createAndEdituserGroupModalController", "deleteUserGroupModalController",
-    function ($scope, $http, $compile, $timeout, permissionModalController, createAndEdituserGroupModalController, deleteUserGroupModalController) {
+    "$scope", "$http", "$compile", "$timeout", "$document", "permissionModalController", "createAndEdituserGroupModalController", "deleteUserGroupModalController",
+    function ($scope, $http, $compile, $timeout, $document, permissionModalController, createAndEdituserGroupModalController, deleteUserGroupModalController) {
         // Initialize variables
         $scope.loading = true;
         $scope.error = null;
@@ -11,6 +11,8 @@ app.controller('UserController', [
         $scope.selectedGroup = "";
         $scope.selectedStatus = "";
         $scope.searchTerm = "";
+        $scope.userGroupDropdownOpen = false;
+        $scope.statusDropdownOpen = false;
 
         // Sorting
         $scope.sortColumn = 'name';
@@ -689,14 +691,14 @@ app.controller('UserController', [
                 function (response) {
                     $scope.loading = false;
 
-                    if (response.data?.success) {
+                    if (response.data.status === 'success') {
                         Toast.fire({
                             type: 'success',
                             title: 'Success!',
                             msg: 'User created successfully'
                         });
                         $scope.resetForm();
-                        $timeout(() => window.location.href = 'user_management', 2000);
+                        // $timeout(() => window.location.href = 'user_management', 2000);
                     } else {
                         Toast.fire({
                             type: 'error',
@@ -717,8 +719,6 @@ app.controller('UserController', [
             );
         };
 
-
-
         // Reset form
         $scope.resetForm = function () {
             $scope.userData = {
@@ -738,6 +738,21 @@ app.controller('UserController', [
             $scope.addUserForm.$setUntouched();
             $scope.addUserForm.$submitted = false;
         };
+
+
+        // Close dropdowns when clicking outside
+        $document.on('click', function (event) {
+            const userGroupEl = document.querySelector('.user-group-dropdown');
+            const statusEl = document.querySelector('.status-dropdown');
+
+            if (userGroupEl && !userGroupEl.contains(event.target)) {
+                $scope.$apply(() => $scope.dropdownOpen = false);
+            }
+
+            if (statusEl && !statusEl.contains(event.target)) {
+                $scope.$apply(() => $scope.statusDropdownOpen = false);
+            }
+        });
 
 
         if (window.location.pathname.includes('users')) {

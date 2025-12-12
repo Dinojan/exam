@@ -14,12 +14,12 @@
         </div> -->
 
     <!-- Main Content -->
-    <div class="bg-[#0003] border border-gray-700 rounded-2xl p-8 md:p-12 shadow-2xl backdrop-blur-sm">
+    <div>
         <!-- Error Message -->
         <div class="text-center mb-10">
             <h2 class="text-3xl md:text-4xl font-bold text-gray-100 mb-4">
                 <i class="fas fa-map-signs text-cyan-400 mr-3"></i>
-                Page Not Found
+                404 Page Not Found
             </h2>
             <p class="text-lg text-gray-300 mb-6 leading-relaxed">
                 The page you're looking for seems to have wandered off into the digital wilderness.

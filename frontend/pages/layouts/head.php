@@ -21,6 +21,7 @@
     <script src="<?= asset('assets/plugins/select2/select2.js') ?>"></script>
     <script>
         var baseUrl = '<?php echo BASE_URL ?>';
+        var user = '<?php echo user_id() ?>';
     </script>
     <style>
         [ng-cloak] {

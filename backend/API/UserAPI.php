@@ -18,7 +18,6 @@ class UserAPI
         echo $users;
     }
 
-
     public function getAllUsers($filter = null, $status = null)
     {
         $conditions = [];
@@ -76,14 +75,15 @@ class UserAPI
         return json_encode($result);
     }
 
-
-
     public function getUserById($id)
     {
         $sql = "SELECT * FROM users WHERE id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return json_encode([
+            'user' => $stmt->fetch(PDO::FETCH_ASSOC),
+            'status' => 'success'
+        ]);
     }
 
     public function getLoggedUserAccesses()
@@ -96,44 +96,114 @@ class UserAPI
         ]);
     }
 
-    public function createUser() {
-        // $data = json_decode(file_get_contents('php://input'), true);
+    // Generate registration number
+    function generateRegNo($db, $prefix)
+    {
+        $validPrefixes = ['LEC', 'STU', 'PRE', 'HOD'];
+        if (!in_array($prefix, $validPrefixes)) {
+            throw new Exception("Invalid prefix");
+        }
 
-        // // Validate required fields
-        // $requiredFields = ['name', 'phone', 'user_group', 'email', 'password'];
-        // foreach ($requiredFields as $field) {
-        //     if (empty($data[$field])) {
-        //         http_response_code(400);
-        //         echo json_encode(['error' => "$field is required."]);
-        //         return;
-        //     }
-        // }
+        // Get last reg_no with this prefix
+        $stmt = $db->prepare("SELECT reg_no FROM users WHERE reg_no LIKE ? ORDER BY id DESC LIMIT 1");
+        $stmt->execute([$prefix . '%']);
+        $last = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // // Hash the password
-        // $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+        if ($last) {
+            // Extract numeric part and increment
+            $number = (int) substr($last['reg_no'], 3) + 1;
+        } else {
+            $number = 1001; // start from 1001
+        }
 
-        // // Insert user into database
-        // $sql = "INSERT INTO users (name, phone, user_group, email, password, status) VALUES (?, ?, ?, ?, ?, ?)";
-        // $stmt = $this->db->prepare($sql);
-        // $status = isset($data['status']) ? $data['status'] : 1; // Default status to 1 if not provided
-
-        // try {
-        //     $stmt->execute([
-        //         $data['name'],
-        //         $data['phone'],
-        //         $data['user_group'],
-        //         $data['email'],
-        //         $hashedPassword,
-        //         $status
-        //     ]);
-
-        //     http_response_code(201);
-        //     echo json_encode(['message' => 'User created successfully.']);
-        // } catch (PDOException $e) {
-        //     http_response_code(500);
-        //     echo json_encode(['error' => 'Failed to create user: ' . $e->getMessage()]);
-        // }
-
-        return json_encode(['message' => 'User created successfully.']);
+        return $prefix . $number;
     }
+
+    public function createUser()
+    {
+        try {
+            // Get POST data safely
+            $fullname = $_POST['fullname'] ?? '';
+            $email = $_POST['email'] ?? '';
+            $phone = $_POST['phone'] ?? '';
+            $username = $_POST['username'] ?? '';
+            $group = $_POST['userGroup'] ?? '';
+            $status = $_POST['status'] ?? '';
+            $pwd = $_POST['password'] ?? '';
+            $cpwd = $_POST['cpassword'] ?? '';
+            $note = $_POST['notes'] ?? '';
+
+            // Validation
+            if (!$fullname)
+                throw new Exception("Fullname is required");
+            if (!$email)
+                throw new Exception("Email is required");
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+                throw new Exception("Invalid email format");
+            if (!$phone)
+                throw new Exception("Phone number is required");
+            if (!$username)
+                throw new Exception("Username is required");
+            if (!$group)
+                throw new Exception("User group is required");
+            if (!$status)
+                throw new Exception("Status is required");
+            if (!$pwd)
+                throw new Exception("Password is required");
+            if ($pwd !== $cpwd)
+                throw new Exception("Passwords do not match");
+
+            $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            if ($stmt->rowCount() > 0)
+                throw new Exception("Email already exists");
+
+            $stmt = $this->db->prepare("SELECT * FROM users WHERE username = ?");
+            $stmt->execute([$username]);
+            if ($stmt->rowCount() > 0)
+                throw new Exception("Username already exists");
+
+            $stmt = $this->db->prepare("SELECT * FROM users WHERE phone = ? AND user_group = ?");
+            $stmt->execute([$username, $group]);
+            if ($stmt->rowCount() > 0)
+                throw new Exception("Phone number already exists");
+
+            // Hash the password
+            $hashedPwd = password_hash($pwd, PASSWORD_DEFAULT);
+
+            $reg_no = $this->generateRegNo($this->db, $group);
+            // Insert into database (example using PDO)
+            $stmt = $this->db->prepare("INSERT INTO users (reg_no, name, email, phone, username, user_group, status, password, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$reg_no, $fullname, $email, $phone, $username, $group, $status, $hashedPwd, $note]);
+
+            return json_encode([
+                'status' => 'success',
+                'message' => 'User created successfully'
+            ]);
+
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getStudentInfo()
+    {
+        try {
+            $user_id = user_id();
+            $studentInfo = $this->db->query("SELECT * FROM users WHERE id = $user_id")->fetchAll(PDO::FETCH_ASSOC);
+            return json_encode([
+                'status' => 'success',
+                'student_info' => $studentInfo
+            ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'message' => 'Failed to fetch student info: ' . $e->getMessage()
+            ]);
+        }
+    }
+
 }

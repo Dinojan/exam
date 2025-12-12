@@ -230,16 +230,16 @@ app.controller('ExamAttemptController', [
         }
 
         // Initialize exam
-        $scope.init = function() {
+        $scope.init = function () {
             // Try to load real data first
             $scope.loadExamData();
         };
 
         // Load dummy data
-        $scope.loadDummyData = function() {
+        $scope.loadDummyData = function () {
             $scope.useDummyData = true;
             $scope.loading = true;
-            
+
             $timeout(() => {
                 $scope.examData = angular.copy($scope.dummyExamData);
                 $scope.processQuestions(angular.copy($scope.dummyQuestions));
@@ -251,64 +251,63 @@ app.controller('ExamAttemptController', [
         };
 
         // Load exam data
-        $scope.loadExamData = async function() {
+        $scope.loadExamData = async function () {
             try {
-                if (!$scope.examId || $scope.examId === 'demo-101') {
+                if (!$scope.examId) {
                     // Use dummy data for demo
                     $scope.loadDummyData();
                     return;
                 }
 
-                // Start new attempt
-                const startResponse = await $http.get(
+
+                // Load exam details
+                const examResponse = await $http.get(
                     window.baseUrl + '/API/exam/attempt/' + $scope.examId
                 );
 
-                if (startResponse.data.status === 'success') {
-                    $scope.attemptId = startResponse.data.attempt_id;
-                    $scope.examStartedAt = new Date(startResponse.data.started_at);
-                    
-                    // Load exam details
-                    const examResponse = await $http.get(
-                        window.baseUrl + '/API/exam/attempt-data/' + $scope.examId + '/' + $scope.attemptId
-                    );
+                if (examResponse.data.status === 'success') {
+                    const data = examResponse.data.exam_info
 
-                    if (examResponse.data.status === 'success') {
-                        const data = examResponse.data;
-                        
-                        $scope.examData = {
-                            id: data.exam_info.id,
-                            title: data.exam_info.title,
-                            code: data.exam_info.code,
-                            duration: data.exam_info.duration,
-                            total_questions: data.questions.length,
-                            total_marks: data.exam_info.total_marks,
-                            passing_marks: data.exam_info.passing_marks,
-                            instructions: $sce.trustAsHtml(data.exam_info.instructions || ''),
-                            schedule_type: data.settings.schedule_type,
-                            shuffle_questions: data.settings.shuffle_questions,
-                            shuffle_options: data.settings.shuffle_options,
-                            full_screen_mode: data.settings.full_screen_mode,
-                            disable_copy_paste: data.settings.disable_copy_paste,
-                            disable_right_click: data.settings.disable_right_click
-                        };
+                    $scope.examData = {
+                        id: data.id,
+                        title: data.title.replace(/ /g, "_"),
+                        code: data.code.replace(/ /g, "_"),
+                        duration: data.duration,
+                        total_questions: data.total_questions,
+                        total_marks: data.total_marks,
+                        passing_marks: data.passing_marks,
+                        passing_persentage: (data.passing_marks / data.total_marks) * 100,
+                        instructions: $sce.trustAsHtml(data.instructions || ''),
+                        schedule_type: data.schedule_type,
+                        shuffle_questions: data.shuffle_questions,
+                        shuffle_options: data.shuffle_options,
+                        full_screen_mode: data.full_screen_mode,
+                        disable_copy_paste: data.disable_copy_paste,
+                        disable_right_click: data.disable_right_click,
+                        allow_retake: data.allow_retake,
+                        max_attempts: data.max_attempts > 0 ? data.max_attempts : 1,
+                        show_results_immediately: data.show_results_immediately,
+                        start_time: new Date(data.start_time).toISOString(),
+                        end_time: new Date(new Date(data.start_time).getTime() + data.duration * 1000).toISOString(),
+                    };
 
-                        // Process questions
-                        $scope.processQuestions(data.questions);
-                        
-                        // Initialize timer
-                        $scope.initializeTimer(data.attempt.time_remaining);
-                        
-                        // Start auto-save
-                        $scope.startAutoSave();
-                        
-                        $scope.loading = false;
-                        $scope.$apply();
-                    } else {
-                        throw new Error(examResponse.data.message || 'Failed to load exam data');
-                    }
+                    console.log($scope.examData)
+
+                    $scope.timeRemaining = data.duration * 60;
+
+                    // Process questions
+                    $scope.processQuestions(examResponse.data.questions, examResponse.data.sections);
+
+                    // Initialize timer
+                    $scope.initializeTimer($scope.timeRemaining);
+
+                    // Start auto-save
+                    $scope.startAutoSave();
+
+                    $scope.loading = false;
+                    $scope.$apply();
                 } else {
-                    throw new Error(startResponse.data.message || 'Failed to start attempt');
+                    throw new Error(examResponse.data.message || 'Failed to load exam data');
                 }
             } catch (error) {
                 console.error('Error loading exam:', error);
@@ -318,37 +317,49 @@ app.controller('ExamAttemptController', [
         };
 
         // Process questions
-        $scope.processQuestions = function(questionsData) {
-            $scope.questions = questionsData.map((question, index) => {
+        $scope.processQuestions = function (questionsData, sectionsData) {
+            let processedQuestions = questionsData.map((question, index) => {
                 // Shuffle options if enabled
                 let options = question.options || [];
-                if ($scope.examData?.shuffle_options) {
+                if ($scope.examData.shuffle_options) {
                     options = $scope.shuffleArray([...options]);
                 }
-                
+
                 return {
                     id: question.id,
                     question: question.question || $sce.trustAsHtml(question.text || ''),
-                    image: question.image,
+                    // image: question.image,
                     options: options.map(opt => ({
                         op: opt.op,
                         text: opt.text || $sce.trustAsHtml(opt.label || ''),
                         image: opt.image,
-                        correct: opt.correct,
-                        explanation: opt.explanation
+                        // explanation: opt.explanation
                     })),
-                    marks: question.marks || 4,
-                    difficulty: question.difficulty,
-                    answer: question.answer || question.user_answer || null,
+                    marks: question.marks,
+                    // difficulty: question.difficulty,
+                    answer: question.user_answer || null,
                     flagged: question.flagged || false,
                     order: index + 1
                 };
             });
 
-            // Shuffle questions if enabled
-            if ($scope.examData?.shuffle_questions) {
-                $scope.questions = $scope.shuffleArray($scope.questions);
+
+            // Create sections with questions
+            $scope.getSectionaizedQuestions(processedQuestions, sectionsData);
+
+            // Shuffle sections if enabled
+            if ($scope.examData.shuffle_questions) {
+                $scope.reviewSections = $scope.shuffleArray($scope.reviewSections);
             }
+
+            $scope.reviewSections.forEach(section => {
+                const questions = section.questions;
+                questions.forEach((question) => {
+                    question.sectionDescription = section.description;
+                    question.sectionSecondDescription = section.second_description;
+                    $scope.questions.push(question);
+                })
+            })
 
             $scope.currentQuestion = $scope.questions[0];
             $scope.updateCounts();
@@ -356,7 +367,7 @@ app.controller('ExamAttemptController', [
         };
 
         // Shuffle array
-        $scope.shuffleArray = function(array) {
+        $scope.shuffleArray = function (array) {
             const shuffled = [...array];
             for (let i = shuffled.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -365,18 +376,83 @@ app.controller('ExamAttemptController', [
             return shuffled;
         };
 
+        // Transform questions into reviewSections structure
+        $scope.getSectionaizedQuestions = function (questions, sections = []) {
+
+            // Reset questions in each section
+            sections.forEach(section => section.questions = []);
+
+            if (!questions || questions.length === 0) {
+                $scope.reviewSections = sections;
+                return;
+            }
+
+            let reviewSectionsMap = {};
+            let reviewSectionsOrder = [];
+
+            questions.forEach(question => {
+                let assigned = false;
+
+                // Assign to existing sections if sectionIds exist and match
+                if (question.sectionIds && question.sectionIds.length > 0) {
+                    for (let counter = 0; counter < question.sectionIds.length; counter++) {
+                        let section = sections.find(s => s.id === question.sectionIds[counter]);
+                        if (section) {
+                            section.questions = section.questions || [];
+                            section.questions.push(question);
+                            assigned = true;
+
+                            if (!reviewSectionsMap[section.id]) {
+                                reviewSectionsMap[section.id] = section;
+                                reviewSectionsOrder.push(section);
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // If not assigned → create new unique section
+                if (!assigned) {
+                    let newSectionId = Math.floor(100000 + Math.random() * 900000);
+                    let newSection = {
+                        id: newSectionId,
+                        exam_id: +$scope.examId,
+                        description: '',
+                        questions: [question],
+                        order: sections.length + 1,
+                        second_description: ''
+                    };
+
+                    sections.push(newSection);
+
+                    reviewSectionsMap[newSection.id] = newSection;
+                    reviewSectionsOrder.push(newSection);
+                }
+            });
+            console.log(reviewSectionsOrder);
+
+            $scope.reviewSections = reviewSectionsOrder;
+
+            // Sort questions inside each section by original question order
+            $scope.reviewSections.forEach(section => {
+                if (section.questions) {
+                    section.questions = section.questions.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+                }
+            });
+        };
+
         // Initialize timer
-        $scope.initializeTimer = function(timeRemainingSeconds) {
+        $scope.initializeTimer = function (timeRemainingSeconds) {
             $scope.timeRemaining = timeRemainingSeconds || ($scope.examData?.duration * 60 || 7200);
             $scope.updateTimerDisplay();
-            
+
             $scope.examEndTime = new Date();
             $scope.examEndTime.setSeconds($scope.examEndTime.getSeconds() + $scope.timeRemaining);
-            
+
             $scope.timerInterval = $interval(() => {
                 $scope.timeRemaining--;
                 $scope.updateTimerDisplay();
-                
+
                 // Check for warnings
                 if ($scope.timeRemaining <= 300 && !$scope.timerWarning) { // 5 minutes
                     $scope.timerWarning = true;
@@ -386,10 +462,10 @@ app.controller('ExamAttemptController', [
                             const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
                             audio.volume = 0.3;
                             audio.play();
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                 }
-                
+
                 // Check if time expired
                 if ($scope.timeRemaining <= 0) {
                     $scope.timeExpired = true;
@@ -400,19 +476,19 @@ app.controller('ExamAttemptController', [
         };
 
         // Update timer display
-        $scope.updateTimerDisplay = function() {
+        $scope.updateTimerDisplay = function () {
             const hours = Math.floor($scope.timeRemaining / 3600);
             const minutes = Math.floor(($scope.timeRemaining % 3600) / 60);
             const seconds = $scope.timeRemaining % 60;
-            
-            $scope.timeRemainingFormatted = 
+
+            $scope.timeRemainingFormatted =
                 hours.toString().padStart(2, '0') + ':' +
                 minutes.toString().padStart(2, '0') + ':' +
                 seconds.toString().padStart(2, '0');
         };
 
         // Calculate estimated score
-        $scope.calculateEstimatedScore = function() {
+        $scope.calculateEstimatedScore = function () {
             let score = 0;
             $scope.questions.forEach(q => {
                 if (q.answer) {
@@ -428,16 +504,16 @@ app.controller('ExamAttemptController', [
         };
 
         // Start auto-save
-        $scope.startAutoSave = function() {
+        $scope.startAutoSave = function () {
             $scope.autoSaveInterval = $interval(() => {
                 $scope.saveProgress();
             }, 30000); // Auto-save every 30 seconds
         };
 
         // Save progress
-        $scope.saveProgress = async function() {
+        $scope.saveProgress = async function () {
             if ($scope.isSubmitting || $scope.showSuccessModal) return;
-            
+
             if ($scope.useDummyData) {
                 // Simulate save for demo
                 console.log('Demo: Progress saved at', new Date().toLocaleTimeString());
@@ -449,19 +525,19 @@ app.controller('ExamAttemptController', [
                 });
                 return;
             }
-            
+
             try {
                 const answers = $scope.questions.map(q => ({
                     question_id: q.id,
                     answer: q.answer,
                     flagged: q.flagged
                 }));
-                
+
                 await $http.post(
                     window.baseUrl + '/API/exam/save-progress/' + $scope.attemptId,
                     { answers: answers, time_remaining: $scope.timeRemaining }
                 );
-                
+
                 console.log('Progress saved at', new Date().toLocaleTimeString());
             } catch (error) {
                 console.error('Error saving progress:', error);
@@ -469,39 +545,84 @@ app.controller('ExamAttemptController', [
         };
 
         // Update counts
-        $scope.updateCounts = function() {
+        $scope.updateCounts = function () {
             $scope.answeredCount = $scope.questions.filter(q => q.answer !== null).length;
             $scope.flaggedCount = $scope.questions.filter(q => q.flagged).length;
             $scope.calculateEstimatedScore();
         };
 
         // Navigation
-        $scope.goToQuestion = function(index) {
+        $scope.goToQuestion = function (index) {
             if (index >= 0 && index < $scope.questions.length) {
                 $scope.currentQuestionIndex = index;
                 $scope.currentQuestion = $scope.questions[index];
             }
         };
 
-        $scope.previousQuestion = function() {
+        $scope.previousQuestion = function () {
             if ($scope.currentQuestionIndex > 0) {
                 $scope.goToQuestion($scope.currentQuestionIndex - 1);
             }
         };
 
-        $scope.nextQuestion = function() {
+        $scope.nextQuestion = function () {
             if ($scope.currentQuestionIndex < $scope.questions.length - 1) {
                 $scope.goToQuestion($scope.currentQuestionIndex + 1);
             }
         };
 
         // Question actions
-        $scope.selectAnswer = function(answer) {
-            $scope.currentQuestion.answer = answer;
-            $scope.updateCounts();
+        $scope.selectAnswer = function (answer) {
+            const formData = new FormData();
+            formData.append('answer', answer);
+
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            function sendAnswer() {
+                $http({
+                    url: window.baseUrl + '/API/exam/' + $scope.examId + '/attempt/' + $scope.attemptId + '/question/' + $scope.currentQuestion.id + '/answer',
+                    method: 'POST',
+                    data: formData,
+                    headers: { 'Content-Type': undefined }
+                }).then(function (response) {
+                    const res = response.data;
+
+                    if (res.status === 'success') {
+                        $scope.currentQuestion.answer = res.answer;
+                    } else {
+                        $scope.currentQuestion.answer = null;
+                        Toast.fire({
+                            type: 'error',
+                            title: 'Error!',
+                            msg: res.msg || 'Failed to save the answer, please select again.'
+                        });
+                    }
+
+                    $scope.updateCounts();
+                }).catch(function (error) {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        console.warn('Retrying to save answer, attempt', attempts);
+                        sendAnswer(); // retry
+                    } else {
+                        console.error('Error saving answer after 5 attempts:', error);
+                        $scope.currentQuestion.answer = null;
+                        Toast.fire({
+                            type: 'error',
+                            title: 'Error!',
+                            msg: 'Failed to save the answer, please select the answer again.'
+                        });
+                        $scope.updateCounts();
+                    }
+                });
+            }
+
+            sendAnswer();
         };
 
-        $scope.clearAnswer = function() {
+
+        $scope.clearAnswer = function () {
             $scope.currentQuestion.answer = null;
             $scope.updateCounts();
             Toast.fire({
@@ -512,20 +633,20 @@ app.controller('ExamAttemptController', [
             });
         };
 
-        $scope.flagCurrentQuestion = function() {
+        $scope.flagCurrentQuestion = function () {
             $scope.currentQuestion.flagged = !$scope.currentQuestion.flagged;
             $scope.updateCounts();
             Toast.fire({
                 type: $scope.currentQuestion.flagged ? 'warning' : 'info',
                 title: $scope.currentQuestion.flagged ? 'Question Flagged' : 'Question Unflagged',
-                msg: $scope.currentQuestion.flagged ? 
-                    'Question has been flagged for review' : 
+                msg: $scope.currentQuestion.flagged ?
+                    'Question has been flagged for review' :
                     'Question has been unflagged',
                 timer: 1500
             });
         };
 
-        $scope.saveAnswer = function() {
+        $scope.saveAnswer = function () {
             $scope.saveProgress();
             Toast.fire({
                 type: 'success',
@@ -535,18 +656,18 @@ app.controller('ExamAttemptController', [
             });
         };
 
-        $scope.saveAndMark = function() {
+        $scope.saveAndMark = function () {
             $scope.currentQuestion.flagged = true;
             $scope.saveProgress();
             $scope.nextQuestion();
         };
 
-        $scope.saveAndNext = function() {
+        $scope.saveAndNext = function () {
             $scope.saveProgress();
             $scope.nextQuestion();
         };
 
-        $scope.saveAllAnswers = function() {
+        $scope.saveAllAnswers = function () {
             $scope.saveProgress();
             Toast.fire({
                 type: 'success',
@@ -557,15 +678,15 @@ app.controller('ExamAttemptController', [
         };
 
         // Review functions
-        $scope.reviewExam = function() {
+        $scope.reviewExam = function () {
             $scope.showReviewModal = true;
         };
 
-        $scope.closeReviewModal = function() {
+        $scope.closeReviewModal = function () {
             $scope.showReviewModal = false;
         };
 
-        $scope.goToFirstUnanswered = function() {
+        $scope.goToFirstUnanswered = function () {
             const firstUnanswered = $scope.questions.findIndex(q => q.answer === null);
             if (firstUnanswered !== -1) {
                 $scope.goToQuestion(firstUnanswered);
@@ -580,7 +701,7 @@ app.controller('ExamAttemptController', [
             }
         };
 
-        $scope.goToFlaggedQuestions = function() {
+        $scope.goToFlaggedQuestions = function () {
             const firstFlagged = $scope.questions.findIndex(q => q.flagged);
             if (firstFlagged !== -1) {
                 $scope.goToQuestion(firstFlagged);
@@ -596,15 +717,15 @@ app.controller('ExamAttemptController', [
         };
 
         // Submit exam
-        $scope.showSubmitModal = function() {
+        $scope.showSubmitModal = function () {
             $scope.showSubmitConfirmation = true;
         };
 
-        $scope.cancelSubmit = function() {
+        $scope.cancelSubmit = function () {
             $scope.showSubmitConfirmation = false;
         };
 
-        $scope.saveAndClose = function() {
+        $scope.saveAndClose = function () {
             $scope.saveProgress();
             Toast.fire({
                 type: 'info',
@@ -617,37 +738,37 @@ app.controller('ExamAttemptController', [
             }, 2000);
         };
 
-        $scope.submitExam = async function() {
+        $scope.submitExam = async function () {
             $scope.isSubmitting = true;
             $scope.showSubmitConfirmation = false;
-            
+
             try {
                 // Calculate time taken
                 $scope.timeTaken = ($scope.examData.duration * 60) - $scope.timeRemaining;
                 $scope.timeTakenFormatted = $scope.formatTime($scope.timeTaken);
                 $scope.submissionTime = new Date();
-                
+
                 if ($scope.useDummyData) {
                     // Demo submission
                     $timeout(() => {
                         // Clear intervals
                         $interval.cancel($scope.timerInterval);
                         $interval.cancel($scope.autoSaveInterval);
-                        
+
                         // Show success modal
                         $scope.showSuccessModal = true;
                         $scope.isSubmitting = false;
-                        
+
                         // Play success sound
                         try {
                             const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3');
                             audio.volume = 0.3;
                             audio.play();
-                        } catch (e) {}
-                        
+                        } catch (e) { }
+
                         $scope.$apply();
                     }, 1500);
-                    
+
                     Toast.fire({
                         type: 'info',
                         title: 'Demo Submission',
@@ -660,20 +781,20 @@ app.controller('ExamAttemptController', [
                         question_id: q.id,
                         answer: q.answer
                     }));
-                    
+
                     const response = await $http.post(
                         window.baseUrl + '/API/exam/submit/' + $scope.attemptId,
-                        { 
+                        {
                             answers: answers,
                             time_taken: $scope.timeTaken
                         }
                     );
-                    
+
                     if (response.data.status === 'success') {
                         // Clear intervals
                         $interval.cancel($scope.timerInterval);
                         $interval.cancel($scope.autoSaveInterval);
-                        
+
                         // Show success modal
                         $scope.showSuccessModal = true;
                     } else {
@@ -692,27 +813,27 @@ app.controller('ExamAttemptController', [
             }
         };
 
-        $scope.forceSubmit = function() {
+        $scope.forceSubmit = function () {
             if (!$scope.isSubmitting) {
                 $scope.submitExam();
             }
         };
 
-        $scope.closeSuccessModal = function() {
+        $scope.closeSuccessModal = function () {
             $scope.showSuccessModal = false;
             window.location.href = window.baseUrl + '/dashboard';
         };
 
         // Helper functions
-        $scope.getQuestionType = function(question) {
+        $scope.getQuestionType = function (question) {
             return 'Multiple Choice';
         };
 
-        $scope.formatTime = function(seconds) {
+        $scope.formatTime = function (seconds) {
             const hours = Math.floor(seconds / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
             const secs = seconds % 60;
-            
+
             if (hours > 0) {
                 return `${hours}h ${minutes}m ${secs}s`;
             } else if (minutes > 0) {
@@ -723,28 +844,39 @@ app.controller('ExamAttemptController', [
         };
 
         // Safe HTML filter
-        $scope.safeHtml = function(text) {
+        $scope.safeHtml = function (text) {
             return $sce.trustAsHtml(text);
         };
 
+        $scope.enterFullscreen = function () {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        };
+
         // Security features for demo
-        $scope.setupSecurityFeatures = function() {
+        $scope.setupSecurityFeatures = function () {
             // Prevent right click if disabled
             if ($scope.examData?.disable_right_click) {
-                document.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    Toast.fire({
-                        type: 'warning',
-                        title: 'Action Restricted',
-                        msg: 'Right click is disabled during the exam.',
-                        timer: 2000
-                    });
-                });
+                // document.addEventListener('contextmenu', function (e) {
+                //     e.preventDefault();
+                //     Toast.fire({
+                //         type: 'warning',
+                //         title: 'Action Restricted',
+                //         msg: 'Right click is disabled during the exam.',
+                //         timer: 2000
+                //     });
+                // });
             }
 
             // Prevent copy/paste if disabled
             if ($scope.examData?.disable_copy_paste) {
-                document.addEventListener('copy', function(e) {
+                document.addEventListener('copy', function (e) {
                     e.preventDefault();
                     Toast.fire({
                         type: 'warning',
@@ -753,8 +885,8 @@ app.controller('ExamAttemptController', [
                         timer: 2000
                     });
                 });
-                
-                document.addEventListener('paste', function(e) {
+
+                document.addEventListener('paste', function (e) {
                     e.preventDefault();
                     Toast.fire({
                         type: 'warning',
@@ -763,8 +895,8 @@ app.controller('ExamAttemptController', [
                         timer: 2000
                     });
                 });
-                
-                document.addEventListener('cut', function(e) {
+
+                document.addEventListener('cut', function (e) {
                     e.preventDefault();
                     Toast.fire({
                         type: 'warning',
@@ -777,38 +909,27 @@ app.controller('ExamAttemptController', [
 
             // Full screen mode
             if ($scope.examData?.full_screen_mode) {
-                const enterFullscreen = function() {
-                    const elem = document.documentElement;
-                    if (elem.requestFullscreen) {
-                        elem.requestFullscreen();
-                    } else if (elem.webkitRequestFullscreen) {
-                        elem.webkitRequestFullscreen();
-                    } else if (elem.msRequestFullscreen) {
-                        elem.msRequestFullscreen();
-                    }
-                };
-                
+
                 // Try to enter full screen
-                enterFullscreen();
-                
+                $('#fsBtn').click();
+
                 // Monitor full screen changes
-                document.addEventListener('fullscreenchange', function() {
+                document.addEventListener('fullscreenchange', function () {
                     if (!document.fullscreenElement) {
                         Toast.fire({
                             type: 'warning',
                             title: 'Full Screen Required',
-                            msg: 'Please return to full screen mode to continue the exam.',
-                            timer: 3000
+                            msg: 'Please return to full screen mode to continue the exam.'
                         });
                         // Re-enter full screen after delay
-                        $timeout(enterFullscreen, 1000);
+                        // $timeout($('#fsBtn').click(), 1000);
                     }
                 });
             }
 
             // Detect tab switching
             let isTabActive = true;
-            window.addEventListener('blur', function() {
+            window.addEventListener('blur', function () {
                 if ($scope.examData?.full_screen_mode && !$scope.showSuccessModal) {
                     isTabActive = false;
                     Toast.fire({
@@ -820,13 +941,13 @@ app.controller('ExamAttemptController', [
                 }
             });
 
-            window.addEventListener('focus', function() {
+            window.addEventListener('focus', function () {
                 isTabActive = true;
             });
         };
 
         // Before unload warning
-        window.addEventListener('beforeunload', function(e) {
+        window.addEventListener('beforeunload', function (e) {
             if (!$scope.isSubmitting && !$scope.showSuccessModal && $scope.answeredCount > 0) {
                 e.preventDefault();
                 e.returnValue = 'You have unsaved answers. Are you sure you want to leave?';
@@ -842,19 +963,21 @@ app.controller('ExamAttemptController', [
         }, 1000);
 
         // Cleanup
-        $scope.$on('$destroy', function() {
+        $scope.$on('$destroy', function () {
             if ($scope.timerInterval) $interval.cancel($scope.timerInterval);
             if ($scope.autoSaveInterval) $interval.cancel($scope.autoSaveInterval);
-            
+
             // Remove event listeners
-            document.removeEventListener('contextmenu', () => {});
-            document.removeEventListener('copy', () => {});
-            document.removeEventListener('paste', () => {});
-            document.removeEventListener('cut', () => {});
-            document.removeEventListener('fullscreenchange', () => {});
-            window.removeEventListener('blur', () => {});
-            window.removeEventListener('focus', () => {});
-            window.removeEventListener('beforeunload', () => {});
+            document.removeEventListener('contextmenu', () => { });
+            document.removeEventListener('copy', () => { });
+            document.removeEventListener('paste', () => { });
+            document.removeEventListener('cut', () => { });
+            document.removeEventListener('fullscreenchange', () => { });
+            window.removeEventListener('blur', () => { });
+            window.removeEventListener('focus', () => { });
+            window.removeEventListener('beforeunload', () => { });
         });
+
+        $scope.init();
     }
 ]);
