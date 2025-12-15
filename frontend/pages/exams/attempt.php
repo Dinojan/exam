@@ -3,9 +3,6 @@
 
 <?php $this->start('content'); ?>
 <div class="bg-[#0003] p-6 rounded-lg mb-16" ng-cloak>
-    <button id="fsBtn" ng-click="enterFullscreen()" class="hidden">
-        Hidden Fullscreen Trigger
-    </button>
 
     <!-- Loading State -->
     <div ng-if="loading" class="text-center py-12">
@@ -88,6 +85,34 @@
                         </div>
                     </div>
 
+                    <!-- Exam Start Countdown -->
+                    <div ng-if="eligibilityError.code === 'EXAM_NOT_STARTED'"
+                        class="bg-[#0005] rounded-lg mt-4 p-4 border border-gray-600 min-w-[280px] flex flex-wrap md:items-center md:justify-between gap-2">
+                        <span class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas fa-hourglass-start text-cyan-400"></i>
+                                <span class="text-gray-300 font-medium">
+                                    Exam Starts In
+                                </span>
+                            </div>
+                        </span>
+
+                        <span class="text-center">
+                            <!-- Countdown -->
+                            <div class="text-3xl font-bold"
+                                ng-class="remainingCountdown <= 300 ? 'text-red-400' : 'text-cyan-400'"
+                                ng-if="remainingCountdown > 0">
+                                {{ timeRemainingFormatted }}
+                            </div>
+
+                            <!-- When time is over -->
+                            <div class="text-xl font-bold text-green-400" ng-if="remainingCountdown <= 0">
+                                Exam Started
+                            </div>
+                        </span>
+                    </div>
+
+
                     <div ng-if="eligibilityError.code === 'MAX_ATTEMPTS_EXCEEDED'"
                         class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded">
                         <div class="flex items-center">
@@ -169,9 +194,75 @@
         </div>
     </div>
 
+    <!-- Exam start modal -->
+    <div ng-if="showExamStartModal && !loading && !showEligibilityModal"
+        class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
+
+        <div class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-md">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-600">
+                <h3 class="text-xl font-bold text-gray-100 flex items-center">
+                    <i class="fas fa-play-circle text-green-400 mr-2"></i>
+                    Exam Ready to Start
+                </h3>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6">
+                <!-- Icon -->
+                <div class="text-center mb-6">
+                    <div
+                        class="w-24 h-24 mx-auto mb-4 rounded-full border-4 border-green-500/30 bg-green-500/20 flex items-center justify-center">
+                        <i class="fas fa-clock text-green-400 text-4xl"></i>
+                    </div>
+
+                    <h4 class="text-lg font-medium text-gray-100 mb-2">
+                        Your exam has started
+                    </h4>
+                    <p class="text-gray-400">
+                        Click the button below to begin your exam.
+                    </p>
+                </div>
+
+                <!-- Exam Info -->
+                <div class="bg-[#0005] rounded-lg p-4 mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-400">Exam ID:</span>
+                        <span class="text-cyan-400 font-mono">
+                            {{ 'EX_' + ('0000' + examId).slice(-4) }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Start Time:</span>
+                        <span class="text-gray-300">
+                            {{ examData.started_at ? examData.started_at : examData.start_time | date:'mediumTime' }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-3">
+                    <!-- Start Exam Button -->
+                    <button ng-click="startExam()" class="w-full py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors
+                           flex items-center justify-center space-x-2 hover:scale-105 transition-transform">
+                        <i class="fas fa-play"></i>
+                        <span>Start Exam</span>
+                    </button>
+
+                    <!-- Cancel / Back -->
+                    <a href="<?php echo BASE_URL; ?>/exam/my"
+                        class="block w-full py-3 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700
+                           transition-colors text-center flex items-center justify-center space-x-2 hover:scale-105 transition-transform">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Back to Exams</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Exam Container (Visible when eligible and loaded) -->
-    <div ng-if="!loading && examData && isEligible && !showEligibilityModal">
-        <!-- [Rest of the exam interface remains exactly the same as in your original code] -->
+    <div ng-if="!loading && examData && isEligible && !showEligibilityModal && !showExamStartModal">
         <!-- Exam Header -->
         <div class="bg-[#0004] rounded-lg p-6 mb-6 border border-gray-600">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -286,7 +377,9 @@
                                 ng-style="{ width: ((answeredCount / examData.total_questions) * 100) + '%' }"></div>
                         </div>
                         <div class="flex justify-between text-xs text-gray-400">
-                            <span>{{Math.round((answeredCount/examData.total_questions)*100)}}% complete</span>
+                            <span>{{progressPercentage}}% complete
+                            </span>
+
                             <span>{{examData.total_questions - answeredCount}} left</span>
                         </div>
                     </div>
@@ -338,11 +431,11 @@
                             <i class="fas fa-eraser"></i>
                             <span>Clear Answer</span>
                         </button>
-                        <button ng-click="saveAnswer()"
+                        <!-- <button ng-click="saveAnswer()"
                             class="w-full py-2 px-4 rounded-lg border border-green-500 text-green-400 hover:bg-green-500/10 transition-colors flex items-center justify-center space-x-2 hover:scale-105 transition-transform">
                             <i class="fas fa-save"></i>
                             <span>Save Answer</span>
-                        </button>
+                        </button> -->
                     </div>
                 </div>
             </div>
@@ -415,12 +508,14 @@
                     </div>
 
                     <!-- Answer Options Container -->
-                    <div class="space-y-4 mb-8">
+                    <div class="mb-8 grid gap-4" ng-class="{'grid-cols-1': currentQuestion.grid === 1,
+                            'grid-cols-1 md:grid-cols-2': currentQuestion.grid === 2,
+                            'grid-cols-1 md:grid-cols-2 lg:grid-cols-4': currentQuestion.grid === 4}">
                         <!-- Individual Option -->
                         <div ng-repeat="option in currentQuestion.options track by $index" class="rounded-lg py-3 px-4 transition-all duration-200 cursor-pointer 
                             hover:border-cyan-500 hover:bg-cyan-500/5 hover:shadow-lg hover:scale-[1.01]" ng-class="{
                             'border-2 border-cyan-500 bg-cyan-500/10 shadow-lg scale-[1.01]': currentQuestion.answer === option.op,
-                            'border-2 border-gray-600': currentQuestion.answer !== option.op
+                            'border-2 border-gray-600': currentQuestion.answer !== option.op,
                         }" ng-click="selectAnswer(option.op)">
 
                             <!-- Option inner layout using flexbox -->
@@ -514,13 +609,13 @@
                             </div>
                             <div class="text-center">
                                 <div class="text-2xl font-bold text-blue-400">
-                                    {{Math.round((answeredCount/examData.total_questions)*100)}}%</div>
+                                    {{progressPercentage}}%</div>
                                 <div class="text-xs text-gray-400">Progress</div>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="flex flex-wrap gap-3">
+                        <!-- <div class="flex flex-wrap gap-3">
                             <button ng-click="reviewExam()"
                                 class="px-6 py-3 rounded-lg border border-blue-500 text-blue-400 hover:bg-blue-500/10 transition-colors flex items-center space-x-2 hover:scale-105 transition-transform">
                                 <i class="fas fa-search"></i>
@@ -538,7 +633,7 @@
                                 <i class="fas fa-paper-plane"></i>
                                 <span>Submit Exam</span>
                             </button>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>
@@ -546,7 +641,7 @@
     </div>
 
     <!-- Review Modal -->
-    <div ng-if="showReviewModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div ng-if="showReviewModal" class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
         <div
             class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-6xl max-h-[90vh] overflow-hidden">
             <div class="p-6 border-b border-gray-600 flex justify-between items-center">
@@ -695,7 +790,7 @@
     </div>
 
     <!-- Submit Confirmation Modal -->
-    <div ng-if="showSubmitConfirmation" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div ng-if="showSubmitConfirmation" class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
         <div class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-md">
             <div class="p-6 border-b border-gray-600">
                 <h3 class="text-xl font-bold text-gray-100 flex items-center">
@@ -779,7 +874,7 @@
     </div>
 
     <!-- Time Expired Modal -->
-    <div ng-if="timeExpired" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div ng-if="timeExpired" class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
         <div class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-md animate-pulse">
             <div class="p-6 border-b border-gray-600">
                 <h3 class="text-xl font-bold text-gray-100 flex items-center">
@@ -826,7 +921,7 @@
     </div>
 
     <!-- Success Modal -->
-    <div ng-if="showSuccessModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+    <div ng-if="showSuccessModal" class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
         <div class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-md">
             <div class="p-6 border-b border-gray-600">
                 <h3 class="text-xl font-bold text-gray-100 flex items-center">
@@ -879,7 +974,7 @@
                         View Results Now
                     </a>
 
-                    <a href="<?php echo BASE_URL; ?>/exams"
+                    <a href="<?php echo BASE_URL; ?>/exam/all"
                         class="block w-full py-3 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors text-center hover:scale-105 transition-transform">
                         <i class="fas fa-arrow-left mr-2"></i>
                         Back to Exams

@@ -155,7 +155,8 @@ app.controller('ExamRegistrationController', [
                 agree_terms: $scope.registrationData.agree_terms,
                 preferred_language: $scope.registrationData.preferred_language,
                 special_accommodations: $scope.registrationData.special_accommodations,
-                receive_notifications: $scope.registrationData.receive_notifications
+                receive_notifications: $scope.registrationData.receive_notifications,
+                password: $scope.registrationData.password,
             };
 
             $http.post(window.baseUrl + '/API/exam/register', $('#registrationForm').serialize())
@@ -184,26 +185,27 @@ app.controller('ExamRegistrationController', [
                             msg: 'You have been registered for the exam.'
                         });
                     } else {
-                        const err = new Error(response.data.message);
-                        err.code = response.data.code;
-                        console.log(err)
-                        throw err;
+                        throw new Error(response.data.msg);
                     }
                 })
                 .catch(function (error) {
-                    console.error('Error submitting registration:', error);
+                    console.error(error);
 
-                    if (error.data && error.data.code === 'ALREADY_REGISTERED') {
-                        $scope.existingRegistration = error.data.registration;
+                    // Get response data safely
+                    const errData = error.data || error.response?.data || error || {};
+                    console.log(errData);
+
+                    if (errData.code === 'ALREADY_REGISTERED') {
+                        $scope.existingRegistration = errData.registration;
                         $scope.showAlreadyRegisteredModal = true;
-                    } else if (error.data && error.data.code === 'EXAM_UNAVAILABLE') {
-                        $scope.registrationError = error.data.message;
+                    } else if (errData.code === 'EXAM_UNAVAILABLE') {
+                        $scope.registrationError = errData.message;
                         $scope.showExamUnavailableModal = true;
                     } else {
                         Toast.fire({
                             type: 'error',
                             title: 'Registration Failed',
-                            msg: error.data?.msg || 'Failed to register. Please try again.'
+                            msg: errData.message || 'Failed to register. Please try again.'
                         });
                     }
                 })

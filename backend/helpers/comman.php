@@ -237,7 +237,7 @@ function renderMenuOptions($menu, $collapse, $level = 0)
                     </div>
 
                 <?php else: ?>
-                    <a href="<?= BASE_URL. '/' .$item['url'] ?>"
+                    <a href="<?= BASE_URL . '/' . $item['url'] ?>"
                         class="flex items-center gap-3 p-2 <?= $activeClass ?> transition-all duration-200">
                         <span
                             class="list-icon text-lg text-white <?php echo $collapse ? 'md:ml-2 group-hover:ml-0' : ''; ?>"><?= $item['icon'] ?></span>
@@ -497,4 +497,32 @@ function generateRandomString($length = 6)
         $randomString .= $characters[rand(0, $charactersLength - 1)];
     }
     return $randomString;
+}
+
+function getPath()
+{
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $path = str_replace('\\', '/', $path);
+    $path = trim($path, '/');
+
+    $basePath = parse_url(BASE_URL, PHP_URL_PATH);
+    $basePath = trim($basePath, '/');
+
+    if ($basePath && strpos($path, $basePath) === 0) {
+        $path = substr($path, strlen($basePath));
+        $path = trim($path, '/');
+    }
+
+    if ($path === '')
+        return '/';
+    $parts = explode('/', $path);
+
+    $firstSegment = array_shift($parts);
+
+    if (in_array($firstSegment, $parts)) {
+        return $path ?: '/';
+    }
+
+    // $path = implode('/', $parts);
+    return $path ?: '/';
 }

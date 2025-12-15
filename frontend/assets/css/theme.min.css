@@ -672,6 +672,10 @@ video {
   right: -10rem;
 }
 
+.-right-full {
+  right: -100%;
+}
+
 .-top-40 {
   top: -10rem;
 }
@@ -752,6 +756,10 @@ video {
   right: 1rem;
 }
 
+.right-full {
+  right: 100%;
+}
+
 .top-0 {
   top: 0px;
 }
@@ -810,22 +818,6 @@ video {
 
 .top-full {
   top: 100%;
-}
-
-.top-\[\] {
-  top: ;
-}
-
-.top-\[50\%\] {
-  top: 50%;
-}
-
-.right-full {
-  right: 100%;
-}
-
-.-right-full {
-  right: -100%;
 }
 
 .isolate {
@@ -1494,16 +1486,6 @@ video {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
-.translate-y-\[\] {
-  --tw-translate-y: ;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-}
-
-.translate-y-\[-50\%\] {
-  --tw-translate-y: -50%;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-}
-
 .translate-y-0 {
   --tw-translate-y: 0px;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
@@ -2066,6 +2048,10 @@ video {
   border-color: rgb(75 85 99 / var(--tw-border-opacity, 1));
 }
 
+.border-gray-600\/70 {
+  border-color: rgb(75 85 99 / 0.7);
+}
+
 .border-gray-700 {
   --tw-border-opacity: 1;
   border-color: rgb(55 65 81 / var(--tw-border-opacity, 1));
@@ -2079,6 +2065,10 @@ video {
 .border-green-500 {
   --tw-border-opacity: 1;
   border-color: rgb(34 197 94 / var(--tw-border-opacity, 1));
+}
+
+.border-green-500\/30 {
+  border-color: rgb(34 197 94 / 0.3);
 }
 
 .border-green-600 {
@@ -2148,6 +2138,10 @@ video {
 .border-yellow-500 {
   --tw-border-opacity: 1;
   border-color: rgb(234 179 8 / var(--tw-border-opacity, 1));
+}
+
+.border-yellow-500\/30 {
+  border-color: rgb(234 179 8 / 0.3);
 }
 
 .border-yellow-600 {

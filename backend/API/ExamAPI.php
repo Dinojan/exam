@@ -836,64 +836,75 @@ class ExamAPI
         try {
             $exam_id = $_POST['exam_id'];
             $user_id = $_POST['student_id'];
+            $pwd = $_POST['pwd'];
             $current_date = date('Y-m-d H:i:s');
             $terms_accepted = isset($_POST['agree_terms']) ? 1 : 0;
 
-            $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ? AND student_id = ?");
-            $stmt->execute([$exam_id, $user_id]);
-            $found = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $this->db->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt->execute([$user_id]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($found) {
-                $reg_data = [];
-                $reg_data['date'] = $found['registration_date'];
-                $reg_data['status'] = $found['status'];
-                $reg_data['attempts'] = $found['attempts_count'];
-                $stmt = $this->db->prepare("SELECT url FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ?");
-                $stmt->execute([$exam_id, $user_id, $found['id']]);
-                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!password_verify($pwd, $user['password'])) {
+                throw new Exception("Invalid password.");
+            }
+
+            if (password_verify($pwd, $user['password'])) {
+                $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ? AND student_id = ?");
+                $stmt->execute([$exam_id, $user_id]);
+                $found = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($found) {
+                    $reg_data = [];
+                    $reg_data['date'] = $found['registration_date'];
+                    $reg_data['status'] = $found['status'];
+                    $reg_data['attempts'] = $found['attempts_count'];
+                    $stmt = $this->db->prepare("SELECT url FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ?");
+                    $stmt->execute([$exam_id, $user_id, $found['id']]);
+                    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    return json_encode([
+                        'status' => 'success',
+                        'msg' => 'You have already registered for this exam.',
+                        'existingRegistration' => $reg_data,
+                        'url' => $result['url'],
+                        'code' => 'ALREADY_REGI'
+                    ]);
+                }
+
+                $stmt = $this->db->prepare("SELECT reg_no FROM exam_registration ORDER BY id DESC LIMIT 1");
+                $stmt->execute();
+
+                $last = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $lastNumber = 0;
+                if ($last && !empty($last['reg_no'])) {
+                    $lastNumber = (int) str_replace('EX_REG_', '', $last['reg_no']);
+                }
+
+                $reg_no = 'EX_REG_' . str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+
+                $stmt = $this->db->prepare("INSERT INTO exam_registration (exam_id, student_id, reg_no, registration_date, terms_accepted) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$exam_id, $user_id, $reg_no, $current_date, $terms_accepted]);
+                $registration_id = $this->db->lastInsertId();
+
+                // Generate a unique 180-character URL for this attempt
+                do {
+                    $url = bin2hex(random_bytes(90)); // 180 characters
+                    $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM exam_attempts WHERE url = ?");
+                    $stmt->execute([$url]);
+                    $exists = $stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
+                } while ($exists);
+
+                $stmt = $this->db->prepare("INSERT INTO exam_attempts (registration_id , exam_id, student_id, url) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$registration_id, $exam_id, $user_id, $url]);
 
                 return json_encode([
                     'status' => 'success',
-                    'msg' => 'You have already registered for this exam.',
-                    'existingRegistration' => $reg_data,
-                    'url' => $result['url'],
-                    'code' => 'ALREADY_REGI'
+                    'msg' => 'Exam registered successfully.',
+                    'registration_id' => $reg_no,
+                    'url' => $url
                 ]);
             }
-
-            $stmt = $this->db->prepare("SELECT reg_no FROM exam_registration ORDER BY id DESC LIMIT 1");
-            $stmt->execute();
-
-            $last = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $lastNumber = 0;
-            if ($last && !empty($last['reg_no'])) {
-                $lastNumber = (int) str_replace('EX_REG_', '', $last['reg_no']);
-            }
-
-            $reg_no = 'EX_REG_' . str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-
-            $stmt = $this->db->prepare("INSERT INTO exam_registration (exam_id, student_id, reg_no, registration_date, terms_accepted) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$exam_id, $user_id, $reg_no, $current_date, $terms_accepted]);
-            $registration_id = $this->db->lastInsertId();
-
-            // Generate a unique 180-character URL for this attempt
-            do {
-                $url = bin2hex(random_bytes(90)); // 180 characters
-                $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM exam_attempts WHERE url = ?");
-                $stmt->execute([$url]);
-                $exists = $stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
-            } while ($exists);
-
-            $stmt = $this->db->prepare("INSERT INTO exam_attempts (registration_id , exam_id, student_id, url) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$registration_id, $exam_id, $user_id, $url]);
-
-            return json_encode([
-                'status' => 'success',
-                'msg' => 'Exam registered successfully.',
-                'registration_id' => $reg_no,
-                'url' => $url
-            ]);
         } catch (Exception $e) {
             return json_encode([
                 'status' => 'error',
@@ -945,7 +956,8 @@ class ExamAPI
                     return json_encode([
                         'status' => 'error',
                         'msg' => 'Exam has not started yet.',
-                        'code' => 'EXAM_NOT_STARTED'
+                        'code' => 'EXAM_NOT_STARTED',
+                        'start_time' => $exam['start_time']
                     ]);
                 }
 
@@ -962,6 +974,7 @@ class ExamAPI
             $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ? AND student_id = ?");
             $stmt->execute([$exam_id, $user]);
             $register = $stmt->fetch(PDO::FETCH_ASSOC);
+            $total_attempts = $register['attempts_count'];
 
             if (!$register) {
                 return json_encode([
@@ -970,12 +983,6 @@ class ExamAPI
                     'code' => 'NOT_REGISTERED'
                 ]);
             }
-
-            // Fetch attempts ordered by ID
-            $stmt = $this->db->prepare("SELECT * FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ? ORDER BY id ASC");
-            $stmt->execute([$exam_id, $user, $register['id']]);
-            $attempts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $total_attempts = count($attempts) - 1;
 
             // Check max attempts
             if ($total_attempts >= $exam['max_attempts']) {
@@ -986,29 +993,17 @@ class ExamAPI
                 ]);
             }
 
-            // Update attempts statuses
-            foreach ($attempts as $index => $attempt) {
-                if ($index == 0) {
-                    $status = 'started';
-                } elseif ($index == $total_attempts - 1) {
-                    $status = ($currentDateTime > $exam['end_date']) ? 'completed' : 'in_progress';
-                } else {
-                    $status = 'in_progress';
-                }
-
-                $stmt = $this->db->prepare("UPDATE exam_attempts SET status = ? WHERE id = ?");
-                $stmt->execute([$status, $attempt['id']]);
-            }
-
-            // Increment attempts_count
-            $stmt = $this->db->prepare("UPDATE exam_registration SET attempts_count = attempts_count + 1 WHERE id = ?");
-            $stmt->execute([$register['id']]);
+            // Fetch attempts ordered by ID
+            $stmt = $this->db->prepare("SELECT * FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ?");
+            $stmt->execute([$exam_id, $user, $register['id']]);
+            $attempts = $stmt->fetch(PDO::FETCH_ASSOC);
+            $total_attempts = count($attempts) - 1;
 
             return json_encode([
                 'status' => 'success',
                 'data' => [
                     'reg_no' => $register['reg_no'],
-                    'total_attempts' => $register['attempts_count'] + 1,
+                    'total_attempts' => $register['attempts_count'],
                 ],
                 'isEligible' => true
             ]);
@@ -1246,7 +1241,7 @@ class ExamAPI
                 if ($att['attempt_status'] === 'in_progress') {
                     $isProgress = true;
                 }
-                
+
                 if ($att['attempt_status'] === 'completed') {
                     $isCompleted = true;
                     $isProgress = false;
@@ -1279,6 +1274,7 @@ class ExamAPI
 
                 'allow_retake' => $settings['retake'] == 1,
                 'max_attempts' => $settings['max_attempts'] ? $settings['max_attempts'] + 0 : 1,
+                'disable_right_click' => $settings['disable_right_click'] == 1,
 
                 'status' => $finalStatus,
                 'isAlredyTaken' => $isAlredyTaken,
@@ -1331,6 +1327,17 @@ class ExamAPI
             $statement = $this->db->prepare("SELECT * FROM exam_settings WHERE exam_id = ?");
             $statement->execute([$id]);
             $settings = $statement->fetch(PDO::FETCH_ASSOC);
+
+            $statement = $this->db->prepare("SELECT id, last_attempt_date FROM exam_registration WHERE exam_id = ? AND student_id = ?");
+            $statement->execute([$id, user_id()]);
+            $register = $statement->fetch(PDO::FETCH_ASSOC);
+            $register_id = $register['id'];
+
+            $statement = $this->db->prepare("SELECT id, answers FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ?");
+            $statement->execute([$id, user_id(), $register_id]);
+            $attempt = $statement->fetch(PDO::FETCH_ASSOC);
+            $attempt_id = $attempt['id'];
+            $stored_answers = [];
 
             $finalSections = [];
 
@@ -1411,15 +1418,72 @@ class ExamAPI
                 'shuffle_options' => $settings['shuffle_options'] == 1,
                 'full_screen_mode' => $settings['full_screen_mode'] == 1,
                 'disable_copy_paste' => $settings['disable_copy_paste'] == 1,
-                'disable_right_click' => $settings['disable_right_click'] == 1,
-                'show_results_immediately' => $settings['immediate_results'] == 1
+                'show_results_immediately' => $settings['immediate_results'] == 1,
+
+                'attempt_id' => $attempt_id
             ];
+
+            $currentTime = strtotime(date('Y-m-d H:i:s'));
+
+            if ($settings['schedule_type'] == 'scheduled') {
+                $startTime = strtotime($settings['start_time']);
+                $endTime = $startTime + ($exam['duration'] * 60);
+
+                if ($currentTime >= $startTime && $currentTime <= $endTime) {
+                    // last attempt date update
+                    $stmt = $this->db->prepare("UPDATE exam_registration SET last_attempt_date = ? WHERE id = ?");
+                    $stmt->execute([$settings['start_time'], $register['id']]);
+
+                    // attempt start time
+                    $stmt = $this->db->prepare("UPDATE exam_attempts SET started_at = ? WHERE id = ?");
+                    $stmt->execute([$settings['start_time'], $register['id']]);
+
+                    $stored_answers = json_decode($attempt['answers'], true) ?: [];
+                }
+            } else {
+
+                if (!$register['last_attempt_date']) {
+
+                    $stmt = $this->db->prepare("UPDATE exam_registration SET last_attempt_date = ? WHERE id = ?");
+                    $stmt->execute([date('Y-m-d H:i:s'), $register['id']]);
+
+                    $stmt = $this->db->prepare("UPDATE exam_attempts SET started_at = NOW() WHERE id = ?");
+                    $stmt->execute([$register['id']]);
+                } else {
+                    $startTime = strtotime($register['last_attempt_date']);
+                    $endTime = $startTime + ($exam['duration'] * 60);
+
+                    if ($currentTime > $endTime) {
+
+                        $stmt = $this->db->prepare("UPDATE exam_registration SET last_attempt_date = ? WHERE id = ?");
+                        $stmt->execute([date('Y-m-d H:i:s'), $register['id']]);
+
+                        $stmt = $this->db->prepare("UPDATE exam_attempts SET started_at = NOW() WHERE id = ?");
+                        $stmt->execute([$register['id']]);
+                    }
+
+                    if ($currentTime >= $startTime && $currentTime <= $endTime) {
+                        $stored_answers = json_decode($attempt['answers'], true) ?: [];
+                    }
+                }
+            }
+
+
+            foreach ($stored_answers as &$answer) {
+                $answer['question_id'] = (int) $answer['question_id'];
+
+                if (isset($answer['flagged'])) {
+                    $answer['flagged'] = filter_var($answer['flagged'], FILTER_VALIDATE_BOOLEAN);
+                }
+            }
+            unset($answer); // reference safe
 
             return json_encode([
                 'status' => 'success',
                 'rest_exam_info' => $mergedData,
                 'sections' => $finalSections,
-                'questions' => $finalQuestions
+                'questions' => $finalQuestions,
+                'answers' => $stored_answers
             ]);
 
         } catch (Exception $e) {
@@ -1446,6 +1510,7 @@ class ExamAPI
             foreach ($answers as &$a) {
                 if ($a['question_id'] === $question_id) {
                     $a['answer'] = $answer;
+                    $a['flagged'] = $_POST['flagged'] ? $_POST['flagged'] : $a['flagged'];
                     $found = true;
                     break;
                 }
@@ -1456,7 +1521,8 @@ class ExamAPI
             if (!$found) {
                 $answers[] = [
                     'question_id' => $question_id,
-                    'answer' => $answer
+                    'answer' => $answer,
+                    'flagged' => isset($_POST['flagged']) ? $_POST['flagged'] : false
                 ];
             }
 

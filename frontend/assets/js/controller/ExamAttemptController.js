@@ -10,6 +10,7 @@ app.controller('ExamAttemptController', [
         $scope.currentQuestionIndex = 0;
         $scope.currentQuestion = null;
         $scope.timeRemaining = null;
+        $scope.remainingCountdown = '00:00:00'
         $scope.timeRemainingFormatted = null;
         $scope.timerWarning = false;
         $scope.timeExpired = false;
@@ -20,7 +21,7 @@ app.controller('ExamAttemptController', [
         $scope.showSuccessModal = false;
         $scope.submissionTime = null;
         $scope.timeTaken = 0;
-        $scope.timeTakenFormatted = "00:00";
+        $scope.timeTakenFormatted = "00:00:00";
         $scope.examStartedAt = null;
         $scope.examEndTime = null;
         $scope.timerInterval = null;
@@ -35,13 +36,32 @@ app.controller('ExamAttemptController', [
         $scope.isProgress = false;
         $scope.isCompleted = false;
         $scope.isAbandoned = false;
+        $scope.showExamStartModal = false;
+        $scope.examStartWarning = false;
+        $scope.isExamRunning = false;
+        $scope.isCountdownInitialized = false;
+        $scope.isTimerInitialized = false;
+        $scope.selectedAnswers = null;
 
 
         // Initialize exam
-        $scope.init = function () {
+        $scope.init = async function () {
             $scope.loading = true;
             $scope.showEligibilityModal = false;
             $scope.eligibilityError = null;
+            // Preload warning audio
+            $scope.startWarningAudio = await new Audio(window.baseUrl + '/frontend/assets/sounds/start_waring.mp3');
+            $scope.endWarningAudio = await new Audio(window.baseUrl + '/frontend/assets/sounds/end_waring.mp3');
+            $scope.startWarningAudio.volume = 0.3;
+            $scope.endWarningAudio.volume = 0.3;
+
+            // Play-pause once to give browser permission
+            $scope.startWarningAudio.play().catch(() => { });
+            $scope.endWarningAudio.play().catch(() => { });
+            $scope.startWarningAudio.pause();
+            $scope.endWarningAudio.pause();
+            $scope.startWarningAudio.currentTime = 0;
+            $scope.endWarningAudio.currentTime = 0;
 
             // First check eligibility
             $scope.checkUserEligibility();
@@ -55,12 +75,13 @@ app.controller('ExamAttemptController', [
 
             try {
                 $http.get(window.baseUrl + "/API/exam/eligibility/" + $scope.examId)
-                    .then(function (response) {
+                    .then(async function (response) {
                         $scope.loading = false;
 
                         if (response.data.status === 'success' && response.data.isEligible) {
                             $scope.isEligible = true;
-                            $scope.loadExamMetaData();
+                            await $scope.loadExamMetaData();
+                            $scope.setupSecurityFeatures();
                         } else {
                             // Set error information
                             $scope.eligibilityError = {
@@ -70,10 +91,24 @@ app.controller('ExamAttemptController', [
                                 timestamp: new Date()
                             };
 
+                            if (response.data.code === 'EXAM_NOT_STARTED') {
+                                $scope.timeData = {
+                                    start_time: response.data.start_time ? new Date(response.data.start_time) : null
+                                };
+
+                                $scope.remainingCountdown = Math.floor(
+                                    ($scope.timeData.start_time - new Date()) / 1000
+                                );
+                                $scope.initializeExamCountdown(
+                                    Math.max(0, $scope.remainingCountdown)
+                                );
+                            }
+
                             $scope.showEligibilityModal = true;
                         }
                     })
                     .catch(function (error) {
+                        console.error(error);
                         $scope.loading = false;
                         $scope.eligibilityError = {
                             code: 'NETWORK_ERROR',
@@ -138,7 +173,7 @@ app.controller('ExamAttemptController', [
 
                     $scope.examData = {
                         id: data.id,
-                        title: data.title.replace(/ /g, "_"),
+                        title: data.title,
                         code: data.code.replace(/ /g, "_"),
                         duration: data.duration,
                         total_questions: data.total_questions,
@@ -148,10 +183,12 @@ app.controller('ExamAttemptController', [
 
                         start_time: data.start_time ? new Date(data.start_time) : null,
                         end_time: data.start_time ? new Date(new Date(data.start_time).getTime() + data.duration * 60 * 1000) : null,
-                        started_at: (data.schedule_type === 'anytime' && data.started_at) ? new Date(data.started_at) : new Date(), // only for schedule type anytime
+                        started_at: (data.schedule_type === 'anytime' && data.started_at) ? new Date(data.started_at) : new Date(),
 
                         max_attempts: data.max_attempts > 0 ? data.max_attempts : 1,
                         allow_retake: data.allow_retake,
+                        total_attempts: data.total_attempts,
+                        disable_right_click: data.disable_right_click,
 
                         isAlreadyTaken: data.isAlredyTaken,
                         isProgress: data.isProgress,
@@ -160,23 +197,25 @@ app.controller('ExamAttemptController', [
                     };
                     const now = new Date();
 
-                    // ANYTIME
-                    if ($scope.examData.schedule_type === 'anytime') {
-                        $scope.startExam();
-                    }
+                    if (data.allow_retake && data.max_attempts >= data.total_attempts) {
+                        // ANYTIME
+                        if ($scope.examData.schedule_type === 'anytime') {
+                            $scope.showExamStartModal = true;
+                        }
 
-                    // SCHEDULED
-                    if ($scope.examData.schedule_type === 'scheduled') {
+                        // SCHEDULED
+                        if ($scope.examData.schedule_type === 'scheduled') {
 
-                        if (now < $scope.examData.start_time) {
-                            $scope.isExamStarted = false;
-                            $scope.isExamEnded = false;
-                        } else if (now >= $scope.examData.start_time && now <= $scope.examData.end_time) {
-                            $scope.startExam();
+                            if (now < $scope.examData.start_time) {
+                                $scope.isExamStarted = false;
+                                $scope.isExamEnded = false;
+                            } else if (now >= $scope.examData.start_time && now <= $scope.examData.end_time) {
+                                $scope.showExamStartModal = true;
 
-                        } else if (now > $scope.examData.end_time) {
-                            $scope.isExamStarted = false;
-                            $scope.isExamEnded = true;
+                            } else if (now > $scope.examData.end_time) {
+                                $scope.isExamStarted = false;
+                                $scope.isExamEnded = true;
+                            }
                         }
                     }
 
@@ -189,12 +228,14 @@ app.controller('ExamAttemptController', [
                 console.error('Error loading exam:', error);
             }
         };
-
         // Start Exam
-        $scope.startExam = () => {
+        $scope.startExam = async () => {
             $scope.isExamStarted = true;
             $scope.isExamEnded = false;
-            $scope.loadExamData();
+            $scope.showExamStartModal = false;
+            await $scope.loadExamData();
+            $scope.isExamRunning = true;
+            $scope.setupSecurityFeatures();
         }
 
         // load other exam data
@@ -208,26 +249,42 @@ app.controller('ExamAttemptController', [
                 if (examResponse.data.status === 'success') {
                     const data = examResponse.data.rest_exam_info
 
-                    $scope.examData =angular.extend($scope.examData || {}, {
+                    $scope.examData = angular.extend($scope.examData || {}, {
                         passing_marks: data.passing_marks,
                         passing_persentage: (data.passing_marks / data.total_marks) * 100,
                         shuffle_questions: data.shuffle_questions,
                         shuffle_options: data.shuffle_options,
                         full_screen_mode: data.full_screen_mode,
                         disable_copy_paste: data.disable_copy_paste,
-                        disable_right_click: data.disable_right_click,
                         show_results_immediately: data.show_results_immediately,
+                        attempt_id: data.attempt_id
                     });
+
+                    $scope.attemptId = data.attempt_id;
+
+                    $scope.selectedAnswers = examResponse.data.answers;
 
 
                     // Process questions
                     $scope.processQuestions(examResponse.data.questions, examResponse.data.sections);
                     // Initialize timer
-                    $scope.timeRemaining = $scope.examData.duration * 60;
+                    // $scope.timeRemaining = $scope.examData.duration * 60;
+                    let endTime;
+
+                    if ($scope.examData.schedule_type === 'scheduled') {
+                        const startTime = new Date($scope.examData.start_time);
+                        endTime = new Date(startTime.getTime() + $scope.examData.duration * 60 * 1000);
+                    } else {
+                        const startTime = new Date($scope.examData.started_at);
+                        endTime = new Date(startTime.getTime() + $scope.examData.duration * 60 * 1000);
+                    }
+
+                    const currentTime = new Date();
+
+                    // Time remaining in seconds
+                    $scope.timeRemaining = Math.max(0, Math.floor((endTime - currentTime) / 1000));
                     $scope.initializeTimer($scope.timeRemaining);
 
-                    // Start auto-save
-                    $scope.startAutoSave();
                     $scope.loading = false;
                     $scope.$apply();
                 } else {
@@ -247,6 +304,14 @@ app.controller('ExamAttemptController', [
                     options = $scope.shuffleArray([...options]);
                 }
 
+                // find selected answer ONCE (safe)
+                const selected = $scope.selectedAnswers.find(
+                    ans => ans.question_id === question.id
+                ) || {};
+
+                if (selected) {
+                    $scope.answeredCount++
+                };
                 return {
                     id: question.id,
                     question: question.question || $sce.trustAsHtml(question.text || ''),
@@ -259,10 +324,11 @@ app.controller('ExamAttemptController', [
                     })),
                     marks: question.marks,
                     // difficulty: question.difficulty,
-                    answer: question.user_answer || null,
-                    flagged: question.flagged || false,
+                    answer: selected.answer || null,
+                    flagged: selected.flagged || false,
                     order: index + 1,
-                    sectionIds: question.sectionIconsods || []
+                    sectionIds: question.sectionIconsods || [],
+                    grid: question.grid || 1,
                 };
             });
 
@@ -363,58 +429,103 @@ app.controller('ExamAttemptController', [
             });
         };
 
+        // Initialize exam countdown
+        $scope.initializeExamCountdown = function (timeRemainingSeconds) {
+            if (!$scope.isCountdownInitialized) {
+                $scope.isCountdownInitialized = true;
+                $scope.remainingCountdown = timeRemainingSeconds;
+                $scope.updateTimerDisplay($scope.remainingCountdown);
+
+                $scope.examStartTime = new Date();
+                $scope.examStartTime.setSeconds($scope.examStartTime.getSeconds() + $scope.remainingCountdown);
+
+                $scope.timerInterval = $interval(() => {
+                    $scope.remainingCountdown--;
+                    $scope.updateTimerDisplay($scope.remainingCountdown);
+
+                    // Check for warnings
+                    if ($scope.remainingCountdown <= 300 && !$scope.examStartWarning) { // 5 minutes
+                        $scope.examStartWarning = true;
+                        // Play warning sound
+                        $scope.startWarningAudio.play().catch(() => { });
+                    }
+
+                    // Check if time expired
+                    if ($scope.remainingCountdown < 0) {
+                        $interval.cancel($scope.timerInterval);
+                        $scope.retryEligibilityCheck();
+                    }
+                }, 1000);
+            }
+        }
+
         // Initialize timer
         $scope.initializeTimer = function (timeRemainingSeconds) {
-            $scope.timeRemaining = timeRemainingSeconds;
-            $scope.updateTimerDisplay();
+            if (!$scope.isTimerInitialized) {
+                $scope.isTimerInitialized = true;
+                $scope.timeRemaining = timeRemainingSeconds;
+                $scope.updateTimerDisplay($scope.timeRemaining);
 
-            $scope.examEndTime = new Date();
-            $scope.examEndTime.setSeconds($scope.examEndTime.getSeconds() + $scope.timeRemaining);
+                $scope.examEndTime = new Date();
+                $scope.examEndTime.setSeconds($scope.examEndTime.getSeconds() + $scope.timeRemaining);
 
-            $scope.timerInterval = $interval(() => {
-                $scope.timeRemaining--;
-                $scope.updateTimerDisplay();
+                $scope.timerInterval = $interval(() => {
+                    if (!$scope.timeExpired) $scope.timeRemaining--; // Decrease time remaining by 1 second
+                    $scope.updateTimerDisplay($scope.timeRemaining);
 
-                // Check for warnings
-                if ($scope.timeRemaining <= 300 && !$scope.timerWarning) { // 5 minutes
-                    $scope.timerWarning = true;
-                    // Play warning sound
-                    try {
-                        const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
-                        audio.volume = 0.3;
-                        audio.play();
-                    } catch (e) { }
-                }
+                    // Check for warnings
+                    if ($scope.timeRemaining === 600 && !$scope.timerWarning) { // 5 minutes
+                        // $scope.timerWarning = true;
+                        $scope.endWarningAudio.play().catch(() => { });
+                        Toast.fire({
+                            type: 'warning',
+                            title: 'Exam Warning',
+                            text: 'You have 10 minutes remaining!'
+                        })
+                    }
 
-                // Check if time expired
-                if ($scope.timeRemaining <= 0) {
-                    $scope.timeExpired = true;
-                    $interval.cancel($scope.timerInterval);
-                    $scope.forceSubmit();
-                }
-            }, 1000);
+                    if ($scope.timeRemaining === 300 && !$scope.timerWarning) { // 5 minutes
+                        // $scope.timerWarning = true;
+                        $scope.endWarningAudio.play().catch(() => { });
+                        Toast.fire({
+                            type: 'warning',
+                            title: 'Exam Warning',
+                            text: 'You have 5 minutes remaining!'
+                        })
+                    }
+
+                    if ($scope.timeRemaining === 60 && !$scope.timerWarning) { // 5 minutes
+                        // $scope.timerWarning = true;
+                        $scope.endWarningAudio.play().catch(() => { });
+                        Toast.fire({
+                            type: 'warning',
+                            title: 'Exam Warning',
+                            text: 'You have 5 minutes remaining!'
+                        })
+                    }
+
+                    if ($scope.timeRemaining <= 60 && !$scope.timerWarning) { // 5 minutes
+                        $scope.timerWarning = true;
+                        // Play warning sound
+                        $scope.endWarningAudio.play().catch(() => { });
+                    }
+
+                    // Check if time expired
+                    if ($scope.timeRemaining <= 0) {
+                        $scope.timeExpired = true;
+                        $scope.showSuccessModal = true;
+                        $interval.cancel($scope.timerInterval);
+                        // $scope.forceSubmit();
+                    }
+                }, 1000);
+            }
         };
 
         // Update timer display
-        $scope.updateTimerDisplay = function () {
-            let endTime;
-
-            if ($scope.examData.schedule_type === 'scheduled') {
-                const startTime = new Date($scope.examData.start_time);
-                endTime = new Date(startTime.getTime() + $scope.examData.duration * 60 * 1000);
-            } else {
-                const startTime = new Date($scope.examData.started_at);
-                endTime = new Date(startTime.getTime() + $scope.examData.duration * 60 * 1000);
-            }
-
-            const currentTime = new Date();
-
-            // Time remaining in seconds
-            $scope.timeRemaining = Math.max(0, Math.floor((endTime - currentTime) / 1000));
-
-            const hours = Math.floor($scope.timeRemaining / 3600);
-            const minutes = Math.floor(($scope.timeRemaining % 3600) / 60);
-            const seconds = $scope.timeRemaining % 60;
+        $scope.updateTimerDisplay = function (time) {
+            const hours = Math.floor(time / 3600);
+            const minutes = Math.floor((time % 3600) / 60);
+            const seconds = time % 60;
 
             $scope.timeRemainingFormatted =
                 hours.toString().padStart(2, '0') + ':' +
@@ -438,11 +549,33 @@ app.controller('ExamAttemptController', [
             $scope.estimatedScore = Math.max(0, score);
         };
 
-        // Start auto-save
-        $scope.startAutoSave = function () {
-            $scope.autoSaveInterval = $interval(() => {
-                $scope.saveProgress();
-            }, 30000); // Auto-save every 30 seconds
+        // Update counts
+        $scope.updateCounts = function () {
+            $scope.answeredCount = $scope.questions.filter(q => q.answer !== null).length;
+            $scope.flaggedCount = $scope.questions.filter(q => q.flagged).length;
+            $scope.progressPercentage = $scope.examData.total_questions ? Math.min(100, Math.round(($scope.answeredCount / $scope.examData.total_questions) * 100)) : 0
+            $scope.calculateEstimatedScore();
+        };
+
+        // Navigation
+        $scope.goToQuestion = function (index) {
+            if (index >= 0 && index < $scope.questions.length) {
+                $scope.currentQuestionIndex = index;
+                $scope.currentQuestion = $scope.questions[index];
+                console.log($scope.currentQuestion)
+            }
+        };
+
+        $scope.previousQuestion = function () {
+            if ($scope.currentQuestionIndex > 0) {
+                $scope.goToQuestion($scope.currentQuestionIndex - 1);
+            }
+        };
+
+        $scope.nextQuestion = function () {
+            if ($scope.currentQuestionIndex < $scope.questions.length - 1) {
+                $scope.goToQuestion($scope.currentQuestionIndex + 1);
+            }
         };
 
         // Save progress
@@ -461,36 +594,8 @@ app.controller('ExamAttemptController', [
                     { answers: answers, time_remaining: $scope.timeRemaining }
                 );
 
-                console.log('Progress saved at', new Date().toLocaleTimeString());
             } catch (error) {
                 console.error('Error saving progress:', error);
-            }
-        };
-
-        // Update counts
-        $scope.updateCounts = function () {
-            $scope.answeredCount = $scope.questions.filter(q => q.answer !== null).length;
-            $scope.flaggedCount = $scope.questions.filter(q => q.flagged).length;
-            $scope.calculateEstimatedScore();
-        };
-
-        // Navigation
-        $scope.goToQuestion = function (index) {
-            if (index >= 0 && index < $scope.questions.length) {
-                $scope.currentQuestionIndex = index;
-                $scope.currentQuestion = $scope.questions[index];
-            }
-        };
-
-        $scope.previousQuestion = function () {
-            if ($scope.currentQuestionIndex > 0) {
-                $scope.goToQuestion($scope.currentQuestionIndex - 1);
-            }
-        };
-
-        $scope.nextQuestion = function () {
-            if ($scope.currentQuestionIndex < $scope.questions.length - 1) {
-                $scope.goToQuestion($scope.currentQuestionIndex + 1);
             }
         };
 
@@ -498,6 +603,7 @@ app.controller('ExamAttemptController', [
         $scope.selectAnswer = function (answer) {
             const formData = new FormData();
             formData.append('answer', answer);
+            formData.append('flagged', false);
 
             let attempts = 0;
             const maxAttempts = 5;
@@ -743,34 +849,25 @@ app.controller('ExamAttemptController', [
             return $sce.trustAsHtml(text);
         };
 
-        $scope.enterFullscreen = function () {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
-            }
-        };
-
         // Security features for demo
         $scope.setupSecurityFeatures = function () {
             // Prevent right click if disabled
-            if ($scope.examData?.disable_right_click) {
-                // document.addEventListener('contextmenu', function (e) {
-                //     e.preventDefault();
-                //     Toast.fire({
-                //         type: 'warning',
-                //         title: 'Action Restricted',
-                //         msg: 'Right click is disabled during the exam.',
-                //         timer: 2000
-                //     });
-                // });
+            if ($scope.examData.disable_right_click) {
+                document.addEventListener('contextmenu', function (e) {
+                    e.preventDefault();
+                    Toast.fire({
+                        type: 'warning',
+                        title: 'Action Restricted',
+                        msg: 'Right click is disabled during the exam.',
+                        timer: 2000
+                    });
+                });
             }
 
+            if (!$scope.isExamRunning) return;
+
             // Prevent copy/paste if disabled
-            if ($scope.examData?.disable_copy_paste) {
+            if ($scope.examData.disable_copy_paste) {
                 document.addEventListener('copy', function (e) {
                     e.preventDefault();
                     Toast.fire({
@@ -803,10 +900,20 @@ app.controller('ExamAttemptController', [
             }
 
             // Full screen mode
-            if ($scope.examData?.full_screen_mode) {
-
+            if ($scope.examData.full_screen_mode) {
                 // Try to enter full screen
-                $('#fsBtn').click();
+                const enterFullscreen = function () {
+                    const elem = document.documentElement;
+                    if (elem.requestFullscreen) {
+                        elem.requestFullscreen();
+                    } else if (elem.webkitRequestFullscreen) {
+                        elem.webkitRequestFullscreen();
+                    } else if (elem.msRequestFullscreen) {
+                        elem.msRequestFullscreen();
+                    }
+                };
+
+                enterFullscreen();
 
                 // Monitor full screen changes
                 document.addEventListener('fullscreenchange', function () {
@@ -817,21 +924,32 @@ app.controller('ExamAttemptController', [
                             msg: 'Please return to full screen mode to continue the exam.'
                         });
                         // Re-enter full screen after delay
-                        // $timeout($('#fsBtn').click(), 1000);
+                        $timeout(function () {
+                            enterFullscreen();
+                        }, 1000);
                     }
                 });
             }
 
             // Detect tab switching
+            $scope.tabSwitchCount = 0;
+            const maxTabSwitch = 3;
             let isTabActive = true;
             window.addEventListener('blur', function () {
-                if ($scope.examData?.full_screen_mode && !$scope.showSuccessModal) {
-                    isTabActive = false;
-                    Toast.fire({
-                        type: 'warning',
-                        title: 'Stay Focused!',
-                        msg: 'Please do not switch tabs during the exam.',
-                        timer: 3000
+                isTabActive = false;
+
+                $scope.tabSwitchCount++;
+
+                Toast.fire({
+                    type: 'warning',
+                    title: 'Stay Focused!',
+                    msg: `Please do not switch tabs during the exam. (${$scope.tabSwitchCount}/${maxTabSwitch})`,
+                    timer: 3000
+                });
+
+                if ($scope.tabSwitchCount >= maxTabSwitch) {
+                    $scope.$apply(() => {
+                        $scope.endExam();
                     });
                 }
             });
@@ -849,13 +967,6 @@ app.controller('ExamAttemptController', [
                 return e.returnValue;
             }
         });
-
-        // Initialize after data is loaded
-        $timeout(() => {
-            if ($scope.examData) {
-                $scope.setupSecurityFeatures();
-            }
-        }, 1000);
 
         // Cleanup
         $scope.$on('$destroy', function () {

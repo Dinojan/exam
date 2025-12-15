@@ -27,22 +27,41 @@
             </p>
 
             <!-- Error Details -->
-            <div class="inline-block bg-[#0004] border border-gray-600 rounded-lg p-4 mb-8">
+            <!-- <div class="inline-block bg-[#0004] border border-gray-600 rounded-lg p-4 mb-8">
                 <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-sm">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-link text-cyan-400"></i>
                         <span class="text-gray-300">Path:</span>
-                        <code
-                            class="bg-gray-800 px-3 py-1 rounded text-cyan-300"><?php echo isset($_GET['path']) ? htmlspecialchars($_GET['path']) : 'Unknown'; ?></code>
+                        <code class="bg-gray-800 px-3 py-1 rounded text-cyan-300">/<?php 
+                        // $displayPath = isset($_GET['path']) && $_GET['path'] !== ''
+                        //     ? $_GET['path']
+                        //     : 'Unknown';
+
+                        // if ($displayPath !== 'Unknown') {
+                        //     $segments = explode('/', $displayPath);
+
+                        //     // Truncate each segment > 15 chars
+                        //     foreach ($segments as &$segment) {
+                        //         $segment = htmlspecialchars($segment);
+                        //         if (strlen($segment) > 15) {
+                        //             $segment = substr($segment, 0, 15) . '...';
+                        //         }
+                        //     }
+
+                        //     $displayPath = implode('/', $segments);
+                        // }
+
+                        // echo $displayPath;
+                        ?></code>
                     </div>
                     <div class="flex items-center gap-2">
                         <i class="fas fa-code text-purple-400"></i>
                         <span class="text-gray-300">Method:</span>
                         <code
-                            class="bg-gray-800 px-3 py-1 rounded text-purple-300"><?php echo isset($_GET['method']) ? htmlspecialchars($_GET['method']) : 'GET'; ?></code>
+                            class="bg-gray-800 px-3 py-1 rounded text-purple-300"><?php // echo isset($_GET['method']) ? htmlspecialchars($_GET['method']) : 'GET'; ?></code>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <!-- Action Buttons -->

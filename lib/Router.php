@@ -254,7 +254,6 @@ class Router
         $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
         $path = str_replace('\\', '/', $path);
         $path = trim($path, '/');
-        ;
 
         $basePath = parse_url(BASE_URL, PHP_URL_PATH);
         $basePath = trim($basePath, '/');

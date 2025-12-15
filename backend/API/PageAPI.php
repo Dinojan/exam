@@ -9,7 +9,7 @@ class PageAPI
         $currentRoute = $_SERVER['REQUEST_URI'] ?? '/';
 
         // Skip login redirect if already on login page OR 404 page
-        if ( !Auth::isLoggedIn() && !str_contains($currentRoute, 'login') && !str_contains($currentRoute, '/404') ) {
+        if (!Auth::isLoggedIn() && !str_contains($currentRoute, 'login') && !str_contains($currentRoute, '/404')) {
             $encodedUrl = rawurlencode($currentRoute);
 
             $router = Router::getInstance();
@@ -29,8 +29,9 @@ class PageAPI
         return view('auth.login', ['title' => 'User Login']);
     }
 
-    public function notFound() {
-         return view('not_found.not_found', ['title' => '404 Page Not Found']);
+    public function notFound()
+    {
+        return view('not_found.not_found', ['title' => '404 Page Not Found']);
     }
 
     public function dashboard()
@@ -84,9 +85,18 @@ class PageAPI
     {
         return view('exams.register', ['title' => 'Register For Exam', 'rest_url_hash' => $hash]);
     }
-    public function attemptExam($hash)
+    public function attemptExam($hash, $id)
     {
-        return view('exams.attempt', ['title' => 'Attempt Exam', 'rest_url_hash' => $hash]);
+        $stmt = db()->prepare("SELECT * FROM exam_attempts WHERE url = ? AND exam_id = ?");
+        $stmt->execute([$hash, $id]);
+        $attempt = $stmt->fetch();
+        if ($attempt) {
+            return view('exams.attempt', ['title' => 'Attempt Exam', 'rest_url_hash' => $hash]);
+        } else {
+            $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+            $path = getPath();
+            header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
+        }
     }
     public function examResults($id)
     {

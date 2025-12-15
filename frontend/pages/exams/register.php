@@ -403,7 +403,7 @@
 
                         <!-- Action Buttons -->
                         <div class="space-y-3">
-                            <button type="button" ng-disabled="registrationForm.$invalid || isSubmitting" ng-click="submitRegistration()"
+                            <button type="button" ng-disabled="!registrationData.agree_terms || !registrationData.password" ng-click="submitRegistration()"
                                 class="w-full py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i class="fas"
                                     ng-class="isSubmitting ? 'fa-spinner animate-spin' : 'fa-check-circle'"></i>
