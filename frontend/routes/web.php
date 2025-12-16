@@ -79,6 +79,7 @@ Router::group(['prefix' => 'API'], function () {
     Router::post('/exams/basic_info/{id}', 'ExamAPI@editExamBasicInfo', 'edit_basic_info', ['auth']);
     Router::post('/exams/settings', 'ExamAPI@saveExamSettings', 'save_exam_settings', ['auth']);
     Router::post('/exam/registration/{id}', 'ExamAPI@saveExamRegistrationData', 'save_exam_registration_data', ['auth']);
+    Router::post('/exam/submit/{exam_id}/{attempt_id}', 'ExamAPI@submitExam', 'submit_exam', ['auth']);
     Router::post('/exam/{exam_id}/attempt/{attempt_id}/question/{question_id}/answer', 'ExamAPI@saveExamAnswer', 'save_exam_answer', ['auth']);
     Router::post('/exam/register', 'ExamAPI@registerExam', 'register_exam', ['auth']);
 

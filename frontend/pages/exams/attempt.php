@@ -28,7 +28,7 @@
                 <!-- Error Icon based on error code -->
                 <div class="text-center mb-6">
                     <div class="w-24 h-24 mx-auto mb-4 rounded-full border-4 flex items-center justify-center" ng-class="{
-                            'bg-red-500/20 border-red-500/30': eligibilityError.code === 'MAX_ATTEMPTS_EXCEEDED' || eligibilityError.code === 'EXAM_ENDED' || eligibilityError.code === 'EXAM_CANCELED' || eligibilityError.code === 'EXAM_NOT_FOUND',
+                            'bg-red-500/20 border-red-500/30': eligibilityError.code === 'MAX_ATTEMPTS_EXCEEDED' || eligibilityError.code === 'EXAM_ENDED' || eligibilityError.code === 'EXAM_CANCELED' || eligibilityError.code === 'EXAM_NOT_FOUND' || eligibilityError.code === 'UNAUTHORIZED',
                             'bg-yellow-500/20 border-yellow-500/30': eligibilityError.code === 'EXAM_NOT_STARTED' || eligibilityError.code === 'EXAM_NOT_PUBLISHED',
                             'bg-blue-500/20 border-blue-500/30': eligibilityError.code === 'NOT_REGISTERED'
                         }">
@@ -37,7 +37,8 @@
                             'fa-clock text-yellow-400': eligibilityError.code === 'EXAM_NOT_STARTED' || eligibilityError.code === 'EXAM_ENDED',
                             'fa-eye-slash text-yellow-400': eligibilityError.code === 'EXAM_NOT_PUBLISHED',
                             'fa-times-circle text-red-400': eligibilityError.code === 'EXAM_CANCELED',
-                            'fa-solid fa-user-slash text-blue-400': eligibilityError.code === 'NOT_REGISTERED',
+                            'fa-user-slash text-blue-400': eligibilityError.code === 'NOT_REGISTERED',
+                            'fa-solid fa-user-lock text-red-400': eligibilityError.code === 'UNAUTHORIZED',
                             'fa-solid fa-exclamation-circle text-yellow-400': !eligibilityError.code
                         }"></i>
                     </div>
@@ -138,6 +139,20 @@
                             </div>
                         </div>
                     </div>
+
+                    <div ng-if="eligibilityError.code === 'UNAUTHORIZED'"
+                        class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-lock text-red-400 text-xl mr-3"></i>
+                            <div>
+                                <div class="text-red-300 font-medium">Permission Denied</div>
+                                <div class="text-red-400 text-sm mt-1">
+                                    This exam is only available for authorized students.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Action Buttons -->
@@ -315,10 +330,10 @@
                             <i class="fas fa-check-circle text-green-400 mr-2"></i>
                             <span>Answer all questions before submitting</span>
                         </div>
-                        <div class="flex items-center text-gray-300">
+                        <!-- <div class="flex items-center text-gray-300">
                             <i class="fas fa-check-circle text-green-400 mr-2"></i>
                             <span>Each question carries {{examData.marks_per_question || 4}} marks</span>
-                        </div>
+                        </div> -->
                         <div class="flex items-center text-gray-300" ng-if="examData.full_screen_mode">
                             <i class="fas fa-expand text-blue-400 mr-2"></i>
                             <span>Full screen mode is enabled</span>
@@ -516,7 +531,7 @@
                             hover:border-cyan-500 hover:bg-cyan-500/5 hover:shadow-lg hover:scale-[1.01]" ng-class="{
                             'border-2 border-cyan-500 bg-cyan-500/10 shadow-lg scale-[1.01]': currentQuestion.answer === option.op,
                             'border-2 border-gray-600': currentQuestion.answer !== option.op,
-                        }" ng-click="selectAnswer(option.op)">
+                        }" ng-click="currentQuestion.answer = option.op; selectAnswer(option.op);">
 
                             <!-- Option inner layout using flexbox -->
                             <div class="flex items-center">
@@ -615,25 +630,13 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <!-- <div class="flex flex-wrap gap-3">
+                        <div class="flex flex-wrap gap-3">
                             <button ng-click="reviewExam()"
                                 class="px-6 py-3 rounded-lg border border-blue-500 text-blue-400 hover:bg-blue-500/10 transition-colors flex items-center space-x-2 hover:scale-105 transition-transform">
                                 <i class="fas fa-search"></i>
                                 <span>Review Exam</span>
                             </button>
-
-                            <button ng-click="saveAllAnswers()"
-                                class="px-6 py-3 rounded-lg border border-green-500 text-green-400 hover:bg-green-500/10 transition-colors flex items-center space-x-2 hover:scale-105 transition-transform">
-                                <i class="fas fa-save"></i>
-                                <span>Save All</span>
-                            </button>
-
-                            <button ng-click="showSubmitModal()"
-                                class="px-6 py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center space-x-2 hover:scale-105 transition-transform">
-                                <i class="fas fa-paper-plane"></i>
-                                <span>Submit Exam</span>
-                            </button>
-                        </div> -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -726,11 +729,6 @@
                                 <i class="fas fa-flag"></i>
                                 <span>Go to Flagged Questions</span>
                             </button>
-                            <button ng-click="saveAllAnswers()"
-                                class="w-full py-3 px-4 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center justify-center space-x-2 hover:scale-105 transition-transform">
-                                <i class="fas fa-save"></i>
-                                <span>Save All Answers</span>
-                            </button>
                         </div>
                     </div>
 
@@ -789,90 +787,6 @@
         </div>
     </div>
 
-    <!-- Submit Confirmation Modal -->
-    <div ng-if="showSubmitConfirmation" class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
-        <div class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-md">
-            <div class="p-6 border-b border-gray-600">
-                <h3 class="text-xl font-bold text-gray-100 flex items-center">
-                    <i class="fas fa-paper-plane text-red-400 mr-2"></i>
-                    Submit Exam
-                </h3>
-            </div>
-
-            <div class="p-6">
-                <div class="text-center mb-6">
-                    <div
-                        class="w-20 h-20 mx-auto mb-4 rounded-full bg-red-500/20 border-4 border-red-500/30 flex items-center justify-center">
-                        <i class="fas fa-exclamation-triangle text-red-400 text-3xl"></i>
-                    </div>
-                    <h4 class="text-lg font-medium text-gray-100 mb-2">Final Submission Confirmation</h4>
-                    <p class="text-gray-400">Once submitted, you cannot change your answers.</p>
-                </div>
-
-                <!-- Submission Summary -->
-                <div class="bg-[#0005] rounded-lg p-4 mb-6">
-                    <h5 class="text-md font-medium text-gray-100 mb-3">Submission Summary:</h5>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">Answered Questions:</span>
-                            <span class="text-green-400 font-bold">{{answeredCount}}/{{examData.total_questions}}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">Flagged Questions:</span>
-                            <span class="text-yellow-400 font-bold">{{flaggedCount}}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">Time Remaining:</span>
-                            <span class="text-cyan-400 font-bold">{{timeRemainingFormatted}}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">Time Spent:</span>
-                            <span class="text-blue-400 font-bold">{{formatTime((examData.duration * 60) -
-                                timeRemaining)}}</span>
-                        </div>
-                    </div>
-
-                    <!-- Warning for unanswered questions -->
-                    <div ng-if="examData.total_questions - answeredCount > 0"
-                        class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded">
-                        <div class="flex items-center">
-                            <i class="fas fa-exclamation-circle text-red-400 text-xl mr-3"></i>
-                            <div>
-                                <div class="text-red-300 font-medium">
-                                    {{examData.total_questions - answeredCount}} unanswered
-                                    question{{examData.total_questions - answeredCount > 1 ? 's' : ''}}!
-                                </div>
-                                <div class="text-red-400 text-sm mt-1">
-                                    You still have time to answer them.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="space-y-3">
-                    <button ng-click="submitExam()"
-                        class="w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center justify-center space-x-2 hover:scale-105 transition-transform">
-                        <i class="fas fa-paper-plane"></i>
-                        <span class="font-bold">Yes, Submit Exam Now</span>
-                    </button>
-
-                    <button ng-click="cancelSubmit()"
-                        class="w-full py-3 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors hover:scale-105 transition-transform">
-                        No, Continue Exam
-                    </button>
-
-                    <button ng-click="saveAndClose()"
-                        class="w-full py-3 rounded-lg border border-blue-500 text-blue-400 hover:bg-blue-500/10 transition-colors hover:scale-105 transition-transform">
-                        <i class="fas fa-save mr-2"></i>
-                        Save Progress and Exit
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Time Expired Modal -->
     <div ng-if="timeExpired" class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
         <div class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-md animate-pulse">
@@ -910,12 +824,49 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <button ng-click="forceSubmit()"
-                    class="w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors flex items-center justify-center space-x-2 animate-pulse">
-                    <i class="fas fa-paper-plane"></i>
-                    <span>Submit Exam Now</span>
-                </button>
+    <!-- Violation Modal -->
+    <div ng-if="showViolationModal" class="fixed inset-0 bg-black/80 z-[9999999] flex items-center justify-center p-4">
+        <div class="bg-[#0006] backdrop-blur rounded-lg border border-gray-600 w-full max-w-md">
+            <div class="p-6 border-b border-gray-600">
+                <h3 class="text-xl font-bold text-gray-100 flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                    Exam Ended!
+                </h3>
+            </div>
+
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <div
+                        class="w-24 h-24 mx-auto mb-4 rounded-full bg-red-500/20 border-4 border-red-500 flex items-center justify-center">
+                        <i class="fas fa-times text-red-400 text-4xl"></i>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-100 mb-2">Rule Violations</h4>
+                    <p class="text-gray-400 mb-3">
+                        The exam has been ended due to excessive violations.
+                    </p>
+                </div>
+
+                <!-- Violation List -->
+                <div class="bg-[#0005] rounded-lg p-4 mb-6 max-h-64 overflow-y-auto">
+                    <ul class="space-y-2">
+                        <li ng-repeat="v in violations" class="flex justify-between text-gray-300">
+                            <span>{{ v.message }}</span>
+                            <span class="text-gray-400 text-sm">{{ v.time | date:'shortTime' }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="space-y-3">
+                    <button ng-click="closeTabSwitchModal()"
+                        class="block w-full py-3 rounded-lg border border-red-500 text-red-400 hover:bg-red-500/10 transition-colors hover:scale-105 transition-transform">
+                        <i class="fas fa-home mr-2"></i>
+                        Go to Dashboard
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -957,11 +908,6 @@
                             <span
                                 class="text-yellow-400 font-bold">{{answeredCount}}/{{examData.total_questions}}</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-400">Estimated Score:</span>
-                            <span class="text-blue-400 font-bold">{{estimatedScore ||
-                                0}}/{{examData.total_marks}}</span>
-                        </div>
                     </div>
                 </div>
 
@@ -980,11 +926,11 @@
                         Back to Exams
                     </a>
 
-                    <button ng-click="closeSuccessModal()"
-                        class="block w-full py-3 rounded-lg border border-green-500 text-green-400 hover:bg-green-500/10 transition-colors hover:scale-105 transition-transform">
+                    <a href="<?php echo BASE_URL; ?>/dashboard"
+                        class="block w-full py-3 text-center rounded-lg border border-green-500 text-green-400 hover:bg-green-500/10 transition-colors hover:scale-105 transition-transform">
                         <i class="fas fa-home mr-2"></i>
                         Go to Dashboard
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>

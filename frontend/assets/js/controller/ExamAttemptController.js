@@ -14,6 +14,10 @@ app.controller('ExamAttemptController', [
         $scope.timeRemainingFormatted = null;
         $scope.timerWarning = false;
         $scope.timeExpired = false;
+        $scope.allowedRulesViolationsCount = 3;
+        $scope.rulesViolatedCount = 0;
+        $scope.violations = [];
+        $scope.showViolationModal = false;
         $scope.answeredCount = 0;
         $scope.flaggedCount = 0;
         $scope.showReviewModal = false;
@@ -283,6 +287,7 @@ app.controller('ExamAttemptController', [
 
                     // Time remaining in seconds
                     $scope.timeRemaining = Math.max(0, Math.floor((endTime - currentTime) / 1000));
+                    console.log($scope.timeRemaining);
                     $scope.initializeTimer($scope.timeRemaining);
 
                     $scope.loading = false;
@@ -352,7 +357,6 @@ app.controller('ExamAttemptController', [
 
             $scope.currentQuestion = $scope.questions[0];
             $scope.updateCounts();
-            $scope.calculateEstimatedScore();
         };
 
         // Shuffle array
@@ -453,7 +457,9 @@ app.controller('ExamAttemptController', [
                     // Check if time expired
                     if ($scope.remainingCountdown < 0) {
                         $interval.cancel($scope.timerInterval);
-                        $scope.retryEligibilityCheck();
+                        setTimeout(() => {
+                            $scope.retryEligibilityCheck();
+                        }, 1000);
                     }
                 }, 1000);
             }
@@ -511,11 +517,15 @@ app.controller('ExamAttemptController', [
                     }
 
                     // Check if time expired
-                    if ($scope.timeRemaining <= 0) {
+                    if ($scope.timeRemaining <= 0 && !$scope.timeExpired) {
                         $scope.timeExpired = true;
-                        $scope.showSuccessModal = true;
                         $interval.cancel($scope.timerInterval);
-                        // $scope.forceSubmit();
+                        $scope.removeAllSecurityFeatures();
+                        $scope.submitExam();
+                        // $timeout(() => {
+                        //     $scope.showExpiredModal = false;
+                        //     $scope.showSuccessModal = true;
+                        // }, 3000);
                     }
                 }, 1000);
             }
@@ -533,28 +543,11 @@ app.controller('ExamAttemptController', [
                 seconds.toString().padStart(2, '0');
         };
 
-        // Calculate estimated score
-        $scope.calculateEstimatedScore = function () {
-            let score = 0;
-            $scope.questions.forEach(q => {
-                if (q.answer) {
-                    const selectedOption = q.options.find(opt => opt.op === q.answer);
-                    if (selectedOption?.correct) {
-                        score += q.marks;
-                    } else if ($scope.examData?.negative_marking) {
-                        score -= ($scope.examData.negative_mark || 1);
-                    }
-                }
-            });
-            $scope.estimatedScore = Math.max(0, score);
-        };
-
         // Update counts
         $scope.updateCounts = function () {
             $scope.answeredCount = $scope.questions.filter(q => q.answer !== null).length;
             $scope.flaggedCount = $scope.questions.filter(q => q.flagged).length;
             $scope.progressPercentage = $scope.examData.total_questions ? Math.min(100, Math.round(($scope.answeredCount / $scope.examData.total_questions) * 100)) : 0
-            $scope.calculateEstimatedScore();
         };
 
         // Navigation
@@ -578,32 +571,11 @@ app.controller('ExamAttemptController', [
             }
         };
 
-        // Save progress
-        $scope.saveProgress = async function () {
-            if ($scope.isSubmitting || $scope.showSuccessModal) return;
-
-            try {
-                const answers = $scope.questions.map(q => ({
-                    question_id: q.id,
-                    answer: q.answer,
-                    flagged: q.flagged
-                }));
-
-                await $http.post(
-                    window.baseUrl + '/API/exam/save-progress/' + $scope.attemptId,
-                    { answers: answers, time_remaining: $scope.timeRemaining }
-                );
-
-            } catch (error) {
-                console.error('Error saving progress:', error);
-            }
-        };
-
         // Question actions
-        $scope.selectAnswer = function (answer) {
+        $scope.selectAnswer = function (answer, flagged = false) {
             const formData = new FormData();
             formData.append('answer', answer);
-            formData.append('flagged', false);
+            formData.append('flagged', flagged);
 
             let attempts = 0;
             const maxAttempts = 5;
@@ -619,6 +591,7 @@ app.controller('ExamAttemptController', [
 
                     if (res.status === 'success') {
                         $scope.currentQuestion.answer = res.answer;
+                        $scope.currentQuestion.flagged = res.flagged;
                     } else {
                         $scope.currentQuestion.answer = null;
                         Toast.fire({
@@ -650,10 +623,8 @@ app.controller('ExamAttemptController', [
             sendAnswer();
         };
 
-
         $scope.clearAnswer = function () {
-            $scope.currentQuestion.answer = null;
-            $scope.updateCounts();
+            $scope.selectAnswer(null, $scope.currentQuestion.flagged);
             Toast.fire({
                 type: 'warning',
                 title: 'Answer Cleared',
@@ -661,49 +632,78 @@ app.controller('ExamAttemptController', [
                 timer: 1500
             });
         };
-
+        
         $scope.flagCurrentQuestion = function () {
+            // Toggle local flagged state
             $scope.currentQuestion.flagged = !$scope.currentQuestion.flagged;
-            $scope.updateCounts();
-            Toast.fire({
-                type: $scope.currentQuestion.flagged ? 'warning' : 'info',
-                title: $scope.currentQuestion.flagged ? 'Question Flagged' : 'Question Unflagged',
-                msg: $scope.currentQuestion.flagged ?
-                    'Question has been flagged for review' :
-                    'Question has been unflagged',
-                timer: 1500
-            });
+
+            const formData = new FormData();
+            formData.append('answer', $scope.currentQuestion.answer);
+            formData.append('flagged', $scope.currentQuestion.flagged);
+
+            let attempts = 0;
+            const maxAttempts = 5;
+
+            function sendFlag() {
+                $http({
+                    url: window.baseUrl + '/API/exam/' + $scope.examId + '/attempt/' + $scope.attemptId + '/question/' + $scope.currentQuestion.id + '/answer',
+                    method: 'POST',
+                    data: formData,
+                    headers: { 'Content-Type': undefined }
+                }).then(function (response) {
+                    const res = response.data;
+
+                    if (res.status !== 'success') {
+                        // Revert flagged if failed
+                        $scope.currentQuestion.flagged = !$scope.currentQuestion.flagged;
+                        Toast.fire({
+                            type: 'error',
+                            title: 'Error!',
+                            msg: res.msg || 'Failed to update flagged status. Try again.'
+                        });
+                    } else {
+                        Toast.fire({
+                            type: $scope.currentQuestion.flagged ? 'warning' : 'info',
+                            title: $scope.currentQuestion.flagged ? 'Question Flagged' : 'Question Unflagged',
+                            msg: $scope.currentQuestion.flagged ?
+                                'Question has been flagged for review' :
+                                'Question has been unflagged',
+                            timer: 1500
+                        });
+                    }
+
+                    $scope.updateCounts();
+                }).catch(function (error) {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        console.warn('Retrying to flag question, attempt', attempts);
+                        setTimeout(sendFlag, 500);
+                    } else {
+                        console.error('Error flagging question after 5 attempts:', error);
+                        $scope.currentQuestion.flagged = !$scope.currentQuestion.flagged;
+                        Toast.fire({
+                            type: 'error',
+                            title: 'Error!',
+                            msg: 'Failed to update flagged status. Please try again.'
+                        });
+                        $scope.updateCounts();
+                    }
+                });
+            }
+
+            sendFlag();
         };
 
-        $scope.saveAnswer = function () {
-            $scope.saveProgress();
-            Toast.fire({
-                type: 'success',
-                title: 'Answer Saved',
-                msg: 'Your answer has been saved successfully.',
-                timer: 1500
-            });
-        };
 
         $scope.saveAndMark = function () {
             $scope.currentQuestion.flagged = true;
-            $scope.saveProgress();
+            $scope.selectAnswer($scope.currentQuestion.answer, $scope.currentQuestion.flagged);
             $scope.nextQuestion();
         };
 
         $scope.saveAndNext = function () {
-            $scope.saveProgress();
+            $scope.selectAnswer($scope.currentQuestion.answer, $scope.currentQuestion.flagged);
             $scope.nextQuestion();
-        };
-
-        $scope.saveAllAnswers = function () {
-            $scope.saveProgress();
-            Toast.fire({
-                type: 'success',
-                title: 'All Answers Saved',
-                msg: 'All your answers have been saved.',
-                timer: 1500
-            });
         };
 
         // Review functions
@@ -755,7 +755,7 @@ app.controller('ExamAttemptController', [
         };
 
         $scope.saveAndClose = function () {
-            $scope.saveProgress();
+            $scope.selectAnswer($scope.currentQuestion.answer, $scope.currentQuestion.flagged);
             Toast.fire({
                 type: 'info',
                 title: 'Progress Saved',
@@ -767,41 +767,45 @@ app.controller('ExamAttemptController', [
             }, 2000);
         };
 
-        $scope.submitExam = async function () {
+        $scope.submitExam = async function (reason = 'completed') {
             $scope.isSubmitting = true;
             $scope.showSubmitConfirmation = false;
-
             try {
                 // Calculate time taken
                 $scope.timeTaken = ($scope.examData.duration * 60) - $scope.timeRemaining;
                 $scope.timeTakenFormatted = $scope.formatTime($scope.timeTaken);
                 $scope.submissionTime = new Date();
+                let totalSeconds = $scope.timeRemaining;
 
-                // Prepare final submission
-                const answers = $scope.questions.map(q => ({
-                    question_id: q.id,
-                    answer: q.answer
-                }));
+                let hours = Math.floor(totalSeconds / 3600);
+                let minutes = Math.floor((totalSeconds % 3600) / 60);
+                let seconds = totalSeconds % 60;
 
-                const response = await $http.post(
-                    window.baseUrl + '/API/exam/submit/' + $scope.attemptId,
-                    {
-                        answers: answers,
-                        time_taken: $scope.timeTaken
-                    }
-                );
+                const formData = new FormData();
+                formData.append('time_remaining', (hours < 10 ? '0' + hours : hours) + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds));
+                formData.append('reason', reason);
+                // formData.append('time_remaining', $scope.formatTime($scope.timeRemaining));
+
+
+                const response = await $http({
+                    url: window.baseUrl + '/API/exam/submit/' + $scope.examId + '/' + $scope.attemptId,
+                    method: 'POST',
+                    data: formData,
+                    headers: { 'Content-Type': undefined }
+                });
 
                 if (response.data.status === 'success') {
                     // Clear intervals
                     $interval.cancel($scope.timerInterval);
                     $interval.cancel($scope.autoSaveInterval);
 
-                    // Show success modal
+                    $scope.isSubmitted = true;
+                    $scope.estimatedScore = response.data.score;
                     $scope.showSuccessModal = true;
+                    $scope.$apply();
                 } else {
                     throw new Error(response.data.message || 'Submission failed');
                 }
-
             } catch (error) {
                 console.error('Error submitting exam:', error);
                 Toast.fire({
@@ -818,16 +822,6 @@ app.controller('ExamAttemptController', [
             if (!$scope.isSubmitting) {
                 $scope.submitExam();
             }
-        };
-
-        $scope.closeSuccessModal = function () {
-            $scope.showSuccessModal = false;
-            window.location.href = window.baseUrl + '/dashboard';
-        };
-
-        // Helper functions
-        $scope.getQuestionType = function (question) {
-            return 'Multiple Choice';
         };
 
         $scope.formatTime = function (seconds) {
@@ -849,140 +843,167 @@ app.controller('ExamAttemptController', [
             return $sce.trustAsHtml(text);
         };
 
+        let tabSwitchCount = 0;
+        let fullscreenCount = 0;
+        let copyCount = 0;
+        let cutCount = 0;
+        let pasteCount = 0;
+
+        $scope.recordViolation = function (type, message, listMessage) {
+            let count = 0;
+
+            // Increment count and track per-type
+            if (['tab-switch', 'fullscreen', 'copy', 'cut', 'paste'].includes(type)) {
+                $scope.rulesViolatedCount++;
+                switch (type) {
+                    case 'tab-switch': tabSwitchCount++; count = tabSwitchCount; break;
+                    case 'fullscreen': fullscreenCount++; count = fullscreenCount; break;
+                    case 'copy': copyCount++; count = copyCount; break;
+                    case 'cut': cutCount++; count = cutCount; break;
+                    case 'paste': pasteCount++; count = pasteCount; break;
+                }
+            }
+
+            // Add to violation list
+            $scope.violations.push({
+                type: type,
+                message: listMessage,
+                time: new Date(),
+                count: count
+            });
+
+            Toast.fire({
+                type: 'warning',
+                title: 'Action Restricted',
+                msg: `${message} Violations: (${$scope.rulesViolatedCount}/${$scope.allowedRulesViolationsCount})`,
+            });
+
+            // End exam if rules exceeded
+            if ($scope.rulesViolatedCount >= $scope.allowedRulesViolationsCount) {
+                $scope.endExamDueToRulesViolation();
+            }
+        };
+
+        $scope.endExamDueToRulesViolation = function () {
+            // Prevent multiple calls
+            if ($scope.examEnded) return;
+            $scope.examEnded = true;
+
+            // Stop timers
+            if ($scope.timerInterval) {
+                $interval.cancel($scope.timerInterval);
+                $scope.timerInterval = null;
+            }
+            if ($scope.autoSaveInterval) {
+                $interval.cancel($scope.autoSaveInterval);
+                $scope.autoSaveInterval = null;
+            }
+
+            // Remove security features
+            $scope.removeAllSecurityFeatures();
+
+            // Show **violation modal**
+            $scope.showViolationModal = true;
+            $scope.$apply();
+
+            $timeout(() => {
+                $scope.submitExam('rules_violation');
+            }, 3000);
+        };
+
+        // ---------- STORED HANDLERS ----------
+        $scope._onContextMenu = function (e) {
+            e.preventDefault();
+            Toast.fire({
+                type: 'warning',
+                title: 'Action Restricted',
+                msg: 'Right click is disabled during the exam.',
+            });
+        };
+
+        $scope._onCopy = function (e) {
+            e.preventDefault();
+            $scope.recordViolation('copy', 'Copy action is disabled during the exam.', 'Attempted to copy text');
+        };
+
+        $scope._onPaste = function (e) {
+            e.preventDefault();
+            $scope.recordViolation('paste', 'Paste action is disabled during the exam.', 'Attempted to paste content');
+        };
+
+        $scope._onCut = function (e) {
+            e.preventDefault();
+            $scope.recordViolation('cut', 'Cut action is disabled during the exam.', 'Attempted to cut text');
+        };
+
+        $scope._onFullscreenChange = function () {
+            if ($scope.timeExpired) return;
+            if (!document.fullscreenElement) {
+                $scope.recordViolation('fullscreen', 'You must stay in fullscreen mode.', 'Exited fullscreen mode');
+                $timeout(() => { document.documentElement.requestFullscreen(); }, 1000);
+            }
+        };
+
+        $scope._onWindowBlur = function () {
+            if ($scope.timeExpired) return;
+            $scope.recordViolation('tab-switch', 'Switching tabs is not allowed.', 'Switched to another tab/window');
+        };
+
+        $scope._onWindowFocus = function () { };
+
+        $scope._onBeforeUnload = function (e) {
+            if (!$scope.isSubmitting && !$scope.showSuccessModal && $scope.answeredCount > 0) {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved answers. Are you sure you want to leave?';
+            }
+        };
+
+
         // Security features for demo
         $scope.setupSecurityFeatures = function () {
-            // Prevent right click if disabled
+
             if ($scope.examData.disable_right_click) {
-                document.addEventListener('contextmenu', function (e) {
-                    e.preventDefault();
-                    Toast.fire({
-                        type: 'warning',
-                        title: 'Action Restricted',
-                        msg: 'Right click is disabled during the exam.',
-                        timer: 2000
-                    });
-                });
+                document.addEventListener('contextmenu', $scope._onContextMenu);
             }
 
             if (!$scope.isExamRunning) return;
 
-            // Prevent copy/paste if disabled
             if ($scope.examData.disable_copy_paste) {
-                document.addEventListener('copy', function (e) {
-                    e.preventDefault();
-                    Toast.fire({
-                        type: 'warning',
-                        title: 'Action Restricted',
-                        msg: 'Copying is disabled during the exam.',
-                        timer: 2000
-                    });
-                });
-
-                document.addEventListener('paste', function (e) {
-                    e.preventDefault();
-                    Toast.fire({
-                        type: 'warning',
-                        title: 'Action Restricted',
-                        msg: 'Pasting is disabled during the exam.',
-                        timer: 2000
-                    });
-                });
-
-                document.addEventListener('cut', function (e) {
-                    e.preventDefault();
-                    Toast.fire({
-                        type: 'warning',
-                        title: 'Action Restricted',
-                        msg: 'Cutting is disabled during the exam.',
-                        timer: 2000
-                    });
-                });
+                document.addEventListener('copy', $scope._onCopy);
+                document.addEventListener('paste', $scope._onPaste);
+                document.addEventListener('cut', $scope._onCut);
             }
 
-            // Full screen mode
             if ($scope.examData.full_screen_mode) {
-                // Try to enter full screen
-                const enterFullscreen = function () {
-                    const elem = document.documentElement;
-                    if (elem.requestFullscreen) {
-                        elem.requestFullscreen();
-                    } else if (elem.webkitRequestFullscreen) {
-                        elem.webkitRequestFullscreen();
-                    } else if (elem.msRequestFullscreen) {
-                        elem.msRequestFullscreen();
-                    }
-                };
-
-                enterFullscreen();
-
-                // Monitor full screen changes
-                document.addEventListener('fullscreenchange', function () {
-                    if (!document.fullscreenElement) {
-                        Toast.fire({
-                            type: 'warning',
-                            title: 'Full Screen Required',
-                            msg: 'Please return to full screen mode to continue the exam.'
-                        });
-                        // Re-enter full screen after delay
-                        $timeout(function () {
-                            enterFullscreen();
-                        }, 1000);
-                    }
-                });
+                document.documentElement.requestFullscreen();
+                document.addEventListener('fullscreenchange', $scope._onFullscreenChange);
             }
 
-            // Detect tab switching
             $scope.tabSwitchCount = 0;
-            const maxTabSwitch = 3;
-            let isTabActive = true;
-            window.addEventListener('blur', function () {
-                isTabActive = false;
+            window.addEventListener('blur', $scope._onWindowBlur);
+            window.addEventListener('focus', $scope._onWindowFocus);
 
-                $scope.tabSwitchCount++;
-
-                Toast.fire({
-                    type: 'warning',
-                    title: 'Stay Focused!',
-                    msg: `Please do not switch tabs during the exam. (${$scope.tabSwitchCount}/${maxTabSwitch})`,
-                    timer: 3000
-                });
-
-                if ($scope.tabSwitchCount >= maxTabSwitch) {
-                    $scope.$apply(() => {
-                        $scope.endExam();
-                    });
-                }
-            });
-
-            window.addEventListener('focus', function () {
-                isTabActive = true;
-            });
+            window.addEventListener('beforeunload', $scope._onBeforeUnload);
         };
 
-        // Before unload warning
-        window.addEventListener('beforeunload', function (e) {
-            if (!$scope.isSubmitting && !$scope.showSuccessModal && $scope.answeredCount > 0) {
-                e.preventDefault();
-                e.returnValue = 'You have unsaved answers. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
-
         // Cleanup
-        $scope.$on('$destroy', function () {
-            if ($scope.timerInterval) $interval.cancel($scope.timerInterval);
-            if ($scope.autoSaveInterval) $interval.cancel($scope.autoSaveInterval);
+        $scope.removeAllSecurityFeatures = function () {
 
-            // Remove event listeners
-            document.removeEventListener('contextmenu', () => { });
-            document.removeEventListener('copy', () => { });
-            document.removeEventListener('paste', () => { });
-            document.removeEventListener('cut', () => { });
-            document.removeEventListener('fullscreenchange', () => { });
-            window.removeEventListener('blur', () => { });
-            window.removeEventListener('focus', () => { });
-            window.removeEventListener('beforeunload', () => { });
-        });
+            // document.removeEventListener('contextmenu', $scope._onContextMenu);
+            document.removeEventListener('copy', $scope._onCopy);
+            document.removeEventListener('paste', $scope._onPaste);
+            document.removeEventListener('cut', $scope._onCut);
+            document.removeEventListener('fullscreenchange', $scope._onFullscreenChange);
+
+            window.removeEventListener('blur', $scope._onWindowBlur);
+            window.removeEventListener('focus', $scope._onWindowFocus);
+            window.removeEventListener('beforeunload', $scope._onBeforeUnload);
+
+            // Exit fullscreen if active
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+        };
 
         $scope.init();
     }

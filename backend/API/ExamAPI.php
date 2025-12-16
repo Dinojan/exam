@@ -918,6 +918,15 @@ class ExamAPI
         try {
             $user = user_id();
 
+            if (($_SESSION['role'] ?? null) !== 6) {
+                return json_encode([
+                    'status' => 'error',
+                    'msg' => 'You are not allowed to access this exam.',
+                    'code' => 'UNAUTHORIZED'
+                ]);
+            }
+
+
             $stmt = $this->db->prepare("SELECT ei.*, es.schedule_type, es.start_time, es.max_attempts FROM exam_info ei LEFT JOIN exam_settings es ON ei.id = es.exam_id WHERE ei.id = ?");
             $stmt->execute([$exam_id]);
             $exam = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -974,7 +983,6 @@ class ExamAPI
             $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ? AND student_id = ?");
             $stmt->execute([$exam_id, $user]);
             $register = $stmt->fetch(PDO::FETCH_ASSOC);
-            $total_attempts = $register['attempts_count'];
 
             if (!$register) {
                 return json_encode([
@@ -984,6 +992,7 @@ class ExamAPI
                 ]);
             }
 
+            $total_attempts = $register['attempts_count'];
             // Check max attempts
             if ($total_attempts >= $exam['max_attempts']) {
                 return json_encode([
@@ -1224,36 +1233,30 @@ class ExamAPI
             $stmt->execute([$exam['id'], user_id()]);
             $registration = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            $stmt = $this->db->prepare("SELECT started_at, status as attempt_status FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ? ORDER BY id ASC");
+            $stmt = $this->db->prepare("SELECT started_at, status as attempt_status FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ?");
             $stmt->execute([$exam['id'], user_id(), $registration['id']]);
-            $attempts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $attempt = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            $isAlredyTaken = false;
+            $isAlreadyTaken = false;
             $isCompleted = false;
             $isAbandoned = false;
             $isProgress = false;
-            foreach ($attempts as $att) {
-
-                if ($att['attempt_status'] !== 'not_started') {
-                    $isAlreadyTaken = true;
-                }
-
-                if ($att['attempt_status'] === 'in_progress') {
-                    $isProgress = true;
-                }
-
-                if ($att['attempt_status'] === 'completed') {
-                    $isCompleted = true;
-                    $isProgress = false;
-                    break;
-                }
-
-                $lastAttempt = end($attempts);
-                if ($lastAttempt['attempt_status'] === 'abandoned') {
-                    $isAbandoned = true;
-                }
-
+            if ($attempt['attempt_status'] !== 'not_started') {
+                $isAlreadyTaken = true;
             }
+
+            if ($attempt['attempt_status'] === 'in_progress') {
+                $isProgress = true;
+            }
+
+            if ($attempt['attempt_status'] === 'completed') {
+                $isCompleted = true;
+            }
+
+            if ($attempt['attempt_status'] === 'abandoned') {
+                $isAbandoned = true;
+            }
+
             // ---------------------------
             // MERGE DATA (DUMMY FORMAT)
             // ---------------------------
@@ -1268,7 +1271,7 @@ class ExamAPI
 
                 'schedule_type' => $settings['schedule_type'],
                 'start_time' => $settings['start_time'] ? str_replace(" ", "T", $settings['start_time']) : null,
-                'started_at' => $attempts[0]['started_at'] ? str_replace(" ", "T", $attempts[0]['started_at']) : null,
+                'started_at' => (!empty($attempt['started_at']) && $attempt['attempt_status'] === 'in_progress') ? str_replace(" ", "T", $attempt['started_at']) : null,
 
                 'instructions' => $exam['instructions'],
 
@@ -1277,11 +1280,11 @@ class ExamAPI
                 'disable_right_click' => $settings['disable_right_click'] == 1,
 
                 'status' => $finalStatus,
-                'isAlredyTaken' => $isAlredyTaken,
+                'isAlredyTaken' => $isAlreadyTaken,
                 'isProgress' => $isProgress,
                 'isAbandoned' => $isAbandoned,
                 'isCompleted' => $isCompleted,
-                'total_attempts' => count($attempts)
+                'total_attempts' => count($attempt)
             ];
 
             return json_encode([
@@ -1333,7 +1336,7 @@ class ExamAPI
             $register = $statement->fetch(PDO::FETCH_ASSOC);
             $register_id = $register['id'];
 
-            $statement = $this->db->prepare("SELECT id, answers FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ?");
+            $statement = $this->db->prepare("SELECT id, answers, status FROM exam_attempts WHERE exam_id = ? AND student_id = ? AND registration_id = ?");
             $statement->execute([$id, user_id(), $register_id]);
             $attempt = $statement->fetch(PDO::FETCH_ASSOC);
             $attempt_id = $attempt['id'];
@@ -1435,20 +1438,19 @@ class ExamAPI
                     $stmt->execute([$settings['start_time'], $register['id']]);
 
                     // attempt start time
-                    $stmt = $this->db->prepare("UPDATE exam_attempts SET started_at = ? WHERE id = ?");
-                    $stmt->execute([$settings['start_time'], $register['id']]);
+                    $stmt = $this->db->prepare("UPDATE exam_attempts SET status = 'in_progress', started_at = ? WHERE id = ?");
+                    $stmt->execute([$settings['start_time'], $attempt['id']]);
 
                     $stored_answers = json_decode($attempt['answers'], true) ?: [];
                 }
             } else {
-
                 if (!$register['last_attempt_date']) {
 
                     $stmt = $this->db->prepare("UPDATE exam_registration SET last_attempt_date = ? WHERE id = ?");
                     $stmt->execute([date('Y-m-d H:i:s'), $register['id']]);
 
-                    $stmt = $this->db->prepare("UPDATE exam_attempts SET started_at = NOW() WHERE id = ?");
-                    $stmt->execute([$register['id']]);
+                    $stmt = $this->db->prepare("UPDATE exam_attempts SET status = 'in_progress', started_at = NOW() WHERE id = ?");
+                    $stmt->execute([$attempt['id']]);
                 } else {
                     $startTime = strtotime($register['last_attempt_date']);
                     $endTime = $startTime + ($exam['duration'] * 60);
@@ -1458,8 +1460,19 @@ class ExamAPI
                         $stmt = $this->db->prepare("UPDATE exam_registration SET last_attempt_date = ? WHERE id = ?");
                         $stmt->execute([date('Y-m-d H:i:s'), $register['id']]);
 
-                        $stmt = $this->db->prepare("UPDATE exam_attempts SET started_at = NOW() WHERE id = ?");
-                        $stmt->execute([$register['id']]);
+                        $stmt = $this->db->prepare("UPDATE exam_attempts SET status = 'in_progress', started_at = NOW() WHERE id = ?");
+                        $stmt->execute([$attempt['id']]);
+                    }
+
+                    if ($attempt['status'] == 'rules_violation') {
+                        if ($currentTime < $endTime) {
+
+                            $stmt = $this->db->prepare("UPDATE exam_registration SET last_attempt_date = ? WHERE id = ?");
+                            $stmt->execute([date('Y-m-d H:i:s'), $register['id']]);
+
+                            $stmt = $this->db->prepare("UPDATE exam_attempts SET status = 'in_progress', started_at = NOW() WHERE id = ?");
+                            $stmt->execute([$attempt['id']]);
+                        }
                     }
 
                     if ($currentTime >= $startTime && $currentTime <= $endTime) {
@@ -1467,7 +1480,6 @@ class ExamAPI
                     }
                 }
             }
-
 
             foreach ($stored_answers as &$answer) {
                 $answer['question_id'] = (int) $answer['question_id'];
@@ -1509,7 +1521,7 @@ class ExamAPI
             // Update if question exists
             foreach ($answers as &$a) {
                 if ($a['question_id'] === $question_id) {
-                    $a['answer'] = $answer;
+                    $a['answer'] = $answer ? $answer : $a['answer'];
                     $a['flagged'] = $_POST['flagged'] ? $_POST['flagged'] : $a['flagged'];
                     $found = true;
                     break;
@@ -1521,7 +1533,7 @@ class ExamAPI
             if (!$found) {
                 $answers[] = [
                     'question_id' => $question_id,
-                    'answer' => $answer,
+                    'answer' => $answer ? $answer : null,
                     'flagged' => isset($_POST['flagged']) ? $_POST['flagged'] : false
                 ];
             }
@@ -1530,12 +1542,88 @@ class ExamAPI
             $update = $this->db->prepare("UPDATE exam_attempts SET answers = ? WHERE exam_id = ? AND id = ?");
             $update->execute([json_encode($answers), $exam_id, $attempt_id]);
 
+            $stmt = $this->db->prepare("SELECT answers FROM exam_attempts WHERE exam_id = ? AND id = ?");
+            $stmt->execute([$exam_id, $attempt_id]);
+            $answers = $stmt->fetch(PDO::FETCH_ASSOC)['answers'];
+            $answers = json_decode($answers, true);
+
+            foreach ($answers as $ans) {
+                if ($ans['question_id'] == $question_id) {
+                    $answer = $ans['answer'];
+                    $flagged = $ans['flagged'];
+                    break;
+                }
+            }
+
+
             return json_encode([
                 'status' => 'success',
                 'msg' => 'Answer saved',
-                'answer' => $answer
+                'answer' => $answer ? $answer : null,
+                'flagged' => $flagged === 'true' ? true : false
             ]);
 
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function submitExam($exam_id, $attempt_id)
+    {
+        try {
+            // Get POST data safely
+            $attempt_status = $_POST['reason'] ?? 'completed';
+            $remaining_time = $_POST['time_remaining'] ?? 0;
+
+            // Get exam attempt
+            $stmt = $this->db->prepare("SELECT * FROM exam_attempts WHERE exam_id = ? AND id = ?");
+            $stmt->execute([$exam_id, $attempt_id]);
+            $attempt = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Get exam info
+            $stmt = $this->db->prepare("SELECT passing_marks, total_marks, total_num_of_ques as total_questions FROM exam_info WHERE id = ?");
+            $stmt->execute([$exam_id]);
+            $exam = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $theAnswers = json_decode($attempt['answers'], true) ?? [];
+
+            $score = 0;
+
+            // Calculate score
+            foreach ($theAnswers as $answer) {
+                $stmt = $this->db->prepare("SELECT answer, marks FROM questions WHERE id = ?");
+                $stmt->execute([$answer['question_id']]);
+                $question = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($question && $question['answer'] == $answer['answer']) {
+                    $score += (float) $question['marks'];
+                }
+            }
+
+            $percentage = ($exam['total_marks'] > 0) ? ($score / $exam['total_marks']) * 100 : 0;
+            $passed = ($score >= $exam['passing_marks']) ? 1 : 0;
+
+            // Update exam_attempts
+            $stmt = $this->db->prepare(
+                "UPDATE exam_attempts SET status = ?, completed_at = NOW(), time_remaining = ?, score = ?, percentage = ?, passed = ? WHERE id = ?"
+            );
+            $stmt->execute([$attempt_status, $remaining_time, $score, $percentage, $passed, $attempt_id]);
+
+            // Update attempts count in exam_registrations
+            $stmt = $this->db->prepare(
+                "UPDATE exam_registration SET attempts_count = attempts_count + 1 WHERE id = ?"
+            );
+            $stmt->execute([$attempt['registration_id']]);
+
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Exam submitted successfully',
+                'score' => $score,
+                'percentage' => $percentage,
+                'passed' => $passed == 1 ? true : false
+            ]);
         } catch (Exception $e) {
             return json_encode([
                 'status' => 'error',
