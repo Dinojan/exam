@@ -1,6 +1,6 @@
 app.controller('ExamPreviewController', [
-    "$scope", "$http", "$compile", "$timeout", "window", "questionEditorModalController",
-    function ($scope, $http, $compile, $timeout, window, questionEditorModalController) {
+    "$scope", "$http", "$compile", "$timeout", "window",
+    function ($scope, $http, $compile, $timeout, window,) {
         $scope.location = $scope.location || {};
         $scope.location.exam = window.getIdFromUrl();
         $scope.dropdownOpen = false;

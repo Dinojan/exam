@@ -114,6 +114,9 @@ Router::group(['prefix' => 'API'], function () {
     Router::get('/session', 'AuthAPI@getSession', 'get_session', ['auth']);
 
 
+    Router::get('/results/lecturer/{lecturer_id}', 'ResultsAPI@getLecturerResults', 'get_lecturer_results', ['auth']);
+    Router::get('/results/student/{student_id}', 'ResultsAPI@getStudentResults', 'get_student_results', ['auth']);
+
 
     Router::put('/user_groups/{id}/permissions', 'UserGroupAPI@setPermissions', 'set_group_permissions', ['auth']);
     Router::post('/user_groups/{id}', 'UserGroupAPI@updateUserGroup', 'update_user_group', ['auth']);

@@ -194,7 +194,7 @@ $menuData = [
                 'title' => 'My Results',
                 'icon' => '<i class="fa-solid fa-user-check"></i>',
                 'url' => 'my_results',
-                'role' => [1,3,6,7],
+                'role' => [1,6,7],
                 'permissions' => ['results.view','results.my'],
                 'children' => []
             ]
