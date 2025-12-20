@@ -8,6 +8,7 @@
         const menuClose = document.getElementById('menu-close');
         const sidebar = document.getElementById('sidebar');
         const logoName = document.getElementById('logo-name');
+        const userIcon = document.getElementById('user-icon');
         const userName = document.getElementById('user-name');
         const menuContainer = document.getElementById('menu-container');
         const menuLabels = document.querySelectorAll('.menu-label');
@@ -27,6 +28,7 @@
 
             logoName.classList.toggle('hidden');
             userName.classList.toggle('hidden');
+            userIcon.classList.toggle('mr-4');
             logoContainer.classList.toggle('justify-center');
             userContainer.classList.toggle('justify-center');
             menuContainer.classList.toggle('md:mr-0');
@@ -53,6 +55,8 @@
                 footer.classList.toggle('w-[calc(100%-4rem)]');
                 footer.classList.toggle('w-[calc(100%-15rem)]');
             }
+
+            menuBtn.classList.toggle('rotate-180');
         }
 
         // Rotate arrow when checkbox checked
@@ -70,13 +74,14 @@
         // Sidebar toggle buttons
         if (menuBtn) {
             menuBtn.addEventListener('click', function () {
-                menuBtn.classList.toggle('rotate-180');
                 toggleSidebar();
             });
         }
 
         if (menuClose) {
-            menuClose.addEventListener('click', toggleSidebar);
+            menuClose.addEventListener('click', function () {
+                toggleSidebar();
+            });
         }
 
         // Initial responsive check

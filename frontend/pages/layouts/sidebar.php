@@ -30,8 +30,8 @@ $user_icon_path = $_SERVER['DOCUMENT_ROOT'] . '/NIT/exam/frontend/' . $user_icon
             </a>
         </div>
         <div id="user-container"
-            class="flex flex-row items-center gap-4 text-white  bg-gradient-to-br from-[#4dd8ff90] to-[#348fff90] p-2 group-hover:justify-start <?php echo $collapse ? 'justify-center' : '' ?>">
-            <div class="text-3xl rounded-full overflow-hidden">
+            class="flex flex-row items-center text-white  bg-gradient-to-br from-[#4dd8ff90] to-[#348fff90] p-2 group-hover:justify-start <?php echo $collapse ? 'justify-center' : '' ?>">
+            <div id="user-icon" class="text-3xl rounded-full overflow-hidden w-[50px] h-[50px] mr-4">
                 <?php if (file_exists($user_icon_path)): ?>
                     <img  width="50px" height="50px" class="bg-gradient-to-br from-[#97e8ff] to-[#b0d4ff]" src="<?php echo asset($user_icon); ?>" alt="Profile Img">
                 <?php else: ?>
@@ -41,7 +41,7 @@ $user_icon_path = $_SERVER['DOCUMENT_ROOT'] . '/NIT/exam/frontend/' . $user_icon
                 <?php endif; ?>
             </div>
             <div id="user-name"
-                class="flex flex-col items-start justify-between w-[calc(100% - 50px)] transition-all duration-300 group-hover:block <?php echo $collapse ? 'hidden' : 'block' ?>">
+                class="flex flex-col items-start justify-between w-[calc(100%_-_66px)] transition-all duration-300 group-hover:block <?php echo $collapse ? 'hidden' : 'block' ?>">
                 <p><?php echo $_SESSION['username'] ?> <small>(<?php echo $_SESSION['role_name'] ?>)</small></p>
                 <p class="text-xs"><?php echo $_SESSION['email'] ?></p>
             </div>

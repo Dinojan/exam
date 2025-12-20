@@ -184,7 +184,7 @@ $menuData = [
                 'id' => 'all_results',
                 'title' => 'All Results',
                 'icon' => '<i class="fa-solid fa-list-check"></i>',
-                'url' => 'results',
+                'url' => 'result/all',
                 'role' => [1,2,3,4,5],
                 'permissions' => ['results.view','results.all'],
                 'children' => []
@@ -193,7 +193,7 @@ $menuData = [
                 'id' => 'my_results',
                 'title' => 'My Results',
                 'icon' => '<i class="fa-solid fa-user-check"></i>',
-                'url' => 'my_results',
+                'url' => 'result/my',
                 'role' => [1,6,7],
                 'permissions' => ['results.view','results.my'],
                 'children' => []

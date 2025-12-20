@@ -27,14 +27,11 @@ app.controller('MyResultsController', [
                     $scope.theLoggedUser.email = data.email;
                     $scope.theLoggedUser.permissions = data.permissions;
                 }
-
-                console.log($scope.theLoggedUser); // ✅ correct place
             });
         }
 
         session().then(() => {
-            console.log('Logged user:', $scope.theLoggedUser);
-            $scope.init(); // ✅ Now role is ready
+            $scope.init();
         });
 
 
@@ -101,9 +98,7 @@ app.controller('MyResultsController', [
 
             $http.get(window.baseUrl + '/API/' + endpoint).then(function (response) {
                 if (response.data.status === 'success') {
-                    console.log(response.data);
                     $scope.results = response.data.results;
-                    console.log($scope.results);
                     $scope.calculateStats($scope.results);
                     $scope.filterResults();
                 } else {

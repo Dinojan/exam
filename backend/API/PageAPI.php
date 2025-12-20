@@ -98,10 +98,7 @@ class PageAPI
             header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
         }
     }
-    public function examResults($id)
-    {
-        return view('exams.results', ['title' => 'Exam Results', 'exam_id' => $id]);
-    }
+
 
     public function questionBank()
     {
@@ -128,6 +125,20 @@ class PageAPI
     public function myResults()
     {
         return view('results.my', ['title' => 'My Results']);
+    }
+
+    public function examResultsReview($id)
+    {
+        $stmt = db()->prepare("SELECT id FROM exam_info WHERE id = ?");
+        $stmt->execute([$id]);
+        $exam = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$exam) {
+            $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+            $path = getPath();
+            header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
+        } else {
+            return view('results.review', ['title' => 'Exam Results Review', 'exam_id' => $id]);
+        }
     }
 
     public function attendance()

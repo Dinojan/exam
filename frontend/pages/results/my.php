@@ -4,9 +4,43 @@
 <?php $this->start('content'); ?>
 <div class="bg-[#0003] p-6 rounded-lg mb-16">
     <!-- Header Section -->
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold">My Results</h1>
-        <p class="text-gray-400">Track your exam performance and progress</p>
+    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold">My Results</h1>
+            <p class="text-gray-400">Track your exam performance and progress</p>
+        </div>
+
+        <?php if (user_id() == 1):
+            $stmt = db()->prepare("SELECT id, name FROM users WHERE user_group = 6");
+            $stmt->execute();
+            $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            ?>
+            <span class="bg-[#0004] backdrop-blur rounded-lg border border-[#fff2] p-2 relative min-w-[250px]">
+
+                <!-- Hidden ng-model input -->
+                <input type="hidden" ng-model="theLoggedUser.id" ng-change="loadResults()">
+
+                <!-- Default label -->
+                <div class="px-4 cursor-pointer w-full text-center" ng-click="dropdownOpen = !dropdownOpen">
+                    {{ theLoggedUser.name || 'Select a Student' }}
+                </div>
+
+                <!-- Dropdown list -->
+                <div ng-show="dropdownOpen"
+                    class="overflow-hidden mt-1 absolute top-full right-0 bg-[#0004] backdrop-blur border border-[#fff2] rounded-lg w-full ">
+                    <div class="max-h-60 overflow-y-auto z-10 p-2">
+                        <?php foreach ($students as $student): ?>
+                            <div class="rounded-lg px-4 py-2 text-gray-300 hover:bg-cyan-500/30 cursor-pointer transition-all duration-300"
+                                ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': theLoggedUser.id === <?php echo $student['id'] ?>}"
+                                ng-click="theLoggedUser = {id: <?php echo $student['id'] ?>, name: '<?php echo $student['name'] ?>'}; dropdownOpen = false; loadResults()">
+                                <?php echo $student['name'] ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </span>
+        <?php endif; ?>
+
     </div>
 
     <!-- Loading State -->
@@ -189,7 +223,7 @@
                     </div>
                     <div class="text-center">
                         <p class="text-xs text-gray-400 mb-1">Time Taken</p>
-                        <p class="text-xl font-bold text-gray-100">{{result.time_taken}}</p>
+                        <p class="text-xl font-bold text-gray-100">{{result.time_taken | formatTime}}</p>
                         <p class="text-xs"
                             ng-class="result.time_taken_percentage <= 80 ? 'text-green-400' : 'text-yellow-400'">
                             {{result.time_taken_percentage}}% of duration
@@ -217,9 +251,9 @@
                 <div class="mt-6">
                     <div class="flex justify-between text-sm mb-2">
                         <span class="text-gray-400">Performance</span>
-                        <span class="text-gray-300">{{result.percentage || 78}}% (Passing:
+                        <span class="text-gray-300">{{result.percentage || 'N/A'}}% (Passing:
                             {{result.passing_percentage
-                            || 40}}%)</span>
+                            || 'N/A'}}%)</span>
                     </div>
                     <div class="w-full bg-gray-700 rounded-full h-3 mb-4">
                         <div class="h-3 rounded-full"
@@ -227,24 +261,24 @@
                             ng-style="{'width': (result.percentage || 78) + '%'}"></div>
                     </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div class="text-center">
                             <p class="text-gray-400">Correct</p>
-                            <p class="text-green-400 font-medium">{{result.correct_answers ||
-                                18}}/{{result.total_questions || 25}}</p>
+                            <p class="text-green-400 font-medium">{{result.correct_answers || 0}}/{{result.total_questions || 0}}</p>
                         </div>
                         <div class="text-center">
                             <p class="text-gray-400">Incorrect</p>
-                            <p class="text-red-400 font-medium">{{result.incorrect_answers || 5}}</p>
+                            <p class="text-red-400 font-medium">{{result.incorrect_answers || 0}}/{{result.total_questions || 0}}</p>
                         </div>
                         <div class="text-center">
                             <p class="text-gray-400">Skipped</p>
-                            <p class="text-yellow-400 font-medium">{{result.skipped_questions || 2}}</p>
+                            <p class="text-yellow-400 font-medium">{{result.skipped_questions || 0}}/{{result.total_questions || 0}}</p>
                         </div>
-                        <div class="text-center">
+                        <!-- <div class="text-center">
                             <p class="text-gray-400">Accuracy</p>
-                            <p class="text-cyan-400 font-medium">{{result.accuracy || 72}}%</p>
-                        </div>
+                            <p class="text-cyan-400 font-medium">{{ result.accuracy ? result.accuracy + '%' : 'N/A' }}
+                            </p>
+                        </div> -->
                     </div>
                 </div>
             </div>

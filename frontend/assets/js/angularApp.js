@@ -131,7 +131,7 @@ app.filter('formatDateTime', function () {
 
 
     // ---------- helpers ----------
-    function pad(n){ return String(n).padStart(2, '0'); }
+    function pad(n) { return String(n).padStart(2, '0'); }
 
     function formatDate(dt, fmt) {
       var day = pad(dt.getDate());
@@ -145,29 +145,29 @@ app.filter('formatDateTime', function () {
       var A = H >= 12 ? 'PM' : 'AM';
       var a = H >= 12 ? 'pm' : 'am';
 
-      var shortMonthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      var fullMonthNames  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      var shortMonthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      var fullMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
       var MMM = shortMonthNames[dt.getMonth()];
       var MMMM = fullMonthNames[dt.getMonth()];
 
       // token map (longest keys first)
       var map = {
         'MMMM': MMMM,
-        'MMM' : MMM,
-        'MM'  : month,
-        'DD'  : day,
+        'MMM': MMM,
+        'MM': month,
+        'DD': day,
         'YYYY': year,
-        'HH'  : HH,
-        'hh'  : hh,
-        'mm'  : mm,
-        'ss'  : ss,
-        'A'   : A,
-        'a'   : a
+        'HH': HH,
+        'hh': hh,
+        'mm': mm,
+        'ss': ss,
+        'A': A,
+        'a': a
       };
 
-      var tokens = Object.keys(map).sort(function(a,b){ return b.length - a.length; });
+      var tokens = Object.keys(map).sort(function (a, b) { return b.length - a.length; });
       var out = fmt;
-      tokens.forEach(function(tok){
+      tokens.forEach(function (tok) {
         out = out.replace(new RegExp(tok, 'g'), map[tok]);
       });
       return out;
@@ -221,6 +221,19 @@ app.filter('remainingTime', function () {
     return days + ` day${days > 1 ? 's' : ''} remaining`;
   };
 });
+app.filter('formatTime', function () {
+  return function (time) {
+    if (typeof time !== 'number') return '00:00:00';
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = time % 60;
+
+    return hours.toString().padStart(2, '0') + ':' +
+      minutes.toString().padStart(2, '0') + ':' +
+      seconds.toString().padStart(2, '0');
+  };
+});
+
 // .filter('formatDateTime', function () {
 //   return function (dateString) {
 //     if (!dateString) return '';
@@ -245,10 +258,10 @@ app.filter('letterIndex', function () {
     }
   };
 });
-app.filter('safeHtml', ['$sce', function($sce) {
-    return function(html) {
-        return $sce.trustAsHtml(html);
-    };
+app.filter('safeHtml', ['$sce', function ($sce) {
+  return function (html) {
+    return $sce.trustAsHtml(html);
+  };
 }]);
 
 app.run([
