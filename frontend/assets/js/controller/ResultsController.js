@@ -2,8 +2,6 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
     // Initial state
     $scope.loading = true;
     $scope.error = null;
-    $scope.students = [];
-    $scope.exams = [];
     $scope.results = [];
     $scope.filteredResults = [];
     $scope.currentFilter = 'all';
@@ -30,7 +28,6 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
     // Initialize controller
     $scope.init = function () {
         $scope.loadResults();
-        $scope.loadExamList();
     };
 
     $scope.setTimeFilter = function (value, label) {
@@ -52,9 +49,10 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
         $scope.loading = true;
         $scope.error = null;
 
+        console.log($scope.selectedStudent);
         // Prepare API parameters
         const params = {
-            student_id: $scope.selectedStudent ? $scope.selectedStudent.id : 'all',
+            student_id: $scope.selectedStudent ? +$scope.selectedStudent.id : 'all',
             exam_id: $scope.selectedExam || 'all',
             time_filter: $scope.timeFilter || 'all',
             filter: $scope.currentFilter
@@ -63,8 +61,15 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
         $http.get(window.baseUrl + '/API/results/admin', { params })
             .then(function (response) {
                 if (response.data.status === 'success') {
-                    $scope.students = response.data.students;
-                    $scope.exams = response.data.exams;
+                    $scope.examList = response.data.exams.map(exam => ({
+                        id: exam.id,
+                        title: exam.title
+                    }));
+                    $scope.results = response.data.results;
+                    $scope.calculateStats();
+                    $scope.applyFilters();
+                    $scope.calculatePagination();
+                    $scope.loading = false;
                 } else {
                     Toast.fire({
                         type: 'error',
@@ -72,125 +77,12 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
                         msg: 'Failed to load results. Please try again.'
                     })
                 }
-            })
-        // Simulate API call with timeout
-        $timeout(function () {
-            try {
-                // Generate dummy data based on filters
-                $scope.generateData(params);
-                $scope.calculateStats();
-                $scope.applyFilters();
-                $scope.calculatePagination();
-                $scope.loading = false;
-            } catch (err) {
+            }).catch(function (err) {
                 $scope.error = 'Failed to load results. Please try again.';
                 $scope.loading = false;
                 console.error('Error loading results:', err);
-            }
-        }, 1000);
+            });
     };
-
-    // Load exam list for filter dropdown
-    $scope.loadExamList = function () {
-        // Simulate API call
-        $timeout(function () {
-            $scope.examList = [
-                { id: 'EXM001', title: 'AngularJS Fundamentals' },
-                { id: 'EXM002', title: 'JavaScript Advanced Concepts' },
-                { id: 'EXM003', title: 'Web Development Basics' },
-                { id: 'EXM004', title: 'Database Design' },
-                { id: 'EXM005', title: 'PHP Programming' }
-            ];
-        }, 500);
-    };
-
-    // Generate dummy data based on filters
-    $scope.generateData = function (params) {
-        $scope.results = [];
-        const students = $scope.students;
-        const exams = $scope.exams;
-        console.log(students);
-        console.log(exams);
-        const numResults = students.find(s => s.id == params.student_id).exams.length;
-        for (let i = 0; i < numResults; i++) {
-            const student = students.find(s => s.id == params.student_id)
-            const exam = exams.find(e => e.id === params.exam_id)
-               
-            const percentage = Math.floor(Math.random() * 40) + 40; // 40-80%
-            const totalMarks = 100;
-            const score = Math.round((percentage / 100) * totalMarks);
-            const timeTaken = `${Math.floor(Math.random() * 30) + 30}:${Math.random() > 0.5 ? '15' : '45'}`;
-            const timePercentage = Math.floor(Math.random() * 40) + 60; // 60-100%
-
-            const result = {
-                id: i + 1,
-                student_id: student.id,
-                student_name: student.name,
-                exam_id: exam.id,
-                exam_title: exam.title,
-                exam_code: exam.code,
-                score: score,
-                total_marks: totalMarks,
-                percentage: percentage,
-                passing_percentage: exam.passing_percentage,
-                correct_answers: Math.floor(Math.random() * 8) + 12, // 12-20
-                incorrect_answers: Math.floor(Math.random() * 8), // 0-8
-                skipped_questions: Math.floor(Math.random() * 3), // 0-3
-                total_questions: 20,
-                accuracy: Math.floor(Math.random() * 30) + 70, // 70-100%
-                time_taken: timeTaken,
-                time_taken_percentage: timePercentage,
-                completed_date: generateRandomDate(),
-                allow_retake: Math.random() > 0.5,
-                status: percentage >= exam.passing_percentage ? 'passed' : 'failed'
-            };
-
-            // Apply time filter
-            if (params.time_filter !== 'all') {
-                const resultDate = new Date(result.completed_date);
-                const now = new Date();
-                const daysDiff = Math.floor((now - resultDate) / (1000 * 60 * 60 * 24));
-
-                let includeResult = false;
-                switch (params.time_filter) {
-                    case 'today':
-                        includeResult = daysDiff === 0;
-                        break;
-                    case 'week':
-                        includeResult = daysDiff <= 7;
-                        break;
-                    case 'month':
-                        includeResult = daysDiff <= 30;
-                        break;
-                    case 'quarter':
-                        includeResult = daysDiff <= 90;
-                        break;
-                    default:
-                        includeResult = true;
-                }
-
-                if (!includeResult) continue;
-            }
-
-            $scope.results.push(result);
-        }
-
-        // Sort by date (newest first)
-        $scope.results.sort((a, b) => new Date(b.completed_date) - new Date(a.completed_date));
-        console.log($scope.results);
-    };
-
-    // Generate random date within last 90 days
-    function generateRandomDate() {
-        const now = new Date();
-        const daysAgo = Math.floor(Math.random() * 90); // 0-90 days ago
-        const date = new Date(now);
-        date.setDate(date.getDate() - daysAgo);
-        date.setHours(Math.floor(Math.random() * 12) + 8); // 8am-8pm
-        date.setMinutes(Math.floor(Math.random() * 60));
-        date.setSeconds(Math.floor(Math.random() * 60));
-        return date.toISOString().replace('T', ' ').substring(0, 19);
-    }
 
     // Calculate statistics
     $scope.calculateStats = function () {
@@ -210,13 +102,10 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
         const passedResults = $scope.results.filter(r => r.percentage >= r.passing_percentage);
 
         // Calculate average time in minutes
-        const totalMinutes = $scope.results.reduce((sum, r) => {
-            const [minutes, seconds] = r.time_taken.split(':').map(Number);
-            return sum + minutes + (seconds / 60);
-        }, 0);
+        const totalMinutes = $scope.results.reduce((sum, r) => sum + (r.time_taken / 60), 0);
 
         const avgMinutes = Math.round(totalMinutes / $scope.results.length);
-        const avgSeconds = Math.round((totalMinutes / $scope.results.length - avgMinutes) * 60);
+        const avgSeconds = Math.round((avgMinutes) * 60);
 
         // Get unique students
         const uniqueStudents = [...new Set($scope.results.map(r => r.student_id))];
@@ -226,10 +115,10 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
 
         $scope.stats = {
             totalAttempts: $scope.results.length,
-            averageScore: Math.round(totalScore / $scope.results.length),
+            averageScore: (totalScore / $scope.results.length).toFixed(2),
             passRate: Math.round((passedResults.length / $scope.results.length) * 100),
             activeStudents: uniqueStudents.length,
-            averageTime: `${avgMinutes.toString().padStart(2, '0')}:${avgSeconds.toString().padStart(2, '0')}`,
+            averageTime: avgSeconds,
             highestScore: highestScore
         };
     };
@@ -246,13 +135,11 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
                 filtered = filtered.filter(r => r.percentage < r.passing_percentage);
                 break;
             case 'recent':
-                // Show last 7 days
                 const weekAgo = new Date();
                 weekAgo.setDate(weekAgo.getDate() - 7);
                 filtered = filtered.filter(r => new Date(r.completed_date) > weekAgo);
                 break;
             case 'top':
-                // Top 20% scores
                 filtered.sort((a, b) => b.percentage - a.percentage);
                 filtered = filtered.slice(0, Math.ceil(filtered.length * 0.2));
                 break;
@@ -280,11 +167,25 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
     };
 
     // Select student
-    $scope.selectStudent = function (id, name) {
-        $scope.selectedStudent = { id: id, name: name };
+    $scope.selectStudent = function (value) {
+        if (!value) {
+            $scope.selectedStudent = { id: 'all', name: 'All Students' };
+        } else {
+            try {
+                $scope.selectedStudent = JSON.parse(value);
+                $scope.selectedStudent.id = +$scope.selectedStudent.id;
+            } catch (e) {
+                console.error('Failed to parse student JSON:', value);
+                $scope.selectedStudent = { id: 'all', name: 'All Students' };
+            }
+        }
+
+        console.log('Selected student:', $scope.selectedStudent);
+
         $scope.currentPage = 1;
         $scope.loadResults();
     };
+
 
     // Pagination functions
     $scope.calculatePagination = function () {

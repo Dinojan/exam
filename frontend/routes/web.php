@@ -44,7 +44,7 @@ Router::group(['middleware' => ['auth']], function () {
     // 🔹 Results
     Router::get('/result/all', 'PageAPI@results', 'all_results');
     Router::get('/result/my', 'PageAPI@myResults', 'my_results');
-    Router::get('/result/review/{exam_id}', 'PageAPI@examResultsReview', 'exam_results');
+    Router::get('/result/review/{attempt_id}/{exam_id}/{student_id}', 'PageAPI@examResultsReview', 'exam_results');
 
     // 🔹 Attendance
     Router::get('/attendance', 'PageAPI@attendance', 'view_attendance');
@@ -116,7 +116,7 @@ Router::group(['prefix' => 'API'], function () {
 
     Router::get('/results/lecturer/{lecturer_id}', 'ResultsAPI@getLecturerResults', 'get_lecturer_results', ['auth']);
     Router::get('/results/student/{student_id}', 'ResultsAPI@getStudentResults', 'get_student_results', ['auth']);
-    Router::get('/results/review/{exam_id}', 'ResultsAPI@getStudentResultsWithQuestions', 'get_exam_results', ['auth']);
+    Router::get('/results/review/{attempt_id}/{exam_id}/{student_id}', 'ResultsAPI@getStudentResultsWithQuestions', 'get_exam_results', ['auth']);
     Router::get('/results/admin', 'ResultsAPI@getAllResultsForAdmin', 'get_all_results_for_admin', ['auth']);
 
     Router::put('/user_groups/{id}/permissions', 'UserGroupAPI@setPermissions', 'set_group_permissions', ['auth']);

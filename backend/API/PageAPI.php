@@ -127,17 +127,26 @@ class PageAPI
         return view('results.my', ['title' => 'My Results']);
     }
 
-    public function examResultsReview($id)
+    public function examResultsReview($attempt_id, $id, $student_id = null)
     {
-        $stmt = db()->prepare("SELECT id FROM exam_info WHERE id = ?");
-        $stmt->execute([$id]);
-        $exam = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$exam) {
+        $stmt = db()->prepare("SELECT id FROM exam_attempts WHERE id = ?  AND status IN ('completed', 'rules_violation')");
+        $stmt->execute([$attempt_id]);
+        $attempt = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$attempt) {
             $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
             $path = getPath();
             header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
         } else {
-            return view('results.review', ['title' => 'Exam Results Review', 'exam_id' => $id]);
+            $stmt = db()->prepare("SELECT id FROM exam_info WHERE id = ?");
+            $stmt->execute([$id]);
+            $exam = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$exam) {
+                $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+                $path = getPath();
+                header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
+            } else {
+                return view('results.review', ['title' => 'Exam Results Review', 'exam_id' => $id]);
+            }
         }
     }
 

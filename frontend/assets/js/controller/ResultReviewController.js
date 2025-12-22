@@ -6,16 +6,17 @@ app.controller('ResultReviewController', ['$scope', '$timeout', '$location', '$h
     $scope.questionFilter = 'all';
     $scope.jumpToQuestion = '';
     $scope.filteredQuestions = [];
-    $scope.examId = getIdFromUrl();
+    $scope.attemptId = getIdFromUrl(3);
+    $scope.examId = getIdFromUrl(2);
+    $scope.studentId = getIdFromUrl();
 
 
     function init() {
         loadResultReview();
     }
 
-
     function loadResultReview() {
-        $http.get(window.baseUrl + '/API/results/review/' + $scope.examId)
+        $http.get(window.baseUrl + '/API/results/review/' + $scope.attemptId +'/' + $scope.examId + '/' + $scope.studentId)
             .then(function (response) {
                 if (response.data && response.data.status === 'success') {
                     $scope.result = response.data.result;
@@ -24,6 +25,7 @@ app.controller('ResultReviewController', ['$scope', '$timeout', '$location', '$h
                     $scope.loading = false;
                 } else {
                     $scope.error = response.data.msg || 'Failed to load exam results. Please try again.';
+                    $scope.loading = false;
                 }
             })
     }

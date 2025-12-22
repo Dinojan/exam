@@ -441,6 +441,14 @@ function getUserGroupName($id)
     return $row ? $row['name'] : null;
 }
 
+function getUserName($id) {
+    $sql = "SELECT name FROM users WHERE id = ?";
+    $statement = db()->prepare($sql);
+    $statement->execute([$id]);
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
+    return $row ? $row['name']  : null;
+}
+
 function getUserStatusText($status)
 {
     switch ($status) {

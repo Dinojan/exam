@@ -17,19 +17,31 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div
                 class="bg-[#0d1117] rounded-lg border border-[#fff2] text-gray-300 p-2 relative w-full md:min-w-[250px]">
+
                 <!-- Default label -->
-                <div class="px-4 cursor-pointer w-full text-center" ng-click="dropdownOpen = !dropdownOpen;">
-                    {{ selectedStudent.id ? selectedStudent.name : 'All Students' }}
+                <div class="cursor-pointer w-full flex items-center justify-between"
+                    ng-click="dropdownOpen = !dropdownOpen; examDropdownOpen = false; timeDropdownOpen = false;">
+                    <p class="px-2">{{ selectedStudent.id ? selectedStudent.name : 'All Students' }}</p>
+                    <i class="fa-solid fa-chevron-down transition-all duration-300"
+                        ng-class="{'rotate-180': dropdownOpen}"></i>
                 </div>
 
                 <!-- Dropdown list -->
                 <div ng-show="dropdownOpen"
                     class="overflow-hidden mt-1 absolute top-full right-0 bg-[#0d1117] border border-[#fff2] rounded-lg w-full z-50">
+
+                    <div class="p-2">
+                        <!-- Search input -->
+                        <input type="text" ng-model="studentSearch" placeholder="Search students..."
+                            class="w-full p-2 rounded bg-[#0d1117] border border-[#fff2] text-gray-300 focus:outline-none" />
+                    </div>
+
                     <div class="max-h-60 overflow-y-auto p-2">
+
                         <!-- All Students option -->
                         <div class="rounded-lg px-4 py-2 text-gray-300 hover:bg-cyan-500/30 cursor-pointer transition-all duration-300"
                             ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': !selectedStudent.id}"
-                            ng-click="selectedStudent = null; dropdownOpen = false; loadResults()">
+                            ng-click="selectedStudent = {id:0,name:'All Students'}; dropdownOpen = false; loadResults()">
                             All Students
                         </div>
 
@@ -38,11 +50,13 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <?php if (!isset($student['id']))
                                 continue; ?>
                             <div class="rounded-lg px-4 py-2 text-gray-300 hover:bg-cyan-500/30 cursor-pointer transition-all duration-300"
-                                ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': selectedStudent && selectedStudent.id === <?php echo $student['id'] ?>}"
-                                ng-click="selectStudent(<?php echo $student['id'] ?>, '<?php echo addslashes($student['name']) ?>'); dropdownOpen = false; loadResults()">
-                                <?php echo $student['name'] ?>
+                                ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': selectedStudent && selectedStudent.id === <?= $student['id'] ?>}"
+                                ng-show="'<?= strtolower(addslashes($student['name'])) ?>'.indexOf((studentSearch || '').toLowerCase()) !== -1"
+                                ng-click="selectStudent(<?= $student['id'] ?>, '<?= addslashes($student['name']) ?>'); dropdownOpen = false; loadResults()">
+                                <?= htmlspecialchars($student['name']) ?>
                             </div>
                         <?php endforeach; ?>
+
                     </div>
                 </div>
             </div>
@@ -50,27 +64,36 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <!-- Additional admin filters -->
             <div class="relative w-full min-w-[250px]">
                 <!-- Selected exam -->
-                <div class="bg-[#0d1117] backdrop-blur rounded-lg border border-[#fff2] p-2 text-gray-300 cursor-pointer text-center z-0"
-                    ng-click="examDropdownOpen = !examDropdownOpen">
-                    {{ selectedExamTitle || 'All Exams' }}
+                <div class="bg-[#0d1117] backdrop-blur rounded-lg border border-[#fff2] text-gray-300 cursor-pointer text-center z-0 flex items-center justify-between p-2"
+                    ng-click="examDropdownOpen = !examDropdownOpen; dropdownOpen = false; timeDropdownOpen = false;">
+                    <p class="px-2">{{ selectedExamTitle || 'All Exams' }}</p>
+                    <i class="fa-solid fa-chevron-down transition-all duration-300"
+                        ng-class="{'rotate-180': examDropdownOpen}"></i>
                 </div>
 
                 <!-- Dropdown -->
                 <div ng-show="examDropdownOpen"
                     class="absolute top-full mt-1 w-full bg-[#0d1117] backdrop-blur border border-[#fff2] rounded-lg z-50 overflow-hidden">
 
+                    <div class="p-2">
+                        <!-- Search input -->
+                        <input type="text" ng-model="examSearch" placeholder="Search exams..."
+                            class="w-full p-2 rounded bg-[#0d1117] border border-[#fff2] text-gray-300 focus:outline-none" />
+                    </div>
+
                     <div class="p-2 max-h-60 overflow-y-auto space-y-1">
+
                         <!-- All exams -->
                         <div class="px-4 py-2 rounded-lg cursor-pointer hover:bg-cyan-500/30"
-                            ng-click="setExam('', 'All Exams')"
+                            ng-click="setExam('', 'All Exams'); examDropdownOpen = false;"
                             ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': !selectedExam}">
                             All Exams
                         </div>
 
                         <!-- Exam list -->
-                        <div ng-repeat="exam in examList"
+                        <div ng-repeat="exam in examList | filter: {title: examSearch}"
                             class="px-4 py-2 rounded-lg cursor-pointer hover:bg-cyan-500/30"
-                            ng-click="setExam(exam.id, exam.title)"
+                            ng-click="setExam(exam.id, exam.title); examDropdownOpen = false;"
                             ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': exam.id === selectedExam}">
                             {{ exam.title }}
                         </div>
@@ -78,12 +101,13 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
             </div>
 
-
             <div class="relative w-full md:min-w-[200px]">
                 <!-- Selected value -->
-                <div class="bg-[#0d1117] backdrop-blur rounded-lg border border-[#fff2] p-2 text-gray-300 cursor-pointer text-center z-0"
-                    ng-click="timeDropdownOpen = !timeDropdownOpen">
-                    {{ timeFilterLabel || 'All Time' }}
+                <div class="bg-[#0d1117] backdrop-blur rounded-lg border border-[#fff2] p-2 text-gray-300 cursor-pointer text-center z-0 flex items-center justify-between"
+                    ng-click="timeDropdownOpen = !timeDropdownOpen; dropdownOpen = false; examDropdownOpen = false;">
+                    <p class="px-2">{{ timeFilterLabel || 'All Time' }}</p>
+                    <i class="fa-solid fa-chevron-down transition-all duration-300"
+                        ng-class="{'rotate-180': timeDropdownOpen}"></i>
                 </div>
 
                 <!-- Dropdown -->
@@ -211,7 +235,7 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                     <div>
                         <p class="text-sm text-gray-400">Avg Time</p>
-                        <h3 class="text-xl font-bold text-gray-100">{{stats.averageTime || '00:00'}}</h3>
+                        <h3 class="text-xl font-bold text-gray-100">{{stats.averageTime | formatTime}}</h3>
                     </div>
                 </div>
             </div>
@@ -273,7 +297,8 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
             class="group relative bg-[#0003] rounded-xl shadow-md border border-[#fff2] hover:shadow-lg transition-shadow hover:border-cyan-500/50 overflow-hidden">
             <div class="p-6">
                 <?php if (user_id() == 1): ?>
-                    <div class="absolute top-0 right-0 text-right hidden group-hover:flex flex-row items-center gap-1 px-4 rounded-bl-xl bg-cyan-600/30 transition-all duration-300">
+                    <div
+                        class="absolute top-0 right-0 text-right hidden group-hover:flex flex-row items-center gap-1 px-4 rounded-bl-xl bg-cyan-600/30 transition-all duration-300">
                         <p class="text-xs text-gray-400">Student ID:</p>
                         <p class="text-sm font-medium text-gray-300">{{result.student_id}}</p>
                     </div>
@@ -310,15 +335,15 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                             {{result.percentage >= result.passing_percentage ? 'Passed' : 'Failed'}}
                                         </span>
                                         <span
-                                            class="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500">
-                                            <i class="fas fa-user-graduate"></i>
-                                            {{result.student_name}}
+                                            class="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500">
+                                            <i class="fas fa-calendar-alt"></i>
+                                            {{result.completed_date | formatDateTime: 'MMM DD, YYYY'}}
                                         </span>
                                     </span>
                                     <span
-                                        class="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        {{result.completed_date | formatDateTime: 'MMM DD, YYYY'}}
+                                        class="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500">
+                                        <i class="fas fa-user-graduate"></i>
+                                        {{result.student_name}}
                                     </span>
                                 </div>
                             </div>
@@ -357,7 +382,7 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <!-- Actions -->
                     <div class="">
                         <div class="flex flex-col space-y-3">
-                            <a ng-href="<?php echo BASE_URL ?>/result/review/{{result.id}}"
+                            <a ng-href="<?php echo BASE_URL ?>/result/review/{{result.id}}/{{result.exam_id}}/{{result.student_id}}"
                                 class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2">
                                 <i class="fas fa-eye"></i>
                                 <span>Review Details</span>

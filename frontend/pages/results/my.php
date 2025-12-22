@@ -15,27 +15,48 @@
             $stmt->execute();
             $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
             ?>
-            <span class="bg-[#0004] backdrop-blur rounded-lg border border-[#fff2] p-2 relative min-w-[250px]">
-
-                <!-- Hidden ng-model input -->
+            <span class="bg-[#0d1117] rounded-lg border border-[#fff2] text-gray-300 p-2 relative md:min-w-[250px]">
                 <input type="hidden" ng-model="theLoggedUser.id" ng-change="loadResults()">
 
                 <!-- Default label -->
-                <div class="px-4 cursor-pointer w-full text-center" ng-click="dropdownOpen = !dropdownOpen">
-                    {{ theLoggedUser.name || 'Select a Student' }}
+                <div class="cursor-pointer w-full flex items-center justify-between"
+                    ng-click="dropdownOpen = !dropdownOpen">
+                    <p class="px-2">{{ theLoggedUser.name || 'Select a Student' }}</p>
+                    <i class="fa-solid fa-chevron-down transition-all duration-300"
+                        ng-class="{'rotate-180': dropdownOpen}"></i>
                 </div>
 
                 <!-- Dropdown list -->
                 <div ng-show="dropdownOpen"
-                    class="overflow-hidden mt-1 absolute top-full right-0 bg-[#0004] backdrop-blur border border-[#fff2] rounded-lg w-full ">
-                    <div class="max-h-60 overflow-y-auto z-10 p-2">
+                    class="overflow-hidden mt-1 absolute top-full right-0 bg-[#0d1117] border border-[#fff2] rounded-lg w-full z-50">
+
+                    <div class="p-2">
+                        <!-- Search input -->
+                        <input type="text" ng-model="studentSearch" placeholder="Search students..."
+                            class="w-full p-2 rounded bg-[#0d1117] border border-[#fff2] text-gray-300 focus:outline-none" />
+                    </div>
+
+                    <div class="max-h-60 overflow-y-auto p-2">
+
+                        <!-- All Students option -->
+                        <div class="rounded-lg px-4 py-2 text-gray-300 hover:bg-cyan-500/30 cursor-pointer transition-all duration-300"
+                            ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': !selectedStudent.id}"
+                            ng-click="selectedStudent = {id:0,name:'All Students'}; dropdownOpen = false; loadResults()">
+                            All Students
+                        </div>
+
+                        <!-- Individual students -->
                         <?php foreach ($students as $student): ?>
+                            <?php if (!isset($student['id']))
+                                continue; ?>
                             <div class="rounded-lg px-4 py-2 text-gray-300 hover:bg-cyan-500/30 cursor-pointer transition-all duration-300"
-                                ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': theLoggedUser.id === <?php echo $student['id'] ?>}"
+                                ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': selectedStudent && selectedStudent.id === <?= $student['id'] ?>}"
+                                ng-show="'<?= strtolower(addslashes($student['name'])) ?>'.indexOf((studentSearch || '').toLowerCase()) !== -1"
                                 ng-click="theLoggedUser = {id: <?php echo $student['id'] ?>, name: '<?php echo $student['name'] ?>'}; dropdownOpen = false; loadResults()">
-                                <?php echo $student['name'] ?>
+                                <?= htmlspecialchars($student['name']) ?>
                             </div>
                         <?php endforeach; ?>
+
                     </div>
                 </div>
             </span>
@@ -233,7 +254,7 @@
                     <!-- Actions -->
                     <div class="">
                         <div class="flex flex-col space-y-3">
-                            <a href="<?php echo BASE_URL ?>/result/review/{{result.exam_id}}"
+                            <a href="<?php echo BASE_URL ?>/result/review/{{result.id}}/{{result.exam_id}}/{{theLoggedUser.id}}"
                                 class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2">
                                 <i class="fas fa-eye"></i>
                                 <span>Review Answers</span>
@@ -264,15 +285,18 @@
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div class="text-center">
                             <p class="text-gray-400">Correct</p>
-                            <p class="text-green-400 font-medium">{{result.correct_answers || 0}}/{{result.total_questions || 0}}</p>
+                            <p class="text-green-400 font-medium">{{result.correct_answers ||
+                                0}}/{{result.total_questions || 0}}</p>
                         </div>
                         <div class="text-center">
                             <p class="text-gray-400">Incorrect</p>
-                            <p class="text-red-400 font-medium">{{result.incorrect_answers || 0}}/{{result.total_questions || 0}}</p>
+                            <p class="text-red-400 font-medium">{{result.incorrect_answers ||
+                                0}}/{{result.total_questions || 0}}</p>
                         </div>
                         <div class="text-center">
                             <p class="text-gray-400">Skipped</p>
-                            <p class="text-yellow-400 font-medium">{{result.skipped_questions || 0}}/{{result.total_questions || 0}}</p>
+                            <p class="text-yellow-400 font-medium">{{result.skipped_questions ||
+                                0}}/{{result.total_questions || 0}}</p>
                         </div>
                         <!-- <div class="text-center">
                             <p class="text-gray-400">Accuracy</p>

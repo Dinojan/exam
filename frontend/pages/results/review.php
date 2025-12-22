@@ -16,7 +16,7 @@
         </div>
 
         <!-- Exam Status Badge -->
-        <div class="flex flex-row items-center justify-between space-x-4 w-full md:w-auto">
+        <div ng-if="!error" class="flex flex-row items-center justify-between space-x-4 w-full md:w-auto">
             <div class="text-center">
                 <p class="text-sm text-gray-400">Overall Score</p>
                 <p class="text-2xl font-bold"
@@ -25,8 +25,8 @@
                 </p>
             </div>
             <div class="px-4 py-2 rounded-full" ng-class="result.percentage >= result.passing_percentage ? 
-                          'bg-green-500/20 text-green-300 border border-green-500' : 
-                          'bg-red-500/20 text-red-300 border border-red-500'">
+                    'bg-green-500/20 text-green-300 border border-green-500' : 
+                    'bg-red-500/20 text-red-300 border border-red-500'">
                 <i class="fas mr-2"
                     ng-class="result.percentage >= result.passing_percentage ? 'fa-check-circle' : 'fa-times-circle'"></i>
                 {{result.percentage >= result.passing_percentage ? 'Passed' : 'Failed'}}
