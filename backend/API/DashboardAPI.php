@@ -100,62 +100,101 @@ class DashboardAPI
             $stats['lecturers'] = $stmt->fetchColumn();
 
             // Get recent users
-            $stmt = $this->db->prepare("SELECT id, name, email, user_group as role, created_at FROM users  WHERE status = 0 ORDER BY created_at DESC  LIMIT 5 ");
+            $stmt = $this->db->prepare("SELECT id, name, email, user_group as role, created_at FROM users  WHERE status = 0 AND user_group != 1 ORDER BY created_at DESC  LIMIT 5 ");
             $stmt->execute();
             $recentUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($recentUsers as &$user) {
                 $user['created_at'] = str_replace(' ', "T", $user['created_at']);
             }
+            $stmt = $this->db->prepare("SELECT ei.id, ei.title, ei.code, ei.duration, es.schedule_type, es.start_time FROM exam_info ei JOIN exam_settings es ON es.exam_id = ei.id WHERE ei.status != 0 ");
+            $stmt->execute();
+            $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $stmt = $this->db->query("
-    SELECT COUNT(DISTINCT ei.id)
-    FROM exam_info ei
-    JOIN exam_settings es ON es.exam_id = ei.id
-    WHERE ei.status = 1
-      AND es.schedule_type = 'scheduled'
-      AND DATE(es.start_time) = CURDATE()
-");
-            $todayCount = $stmt->fetchColumn();
+            $todayCount = 0;
+            $upcomingExams = [];
+            $activeCount = 0;
+
+            $now = new DateTime();
+            $todayDate = $now->format('Y-m-d');
+
+            foreach ($exams as $exam) {
+                if ($exam['schedule_type'] === 'anytime') {
+                    $activeCount++;
+                    $todayCount++;
+                    continue;
+                }
+
+                $startDateTime = new DateTime($exam['start_time']);
+                $startDate = $startDateTime->format('Y-m-d');
+
+                $endDateTime = clone $startDateTime;
+                $endDateTime->modify('+' . (int) $exam['duration'] . ' minutes');
+                if ($startDate === $todayDate) {
+                    $todayCount++;
+
+                    if ($now < $startDateTime) {
+                        $upcomingExams[] = [
+                            'id' => $exam['id'] + 0,
+                            'code' => str_replace(' ', '_', $exam['code']),
+                            'title' => $exam['title'],
+                            'date' => str_replace(' ', 'T', $exam['start_time']),
+                            'duration' => $exam['duration'] + 0
+                        ];
+                    } elseif ($now >= $startDateTime && $now <= $endDateTime) {
+                        $activeCount++;
+                    }
+                } elseif ($startDate > $todayDate) {
+                    $upcomingExams[] = [
+                        'id' => $exam['id'] + 0,
+                        'code' => str_replace(' ', '_', $exam['code']),
+                        'title' => $exam['title'],
+                        'date' => str_replace(' ', 'T', $exam['start_time']),
+                        'duration' => $exam['duration'] + 0
+                    ];
+                }
+            }
+
+            $stmt = $this->db->prepare("SELECT ea.score, ei.total_marks FROM exam_attempts ea LEFT JOIN exam_info ei ON ea.exam_id = ei.id WHERE ea.status IN ('completed', 'rules_violation')");
+            $stmt->execute();
+            $scores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $totalScorePresantage = 0;
+            $totalCount = count($scores);
+
+            foreach ($scores as $row) {
+                $scorePresantage = ($row['score'] / $row['total_marks']) * 100;
+                $totalScorePresantage += (float) $scorePresantage;
+            }
 
 
-         $stmt = $this->db->query("
-    SELECT COUNT(DISTINCT ei.id)
-    FROM exam_info ei
-    JOIN exam_settings es ON es.exam_id = ei.id
-    WHERE ei.status = 1
-      AND es.schedule_type = 'scheduled'
-      AND es.start_time > NOW()
-");
-$upcomingCount = $stmt->fetchColumn();
+            $stmt = $this->db->prepare("SELECT  COUNT(*) AS total, SUM( CASE  WHEN ea.score >= ei.passing_marks THEN 1 ELSE 0  END ) AS passed FROM exam_attempts ea LEFT JOIN exam_info ei ON ei.id = ea.exam_id WHERE ea.status IN ('completed', 'rules_violation') ");
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
+            $total = (int) $result['total'];
+            $passed = (int) $result['passed'];
 
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM questions");
+            $stmt->execute();
+            $totalQuestions = (int) $stmt->fetchColumn();
 
-            $stmt = $this->db->query("
-    SELECT COUNT(DISTINCT ei.id)
-    FROM exam_info ei
-    JOIN exam_settings es ON es.exam_id = ei.id
-    WHERE ei.status = 1
-      AND (
-            es.schedule_type = 'anytime'
-            OR (
-                es.schedule_type = 'scheduled'
-                AND NOW() BETWEEN es.start_time
-                AND DATE_ADD(es.start_time, INTERVAL ei.duration MINUTE)
-            )
-          )
-");
-            $activeCount = $stmt->fetchColumn();
-
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM questions WHERE YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)");
+            $stmt->execute();
+            $thisWeekQuestions = (int) $stmt->fetchColumn();
 
             $stats['todayExams'] = (int) $todayCount;
-            $stats['upcomingExams'] = (int) $upcomingCount;
             $stats['activeExams'] = (int) $activeCount;
+            $stats['avgScore'] = $totalCount > 0 ? round($totalScorePresantage / $totalCount, 1) : 0;
+            $stats['passRate'] = $total > 0 ? round(($passed / $total) * 100, 1) : 0;
+            $stats['totalQuestions'] = $totalQuestions;
+            $stats['thisWeekQuestions'] = $thisWeekQuestions;
 
 
             return $this->successResponse('Dashboard data loaded', [
                 'stats' => $stats,
                 'recentUsers' => $recentUsers,
+                'upcomingExams' => $upcomingExams
             ]);
         } catch (Exception $e) {
             return $this->errorResponse('Failed to load dashboard data: ' . $e->getMessage());

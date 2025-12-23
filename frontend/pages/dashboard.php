@@ -7,7 +7,7 @@
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-100">Dashboard</h1>
         <p class="text-gray-400">Welcome back, {{user.name}}! Here's your overview.</p>
-        <p class="text-sm text-gray-500">User ID: {{user.id}} | Role: {{getRoleName(user.role)}}</p>
+        <!-- <p class="text-sm text-gray-500">User ID: {{user.id}} | Role: {{getRoleName(user.role)}}</p> -->
     </div>
 
     <!-- Loading State -->
@@ -274,7 +274,7 @@
                     class="bg-[#0005] p-6 rounded-xl border border-[#fff2] hover:border-yellow-500/50 transition-colors">
                     <div class="flex items-center">
                         <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center mr-4">
-                            <i class="fas fa-question-circle text-yellow-400 text-xl"></i>
+                            <i class="fa-solid fa-question text-yellow-400 text-xl"></i>
                         </div>
                         <div>
                             <p class="text-sm text-gray-400">Questions</p>
@@ -302,14 +302,14 @@
                     </div>
                     <div class="space-y-4">
                         <div ng-repeat="user in recentUsers"
-                            class="flex items-center p-4 rounded-lg bg-[#0007] hover:bg-[#0009] transition-colors">
+                            class="flex items-center justify-between p-4 rounded-lg bg-[#0007] hover:bg-[#0009] transition-colors">
                             <div
-                                class="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center text-white font-bold mr-4">
+                                class="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center text-white font-bold">
                                 {{user.name.charAt(0)}}
                             </div>
-                            <div class="flex-1">
+                            <div class="max-w-[calc(100%-9rem)] overflow-hidden md:flex-1 md:max-w-auto">
                                 <h3 class="font-medium text-gray-100">{{user.name}}</h3>
-                                <p class="text-sm text-gray-400">{{user.email}}</p>
+                                <p id="user-email" class="text-sm text-gray-400 overflow-auto">{{user.email}}</p>
                             </div>
                             <div class="text-right">
                                 <span class="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-300">
@@ -333,20 +333,18 @@
                         <div ng-repeat="exam in upcomingExams"
                             class="p-4 rounded-lg bg-[#0007] hover:bg-[#0009] transition-colors">
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-medium text-gray-100">{{exam.title}}</h3>
+                                <h3 class="font-medium text-gray-100 capitalize">{{exam.title}}</h3>
                                 <span class="text-xs px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-300">
-                                    {{exam.date}}
+                                    {{exam.date | date: 'MMM d, y'}}
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-400 mb-3">Duration: {{exam.duration}} mins</p>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">{{exam.students}} students</span>
-                                <a href="<?php echo BASE_URL ?>/exams/edit/{{exam.id}}"
-                                    class="text-cyan-400 hover:text-cyan-300">Manage</a>
+                            <div class="flex justify-between items-center">
+                                <p class="text-gray-400">Exam code: <span class="uppercase">{{exam.code}}</span></p>
+                                <p class="text-sm text-gray-400">Duration: {{exam.duration}} mins</p>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Empty state -->
                     <div ng-if="!upcomingExams || upcomingExams.length === 0"
                         class="p-6 text-center rounded-lg bg-[#0007] text-gray-400">
@@ -427,7 +425,7 @@
                             <p class="text-sm text-gray-400 mb-3">{{exam.course}}</p>
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-400">{{exam.students}} students enrolled</span>
-                                <a href="<?php echo BASE_URL ?>/exams/edit/{{exam.id}}"
+                                <a href="<?php echo BASE_URL ?>/exam/edit/{{exam.id}}"
                                     class="text-cyan-400 hover:text-cyan-300">Edit</a>
                             </div>
                         </div>
@@ -454,33 +452,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions for Lecturer -->
-            <div class="bg-[#0005] p-6 rounded-xl border border-[#fff2]">
-                <h2 class="text-xl font-bold text-gray-100 mb-6">Quick Actions</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <a href="<?php echo BASE_URL ?>/exams/create"
-                        class="flex flex-col items-center justify-center p-4 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/30 transition-colors">
-                        <i class="fas fa-plus-circle text-cyan-400 text-2xl mb-2"></i>
-                        <span class="text-gray-100 text-sm">Create Exam</span>
-                    </a>
-                    <a href="<?php echo BASE_URL ?>/questions/create"
-                        class="flex flex-col items-center justify-center p-4 rounded-lg bg-green-600/20 hover:bg-green-600/30 border border-green-500/30 transition-colors">
-                        <i class="fas fa-question-circle text-green-400 text-2xl mb-2"></i>
-                        <span class="text-gray-100 text-sm">Add Question</span>
-                    </a>
-                    <a href="<?php echo BASE_URL ?>/my-courses"
-                        class="flex flex-col items-center justify-center p-4 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 transition-colors">
-                        <i class="fas fa-chalkboard-teacher text-purple-400 text-2xl mb-2"></i>
-                        <span class="text-gray-100 text-sm">My Courses</span>
-                    </a>
-                    <a href="<?php echo BASE_URL ?>/my-results"
-                        class="flex flex-col items-center justify-center p-4 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 transition-colors">
-                        <i class="fas fa-chart-bar text-yellow-400 text-2xl mb-2"></i>
-                        <span class="text-gray-100 text-sm">Results</span>
-                    </a>
                 </div>
             </div>
         </div>
@@ -555,7 +526,7 @@
                             <p class="text-sm text-gray-400 mb-3">{{exam.course}} • {{exam.duration}} mins</p>
                             <div class="flex justify-between text-sm">
                                 <span class="text-gray-400">Starts: {{exam.start_time}}</span>
-                                <a href="<?php echo BASE_URL ?>/exams/register/{{exam.hash}}"
+                                <a href="<?php echo BASE_URL ?>/exam/register/{{exam.hash}}"
                                     class="text-cyan-400 hover:text-cyan-300">Start</a>
                             </div>
                         </div>
