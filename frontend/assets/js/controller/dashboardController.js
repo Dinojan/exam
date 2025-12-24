@@ -97,27 +97,9 @@ app.controller('DashboardController', ['$scope', '$http', '$timeout', function (
                     $scope.recentUsers = response.data.recentUsers;
                     $scope.upcomingExams = response.data.upcomingExams;
                 } else {
-                    // Demo data
-                    $scope.stats = {
-                        totalUsers: 15,
-                        students: 8,
-                        lecturers: 2,
-                        activeExams: 3,
-                        todayExams: 1,
-                        avgScore: 78,
-                        passRate: 85,
-                        totalQuestions: 234
-                    };
-                    $scope.recentUsers = [
-                        { id: 15, name: 'Saththiyaseelan Keyithan', email: 'sadmin@nit.com', user_group: 6, created_at: '2025-12-13 05:09:28' },
-                        { id: 14, name: 'Saththiyaseelan Keyithan', email: 'nit@tech.lk', user_group: 1, created_at: '2025-12-13 05:05:38' },
-                        { id: 13, name: 'Saththiyaseelan Keyithan', email: 'tech@nit.lk', user_group: 6, created_at: '2025-12-13 03:58:20' }
-                    ];
-                    $scope.upcomingExams = [
-                        { id: 1, title: 'Mid-term Mathematics', date: 'Tomorrow', duration: 120, students: 45 },
-                        { id: 2, title: 'Physics Final', date: 'Dec 28', duration: 180, students: 32 },
-                        { id: 3, title: 'Chemistry Quiz', date: 'Jan 5', duration: 60, students: 28 }
-                    ];
+                    $scope.stats = {};
+                    $scope.recentUsers = [];
+                    $scope.upcomingExams = [];
                 }
                 $scope.loading = false;
             })
@@ -130,26 +112,15 @@ app.controller('DashboardController', ['$scope', '$http', '$timeout', function (
     function loadLecturerDashboard() {
         $http.get(window.baseUrl + '/API/dashboard/lecturer')
             .then(function (response) {
-                if (response.data.success) {
+                if (response.data.status === 'success') {
                     $scope.lecturerStats = response.data.stats;
                     $scope.myUpcomingExams = response.data.upcomingExams;
-                    $scope.pendingReviews = response.data.pendingReviews;
+                    $scope.recentAttempts = response.data.recentAttempts;
                 } else {
                     // Demo data
-                    $scope.lecturerStats = {
-                        courses: 3,
-                        exams: 5,
-                        students: 45,
-                        questions: 78
-                    };
-                    $scope.myUpcomingExams = [
-                        { id: 1, title: 'Mathematics Quiz', date: 'Tomorrow', course: 'Math 101', students: 25 },
-                        { id: 2, title: 'Calculus Test', date: 'Next Week', course: 'Calculus', students: 20 }
-                    ];
-                    $scope.pendingReviews = [
-                        { attempt_id: 101, exam_id: 1, student_id: 8, student_name: 'Saththiyaseelan Keyithan', exam_title: 'Mathematics Quiz', submitted_date: 'Today' },
-                        { attempt_id: 102, exam_id: 2, student_id: 15, student_name: 'Saththiyaseelan Keyithan', exam_title: 'Physics Test', submitted_date: 'Yesterday' }
-                    ];
+                    $scope.lecturerStats = {};
+                    $scope.myUpcomingExams = [];
+                    $scope.recentAttempts = [];
                 }
                 $scope.loading = false;
             })

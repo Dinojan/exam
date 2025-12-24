@@ -1,30 +1,7 @@
 <?php
-// use Backend\Modal\Auth;
-
-// class DashboardAPI {
-
-//     public function __construct(){
-//         if (!Auth::isLoggedIn()) {
-//                redirect('login');
-//         }
-//     }
-
-//     public function index() {
-//         // echo 'Dashboard';
-//         // If user is logged in, show dashboard, otherwise home
-//         // if (Auth::isLoggedIn()) {
-//         //     redirect('admin.dashboard');
-//             return view('dashboard', ['title' => 'Dashboard']);
-//         // }
-//         // return view('auth.login', ['title' => 'Login']);
-//         // redirect('login');
-//     }
-// }
 
 use Backend\Modal\Auth;
 
-
-// Dashboard API Controller
 class DashboardAPI
 {
     private $db;
@@ -40,8 +17,7 @@ class DashboardAPI
     private function checkAuth()
     {
         if (!Auth::isLoggedIn()) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'message' => 'Authentication required']);
+            redirect('login');
             exit;
         }
         $this->user = Auth::getUser();
@@ -77,7 +53,6 @@ class DashboardAPI
                     'lastBackup' => 'Today'
                 ]
             ]);
-
         } catch (Exception $e) {
             return $this->errorResponse('Failed to load dashboard data: ' . $e->getMessage());
         }
@@ -206,22 +181,118 @@ class DashboardAPI
     {
         try {
             $userId = $this->user['id'];
-            $stats = [];
+            $stats = [
+                'activeExams' => 0,
+                'exams' => 0,
+                'enrolledStudents' => 0,
+                'questions' => 0
+            ];
+            $upcomingExams = [];
+            $recentAttempts = [];
 
-            // Get lecturer stats (you'll need to map lecturers to courses/exams)
-            // For now, return dummy data
+            $stmt = $this->db->prepare("SELECT * FROM exam_info WHERE created_by = ?");
+            $stmt->execute([$userId]);
+            $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $total_enrolled_students = 0;
+            $active_exams = 0;
+            $allAttempts = [];
+            foreach ($exams as &$exam) {
+                $stmt = $this->db->prepare("SELECT * FROM exam_settings WHERE exam_id = ?");
+                $stmt->execute([$exam['id']]);
+                $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($settings) {
+                    $stmt = $this->db->prepare("SELECT * FROM exam_registration WHERE exam_id = ?");
+                    $stmt->execute([$exam['id']]);
+                    $registrations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $stmt = $this->db->prepare("SELECT * FROM exam_attempts WHERE exam_id = ? AND status IN ('completed', 'rules_violation', 'in_progress', 'started')");
+                    $stmt->execute([$exam['id']]);
+                    $attempts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $enrolled_students = count($registrations);
+                    $total_enrolled_students += $enrolled_students;
+
+                    if ($attempts) {
+                        foreach ($attempts as &$attempt) {
+                            $attempt['exam_title'] = $exam['title'];
+                        }
+                        unset($attempt);
+                        $allAttempts = array_merge($allAttempts, $attempts);
+                    }
+
+                    if ($settings['schedule_type'] == 'anytime') {
+                        $active_exams++;
+                        continue;
+                    }
+
+                    $now = new DateTime();
+                    $todayDate = $now->format('Y-m-d');
+                    $startDateTime = new DateTime($settings['start_time']);
+                    $startDate = $startDateTime->format('Y-m-d');
+
+                    $endDateTime = clone $startDateTime;
+                    $endDateTime->modify('+' . (int) $exam['duration'] . ' minutes');
+                    if ($startDate === $todayDate) {
+                        if ($now < $startDateTime) {
+                            $upcomingExams[] = [
+                                'id' => $exam['id'] + 0,
+                                'code' => str_replace(' ', '_', $exam['code']),
+                                'title' => $exam['title'],
+                                'date' => str_replace(' ', 'T', $settings['start_time']),
+                                'students' => $enrolled_students + 0
+                            ];
+                        } elseif ($now >= $startDateTime && $now <= $endDateTime) {
+                            $active_exams++;
+                        }
+                    } elseif ($startDate > $todayDate) {
+                        $upcomingExams[] = [
+                            'id' => $exam['id'] + 0,
+                            'code' => str_replace(' ', '_', $exam['code']),
+                            'title' => $exam['title'],
+                            'date' => str_replace(' ', 'T', $settings['start_time']),
+                            'students' => $enrolled_students + 0
+                        ];
+                    }
+                }
+            }
+
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM questions WHERE created_by = ?");
+            $stmt->execute([$userId]);
+            $toatl_questions = $stmt->fetchColumn();
+
+            usort($allAttempts, function ($a, $b) {
+                return strtotime($b['started_at']) - strtotime($a['started_at']);
+            });
+
+            $convertedAttempts = [];
+            foreach ($allAttempts as &$att) {
+                $attempt = [
+                    'attempt_id' => $att['id'],
+                    'exam_id' => $att['exam_id'],
+                    'student_id' => $att['student_id'],
+                    'student_name' => getUserName($att['student_id']),
+                    'exam_title' => $att['exam_title'],
+                    'attempted_date' => $att['started_at']
+                ];
+                $convertedAttempts[] = $attempt;
+            }
+
+            $recentAttempts = array_slice($convertedAttempts, 0, 5);
+
+            $stats = [
+                'activeExams' => $active_exams + 0,
+                'exams' => count($exams) + 0,
+                'enrolledStudents' => $total_enrolled_students + 0,
+                'questions' => $toatl_questions + 0
+            ];
 
             return $this->successResponse('Dashboard data loaded', [
-                'stats' => [
-                    'courses' => 3,
-                    'exams' => 5,
-                    'students' => 45,
-                    'questions' => 78
-                ],
-                'upcomingExams' => [],
-                'pendingReviews' => []
+                'stats' => $stats,
+                'upcomingExams' => $upcomingExams,
+                'recentAttempts' => $recentAttempts
             ]);
-
         } catch (Exception $e) {
             return $this->errorResponse('Failed to load dashboard data: ' . $e->getMessage());
         }
@@ -284,7 +355,6 @@ class DashboardAPI
                 ]
 
             ]);
-
         } catch (Exception $e) {
             return $this->errorResponse('Failed to load dashboard data: ' . $e->getMessage());
         }
@@ -318,6 +388,6 @@ class DashboardAPI
 
     private function errorResponse($message)
     {
-        return ['status' => 'error', 'msg' => $message];
+        return json_encode(['status' => 'error', 'msg' => $message]);
     }
 }

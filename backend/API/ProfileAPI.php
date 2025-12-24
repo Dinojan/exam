@@ -1,6 +1,9 @@
 <?php
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use Backend\Modal\Auth;
+use Dompdf\Dompdf;
+
 
 class ProfileAPI
 {
@@ -385,8 +388,7 @@ class ProfileAPI
 
             if (strtolower($format) === 'pdf') {
                 $userData['created_at'] = date('D, M d Y, H:i:s', strtotime($userData['created_at']));
-                require_once 'vendor/autoload.php';
-                $pdf = new \Dompdf\Dompdf();
+                $pdf = new Dompdf();
 
                 $html = '
                     <html>

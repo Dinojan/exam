@@ -6,7 +6,7 @@ Follow these steps **before uploading the project to hosting**.
 
 ### 1. `root/.htaccess` file
 
-> Update this only after hosting if the project is inside a subfolder.
+> Update this **after hosting** only if the project is inside a subfolder.
 
 ```apache
 RewriteBase /NIT/exam/
@@ -72,3 +72,25 @@ if (!defined('VERSION')) define('VERSION', '1.0.0');
 if (!defined('NAME')) define('NAME', 'Online Exam');
 if (!defined('SKIP_ROOT')) define('SKIP_ROOT', false);
 ```
+
+
+### 5. Install `dompdf`
+
+> Make sure **Composer** and **PHP zip extension** are enabled.
+
+```powershell
+cd C:xampp\htdocs
+```
+```powershell
+composer -v
+```
+```powershell
+composer require dompdf/dompdf
+```
+
+✅ Verification
+```powershell
+dir vendor\dompdf
+```
+
+If the folder exists, `dompdf` is installed successfully 🎉

@@ -1201,6 +1201,10 @@ video {
   height: 3rem;
 }
 
+.h-14 {
+  height: 3.5rem;
+}
+
 .h-16 {
   height: 4rem;
 }
@@ -1251,6 +1255,10 @@ video {
 
 .h-\[50px\] {
   height: 50px;
+}
+
+.h-\[calc\(100\%_-_1\.75rem\)\] {
+  height: calc(100% - 1.75rem);
 }
 
 .h-auto {
@@ -1318,6 +1326,14 @@ video {
   max-height: 90vh;
 }
 
+.min-h-80 {
+  min-height: 20rem;
+}
+
+.min-h-96 {
+  min-height: 24rem;
+}
+
 .min-h-\[100vh\] {
   min-height: 100vh;
 }
@@ -1352,6 +1368,10 @@ video {
 
 .w-12 {
   width: 3rem;
+}
+
+.w-14 {
+  width: 3.5rem;
 }
 
 .w-16 {
@@ -3440,6 +3460,11 @@ video {
   padding-bottom: 0.25rem;
 }
 
+.py-10 {
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
 .py-12 {
   padding-top: 3rem;
   padding-bottom: 3rem;
@@ -3553,6 +3578,10 @@ video {
 
 .pr-12 {
   padding-right: 3rem;
+}
+
+.pr-2 {
+  padding-right: 0.5rem;
 }
 
 .pr-4 {
@@ -4308,13 +4337,25 @@ video {
   display: none;
 }
 
+body::-webkit-scrollbar {
+  border-radius: 0 !important;
+}
+
+body::-webkit-scrollbar-track {
+  border-radius: 0 !important;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
   background: transparent;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-track {
   background: #000d;
+  border-radius: 4px;
+  margin-left: 8px;
 }
 
 ::-webkit-scrollbar-thumb {

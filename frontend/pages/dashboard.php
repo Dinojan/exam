@@ -362,11 +362,11 @@
                 <div class="bg-[#0005] p-6 rounded-xl border border-[#fff2]">
                     <div class="flex items-center">
                         <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center mr-4">
-                            <i class="fas fa-book-open text-blue-400 text-xl"></i>
+                            <i class="fas fa-clipboard-list text-blue-400 text-xl"></i>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-400">My Courses</p>
-                            <h3 class="text-2xl font-bold text-gray-100">{{lecturerStats.courses || 0}}</h3>
+                            <p class="text-sm text-gray-400">My Active exams</p>
+                            <h3 class="text-2xl font-bold text-gray-100">{{lecturerStats.activeExams || 0}}</h3>
                         </div>
                     </div>
                 </div>
@@ -374,7 +374,7 @@
                 <div class="bg-[#0005] p-6 rounded-xl border border-[#fff2]">
                     <div class="flex items-center">
                         <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center mr-4">
-                            <i class="fas fa-clipboard-list text-green-400 text-xl"></i>
+                            <i class="fas fa-file-alt text-green-400 text-xl"></i>
                         </div>
                         <div>
                             <p class="text-sm text-gray-400">My Exams</p>
@@ -386,11 +386,12 @@
                 <div class="bg-[#0005] p-6 rounded-xl border border-[#fff2]">
                     <div class="flex items-center">
                         <div class="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center mr-4">
-                            <i class="fas fa-users text-purple-400 text-xl"></i>
+                            <i class="fas fa-user-check text-purple-400 text-xl"></i>
+
                         </div>
                         <div>
-                            <p class="text-sm text-gray-400">My Students</p>
-                            <h3 class="text-2xl font-bold text-gray-100">{{lecturerStats.students || 0}}</h3>
+                            <p class="text-sm text-gray-400">Enrolled Students</p>
+                            <h3 class="text-2xl font-bold text-gray-100">{{lecturerStats.enrolledStudents || 0}}</h3>
                         </div>
                     </div>
                 </div>
@@ -398,7 +399,7 @@
                 <div class="bg-[#0005] p-6 rounded-xl border border-[#fff2]">
                     <div class="flex items-center">
                         <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center mr-4">
-                            <i class="fas fa-question-circle text-yellow-400 text-xl"></i>
+                            <i class="fas fa-question text-yellow-400 text-xl"></i>
                         </div>
                         <div>
                             <p class="text-sm text-gray-400">My Questions</p>
@@ -412,45 +413,89 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <!-- Upcoming Exams -->
                 <div class="bg-[#0005] p-6 rounded-xl border border-[#fff2]">
-                    <h2 class="text-xl font-bold text-gray-100 mb-6">My Upcoming Exams</h2>
-                    <div class="space-y-4">
-                        <div ng-repeat="exam in myUpcomingExams"
-                            class="p-4 rounded-lg bg-[#0007] hover:bg-[#0009] transition-colors">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-medium text-gray-100">{{exam.title}}</h3>
-                                <span class="text-xs px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-300">
-                                    {{exam.date}}
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-400 mb-3">{{exam.course}}</p>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">{{exam.students}} students enrolled</span>
-                                <a href="<?php echo BASE_URL ?>/exam/edit/{{exam.id}}"
-                                    class="text-cyan-400 hover:text-cyan-300">Edit</a>
+                    <h2 class="text-xl font-bold text-gray-100" ng-class="{'mb-6' : myUpcomingExams.length > 0}">My Upcoming Exams</h2>
+
+                    <!-- Upcoming exams list -->
+                    <div class="max-h-96 overflow-hidden"  ng-if="myUpcomingExams.length > 0">
+                        <div class="space-y-4 max-h-96 overflow-y-auto">
+                            <div ng-repeat="exam in myUpcomingExams"
+                                class="p-4 rounded-lg bg-[#0007] hover:bg-[#0009] transition-colors">
+
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-medium text-gray-100 capitalize">{{exam.title}}</h3>
+                                    <span class="text-xs px-2 py-1 rounded-full bg-cyan-500/20 text-cyan-300 capitalize">
+                                        {{exam.date | fromNow}}
+                                    </span>
+                                </div>
+
+                                <p class="text-sm text-gray-400 mb-3">Code: <span class="uppercase">{{exam.code}}</span></p>
+
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">{{exam.students}} student{{exam.students > 1 ? 's' : ''}} enrolled</span>
+                                    <a href="<?php echo BASE_URL ?>/exam/edit/{{exam.id}}"
+                                        class="text-cyan-400 hover:text-cyan-300">Edit</a>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- No upcoming exams state -->
+                    <div ng-if="!myUpcomingExams.length"
+                        class="flex flex-col items-center justify-center py-10 text-center h-[calc(100%_-_1.75rem)]">
+
+                        <div class="w-14 h-14 rounded-full bg-cyan-500/20 flex items-center justify-center mb-4">
+                            <i class="fas fa-calendar-times text-cyan-400 text-2xl"></i>
+                        </div>
+
+                        <p class="text-gray-300 font-medium">No Upcoming Exams</p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            You haven’t scheduled any exams yet
+                        </p>
+                    </div>
                 </div>
 
-                <!-- Pending Reviews -->
+                <!-- Recently Attempted Exams -->
                 <div class="bg-[#0005] p-6 rounded-xl border border-[#fff2]">
-                    <h2 class="text-xl font-bold text-gray-100 mb-6">Pending Reviews</h2>
-                    <div class="space-y-4">
-                        <div ng-repeat="review in pendingReviews"
+                    <h2 class="text-xl font-bold text-gray-100" ng-class="{'mb-6' : recentAttempts.length > 0}">Recently Attempted Exams by Students</h2>
+
+                    <!-- Recently attempted list -->
+                    <div class="space-y-4 max-h-96 overflow-y-auto" ng-if="recentAttempts.length > 0">
+                        <div ng-repeat="attempt in recentAttempts"
                             class="p-4 rounded-lg bg-[#0007] hover:bg-[#0009] transition-colors">
+
                             <div class="flex justify-between items-start mb-2">
-                                <h3 class="font-medium text-gray-100">{{review.student_name}}</h3>
-                                <span class="text-xs px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300">
-                                    Pending
+                                <h3 class="font-medium text-gray-100 capitalize">{{attempt.student_name}}</h3>
+                                <span class="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-300">
+                                    Attempted
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-400 mb-3">{{review.exam_title}}</p>
+
+                            <p class="text-sm text-gray-400 mb-3 capitalize">{{attempt.exam_title}}</p>
+
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">Submitted: {{review.submitted_date}}</span>
-                                <a href="<?php echo BASE_URL ?>/results/review/{{review.attempt_id}}/{{review.exam_id}}/{{review.student_id}}"
-                                    class="text-cyan-400 hover:text-cyan-300">Review</a>
+                                <span class="text-gray-400">
+                                    Attempted on: <span class="capitalize">{{attempt.attempted_date | fromNow}}</span>
+                                </span>
+                                <a href="<?php echo BASE_URL ?>/result/review/{{attempt.attempt_id}}/{{attempt.exam_id}}/{{attempt.student_id}}"
+                                    class="text-cyan-400 hover:text-cyan-300">
+                                    View Result
+                                </a>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- No recently attempted students -->
+                    <div ng-if="!recentAttempts.length"
+                        class="flex flex-col items-center justify-center py-10 text-center h-[calc(100%_-_1.75rem)]">
+
+                        <div class="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
+                            <i class="fas fa-user-clock text-green-400 text-2xl"></i>
+                        </div>
+
+                        <p class="text-gray-300 font-medium">No Recent Attempts</p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            No students have attempted exams recently
+                        </p>
                     </div>
                 </div>
             </div>
