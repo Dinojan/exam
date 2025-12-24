@@ -1447,6 +1447,11 @@ video {
   width: 100%;
 }
 
+.w-max {
+  width: -moz-max-content;
+  width: max-content;
+}
+
 .w-screen {
   width: 100vw;
 }
@@ -6003,6 +6008,11 @@ select:focus {
     margin-right: 6rem;
   }
 
+  .md\:mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .md\:mb-6 {
     margin-bottom: 1.5rem;
   }
@@ -6191,6 +6201,10 @@ select:focus {
 
   .md\:p-6 {
     padding: 1.5rem;
+  }
+
+  .md\:p-8 {
+    padding: 2rem;
   }
 
   .md\:px-3 {

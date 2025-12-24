@@ -50,7 +50,7 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
         $scope.error = null;
         // Prepare API parameters
         const params = {
-            student_id: $scope.selectedStudent ? +$scope.selectedStudent : 'all',
+            student_id: $scope.selectedStudent ? +$scope.selectedStudent.id : 'all',
             exam_id: $scope.selectedExam || 'all',
             time_filter: $scope.timeFilter || 'all',
             filter: $scope.currentFilter
@@ -170,8 +170,9 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
             $scope.selectedStudent = { id: 'all', name: 'All Students' };
         } else {
             try {
-                $scope.selectedStudent = JSON.parse(value);
+                $scope.selectedStudent = value;
                 $scope.selectedStudent.id = +$scope.selectedStudent.id;
+                // $scope.selectedStudent.name = $scope.selectedStudent.name;
             } catch (e) {
                 console.error('Failed to parse student JSON:', value);
                 $scope.selectedStudent = { id: 'all', name: 'All Students' };

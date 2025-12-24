@@ -1,7 +1,7 @@
 <?php $this->extend('frontend'); ?>
 <?php $this->start('content'); ?>
 
-<div class="max-w-4xl w-full mx-auto">
+<div class="max-w-4xl md:w-full mx-4 md:mx-auto">
     <!-- Error Code with Animation -->
     <!-- <div class="text-center mb-8">
             <div class="relative inline-block">

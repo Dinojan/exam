@@ -5,6 +5,10 @@
 $stmt = db()->prepare("SELECT id, name FROM users WHERE user_group = 6");
 $stmt->execute();
 $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = db()->prepare("SELECT id, title FROM exam_info WHERE status = 1");
+$stmt->execute();
+$exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <?php $this->start('content'); ?>
 <div class="bg-[#0003] p-6 rounded-lg mb-16">
@@ -41,6 +45,7 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <!-- All Students option -->
                         <div class="rounded-lg px-4 py-2 text-gray-300 hover:bg-cyan-500/30 cursor-pointer transition-all duration-300"
                             ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': !selectedStudent.id}"
+                            ng-show="!studentSearch || 'all exams'.indexOf((studentSearch || '').toLowerCase()) !== -1"
                             ng-click="selectedStudent = {id:0,name:'All Students'}; dropdownOpen = false; loadResults()">
                             All Students
                         </div>
@@ -52,11 +57,10 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="rounded-lg px-4 py-2 text-gray-300 hover:bg-cyan-500/30 cursor-pointer transition-all duration-300"
                                 ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': selectedStudent && selectedStudent.id === <?= $student['id'] ?>}"
                                 ng-show="'<?= strtolower(addslashes($student['name'])) ?>'.indexOf((studentSearch || '').toLowerCase()) !== -1"
-                                ng-click="selectStudent(<?= $student['id'] ?>, '<?= addslashes($student['name']) ?>'); dropdownOpen = false; loadResults()">
+                                ng-click="selectStudent({id: <?= $student['id'] ?>, name:'<?= addslashes($student['name']) ?>'}); dropdownOpen = false; loadResults()">
                                 <?= htmlspecialchars($student['name']) ?>
                             </div>
                         <?php endforeach; ?>
-
                     </div>
                 </div>
             </div>
@@ -86,17 +90,22 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <!-- All exams -->
                         <div class="px-4 py-2 rounded-lg cursor-pointer hover:bg-cyan-500/30"
                             ng-click="setExam('', 'All Exams'); examDropdownOpen = false;"
+                            ng-show="!examSearch || 'all exams'.indexOf((examSearch || '').toLowerCase()) !== -1"
                             ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': !selectedExam}">
                             All Exams
                         </div>
 
                         <!-- Exam list -->
-                        <div ng-repeat="exam in examList | filter: {title: examSearch}"
-                            class="px-4 py-2 rounded-lg cursor-pointer hover:bg-cyan-500/30"
-                            ng-click="setExam(exam.id, exam.title); examDropdownOpen = false;"
-                            ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': exam.id === selectedExam}">
-                            {{ exam.title }}
-                        </div>
+                        <?php foreach ($exams as $exam): ?>
+                            <?php if (!isset($exam['id']))
+                                continue; ?>
+                            <div class="px-4 py-2 rounded-lg cursor-pointer hover:bg-cyan-500/30 capitalize"
+                                ng-click="setExam(<?php echo $exam['id'] ?>, '<?php echo $exam['title'] ?>'); examDropdownOpen = false;"
+                                ng-show="'<?= strtolower(addslashes($exam['title'])) ?>'.indexOf((examSearch || '').toLowerCase()) !== -1"
+                                ng-class="{'bg-cyan-500/70 hover:bg-cyan-500/60 text-white': <?php echo $exam['id'] ?> === selectedExam}">
+                                <?php echo htmlspecialchars($exam['title']); ?>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>

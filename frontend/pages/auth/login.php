@@ -17,7 +17,7 @@
     style="animation-delay: 2s;"></div>
 
 <!-- Login container -->
-<div class="glass-effect rounded-3xl p-8 w-full max-w-md floating mx-auto" style="animation-duration: 6s;">
+<div class="glass-effect rounded-3xl p-6 md:p-8 mx-auto w-max md:w-full max-w-md floating " style="animation-duration: 6s;">
     <div class="text-center mb-2">
         <div class="inline-block p-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 mb-4 pulse">
             <i class="fas fa-user text-white text-2xl"></i>
