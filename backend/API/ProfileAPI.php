@@ -435,7 +435,9 @@ class ProfileAPI
 
                 if ($userData['user_group'] == 'Student') {
                     $html .= '</table>
-                        <h2>Exam History</h2>
+                        <h2>Exam History</h2>';
+                    if (!empty($examData)) {
+                        $html .= '
                         <table>
                             <tr>
                                 <th>Exam Code</th>
@@ -445,22 +447,22 @@ class ProfileAPI
                                 <th>Completed At</th>
                             </tr>';
 
-                    foreach ($examData as $exam) {
-                        if (isset($exam['score'], $exam['passing_marks'])) {
-                            $exam['passed'] = floatval($exam['score']) >= floatval($exam['passing_marks']) ? 'Pass' : 'Fail';
-                            $passedColor = $exam['passed'] === 'Pass' ? 'green' : 'red';
-                        } else {
-                            $exam['passed'] = '-';
-                            $passedColor = 'black';
-                        }
+                        foreach ($examData as $exam) {
+                            if (isset($exam['score'], $exam['passing_marks'])) {
+                                $exam['passed'] = floatval($exam['score']) >= floatval($exam['passing_marks']) ? 'Pass' : 'Fail';
+                                $passedColor = $exam['passed'] === 'Pass' ? 'green' : 'red';
+                            } else {
+                                $exam['passed'] = '-';
+                                $passedColor = 'black';
+                            }
 
 
-                        $score = isset($exam['score']) ? floatval($exam['score']) : '-';
-                        if (is_numeric($score)) {
-                            $score = $score == floor($score) ? floor($score) : $score;
-                        }
+                            $score = isset($exam['score']) ? floatval($exam['score']) : '-';
+                            if (is_numeric($score)) {
+                                $score = $score == floor($score) ? floor($score) : $score;
+                            }
 
-                        $html .= '<tr>
+                            $html .= '<tr>
                             <td style="text-transform: uppercase;">' . htmlspecialchars(str_replace(' ', "_", $exam['exam_code'])) . '</td>
                             <td style="text-transform: capitalize;">' . htmlspecialchars($exam['exam_title']) . '</td>
                             <td style="text-align: center;">' . htmlspecialchars($score) . '</td>
@@ -468,8 +470,21 @@ class ProfileAPI
                             <td>' . htmlspecialchars(isset($exam['completed_at']) ? date('D, M d Y, H:i:s', strtotime($exam['completed_at'])) : '-') . '</td>
                         </tr>';
 
+                        }
+                    } else {
+                        $html .= '
+                            <div style="
+                                margin-top: 12px;
+                                padding: 16px;
+                                text-align: center;
+                                color: #666;
+                                border: 1px dashed #ccc;
+                                border-radius: 6px;
+                            ">
+                                <strong>No Exam History</strong><br>
+                                <span>The student has not completed any exams yet.</span>
+                            </div>';
                     }
-
                 }
 
                 $html .= '</table>
