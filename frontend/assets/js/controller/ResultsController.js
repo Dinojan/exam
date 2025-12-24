@@ -12,7 +12,6 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
     $scope.pageSize = 10;
     $scope.totalPages = 1;
     $scope.dropdownOpen = false;
-    $scope.examList = [];
     $scope.timeFilterLabel = 'All Time';
     $scope.selectedExamTitle = 'All Exams';
     $scope.stats = {
@@ -59,10 +58,6 @@ app.controller('ResultsController', ['$scope', '$timeout', '$http', function ($s
         $http.get(window.baseUrl + '/API/results/admin', { params })
             .then(function (response) {
                 if (response.data.status === 'success') {
-                    $scope.examList = response.data.exams.map(exam => ({
-                        id: exam.id,
-                        title: exam.title
-                    }));
                     $scope.results = response.data.results;
                     $scope.calculateStats();
                     $scope.applyFilters();

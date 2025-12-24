@@ -36,7 +36,6 @@ app.controller('ExamRegistrationController', [
             $http.get(window.baseUrl + '/API/exam/register/' + $scope.examId)
                 .then(function (response) {
                     if (response.data.code) {
-                        console.log(response.data);
                         $scope.existingRegistration = response.data.existingRegistration;
                         $scope.existingRegistration.date = new Date(response.data.existingRegistration.date);
                         $scope.attemptID = response.data.attempt_id;

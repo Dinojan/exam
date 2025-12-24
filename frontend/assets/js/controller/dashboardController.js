@@ -96,9 +96,6 @@ app.controller('DashboardController', ['$scope', '$http', '$timeout', function (
                     $scope.stats = response.data.stats;
                     $scope.recentUsers = response.data.recentUsers;
                     $scope.upcomingExams = response.data.upcomingExams;
-                    console.log($scope.stats);
-                    console.log($scope.recentUsers);
-                    console.log($scope.upcomingExams);
                 } else {
                     // Demo data
                     $scope.stats = {

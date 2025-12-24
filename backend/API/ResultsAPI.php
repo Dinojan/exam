@@ -293,7 +293,6 @@ class ResultsAPI
             $attempts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $results = [];
-            $exams = [];
 
             foreach ($attempts as $attempt) {
                 $stmt = $this->db->prepare("SELECT  ei.*, es.retake AS allow_retake, es.max_attempts FROM exam_info ei LEFT JOIN exam_settings es ON es.exam_id = ei.id WHERE ei.id = ? ");
@@ -359,16 +358,11 @@ class ResultsAPI
                     'allow_retake' => ($exam['allow_retake'] && $attempt['attempts'] < $exam['max_attempts']) ? true : false,
                     'status' => $attempt['score'] >= $exam['passing_marks'],
                 ];
-
-                if (!in_array($exam, $exams)) {
-                    $exams[] = $exam;
-                }
             }
 
             return json_encode([
                 "results" => $results,
                 'status' => 'success',
-                'exams' => $exams,
             ]);
         } catch (Exception $e) {
             return json_encode([
