@@ -223,7 +223,9 @@ class UserAPI
             $password = $pwd;
             $token = bin2hex(random_bytes(32));
             $resetLink = BASE_URL . '/reset-password/' . $token;
-            $tokenExpire = date('d-m-y H:i:s', strtotime('+2 hours'));
+            $tokenExpire = new DateTime('now', new DateTimeZone('Asia/Colombo'));
+            $tokenExpire->modify('+24 hours');
+            $tokenExpire = $tokenExpire->format('Y-m-d H:i:s');
 
             $stmt = $this->db->prepare('UPDATE users SET reset_token = ?, token_expire = ? WHERE email = ?');
             $stmt->execute([$token, $tokenExpire, $toMail]);
@@ -264,36 +266,6 @@ class UserAPI
             return json_encode([
                 'status' => 'error',
                 'message' => 'Failed to fetch student info: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    public function testMail()
-    {
-        try {
-            $toMail = 'sathyjaseelankeyithan@gmail.com';
-            $fullname = 'Saththiyaseelan Keyithan';
-            $username = 'saththiya123';
-            $password = 'TempPass123';
-            $token = bin2hex(random_bytes(32));
-            $resetLink = BASE_URL . '/reset-password/' . $token;
-            $tokenExpire = date('d-m-y H:i:s', strtotime('+2 hours'));
-
-            // Generate email HTML using your template
-            $message = resetMailTemplate($toMail, $resetLink, $tokenExpire, $fullname, $username, $password);
-
-            // Send the email
-            $result = sendMail($toMail, 'Reset Your Password', $message, $fullname);
-            if ($result === true) {
-                $response = ['status' => 'success'];
-            } else {
-                $response = ['status' => 'error', 'error' => 'SMTP Error: Could not authenticate.'];
-            }
-            return json_encode($response);
-        } catch (Exception $e) {
-            return json_encode([
-                'status' => 'error',
-                'message' => 'Failed to send email: ' . $e->getMessage()
             ]);
         }
     }

@@ -50,15 +50,18 @@ class PageAPI
 
     public function resetPassword($resetToken)
     {
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $path = getPath();
         if (!$resetToken) {
-            $this->notFound();
+            header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
         } else {
             $stmt = db()->prepare("SELECT reset_token FROM users WHERE reset_token = ?");
             $stmt->execute([$resetToken]);
-            if ($stmt->rowCount() == 1) {
+            $token = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($token) {
                 return view('auth.reset', ['title' => 'Reset Password']);
             } else {
-                $this->notFound();
+                header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
             }
         }
     }

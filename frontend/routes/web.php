@@ -1,6 +1,6 @@
 <?php
 // 🔹 Base & Authentication
-Router::get('/', 'PageAPI@dashboard', 'home', );
+Router::get('/', 'PageAPI@dashboard', 'home',);
 Router::get('/login', 'PageAPI@login', 'login');
 
 Router::group(['middleware' => ['auth']], function () {
@@ -102,6 +102,8 @@ Router::group(['prefix' => 'API'], function () {
     Router::post('/questions/assign_to_section/{id}', 'QuestionAPI@assignQuestionToSection', 'assign_question_to_section', ['auth']);
     Router::post('/questions/unassign_section/{id}', 'QuestionAPI@unassignSection', 'assign_question_to_section', ['auth']);
 
+    Router::post('/reset/{token}', 'AuthAPI@updateResetInfos', 'update_reset_infos');
+    Router::post('/reset/resend/{token}', 'AuthAPI@resendResetLink', 'resend_reset_link', ['auth']);
 
 
     Router::get('/users', 'UserAPI@getAllUsersHandler', 'get_all_users', ['auth']);
@@ -122,6 +124,7 @@ Router::group(['prefix' => 'API'], function () {
     Router::get('/exam/eligibility/{exam_id}', 'ExamAPI@checkExamEligibility', 'check_exam_eligibility', ['auth']);
 
     Router::get('/session', 'AuthAPI@getSession', 'get_session', ['auth']);
+    Router::get('/reset/{token}', 'AuthAPI@getResetInfos', 'get_reset_infos', ['auth']);
 
     Router::get('/results/lecturer/{lecturer_id}', 'ResultsAPI@getLecturerResults', 'get_lecturer_results', ['auth']);
     Router::get('/results/student/{student_id}', 'ResultsAPI@getStudentResults', 'get_student_results', ['auth']);

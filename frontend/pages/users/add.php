@@ -24,7 +24,6 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <?php $this->start('content'); ?>
 
 <div class="bg-[#0003] p-6 rounded-lg mb-16">
-    <div class="px-4 py-3 bg-cyan-600 rounded-lg" ng-click="sendMail()">Test mail</div>
     <!-- Header Section -->
     <div class="flex flex-col md:flex-row justify-between md:items-center mb-6">
         <div>
@@ -262,7 +261,7 @@ $userGroups = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </button>
                 <button type="buttonm" ng-disabled="loading" ng-click="submitUser()"
                     class="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-6 rounded-lg transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-user-plus" ng-class="{'fa-spin animate-spin': loading}"></i>
+                    <i class="fas" ng-class="{'fa-spin animate-spin': loading, 'fa-user-plus': !loading}"></i>
                     <span>{{ loading ? 'Creating User...' : 'Create User' }}</span>
                 </button>
             </div>

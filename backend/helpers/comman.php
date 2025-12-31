@@ -148,7 +148,7 @@ function currentNav($index = null)
 
     if ($index !== null) {
         $parts = explode('/', trim($current, '/'));
-        $current = $parts[(int)$index] ?? '';
+        $current = $parts[(int)$index - 1] ?? '';
     }
     return $current;
 }

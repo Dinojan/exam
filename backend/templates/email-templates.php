@@ -1,5 +1,5 @@
 <?php
-function resetMailTemplate($toMail, $resetLink, $tokenExpire, $fullname, $username, $password)
+function resetMailTemplate($toMail, $resetLink, $tokenExpire, $fullname, $username, $password = null)
 {
     $mailBody = "
         <!DOCTYPE html>
@@ -61,9 +61,18 @@ function resetMailTemplate($toMail, $resetLink, $tokenExpire, $fullname, $userna
                     <div class='details-card'>
                         <h3><i class='fas fa-key'></i> Your Login Details</h3>
                         <div class='detail-row'><span class='detail-label'>Email Address:</span><span class='detail-value'> $toMail</span></div>
-                        <div class='detail-row'><span class='detail-label'>Username:</span><span class='detail-value'> $username</span></div>
-                        <div class='detail-row'><span class='detail-label'>Temporary Password:</span><span class='detail-value'><code style='background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;'> $password</code></span></div>
-                        <div class='detail-row'><span class='detail-label'>Account Created:</span> <span class='detail-value'>" . date('F j, Y \a\t g:i A') . "</span></div>
+                        <div class='detail-row'><span class='detail-label'>Username:</span><span class='detail-value'> $username</span></div>";
+    if ($password) {
+        $mailBody .= "
+            <div class='detail-row'>
+                <span class='detail-label'>Temporary Password:</span>
+                <span class='detail-value'>
+                    <code style='background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;'>$password</code>
+                </span>
+            </div>
+            ";
+    }
+    $mailBody .=  "<div class='detail-row'><span class='detail-label'>Account Created:</span> <span class='detail-value'>" . date('F j, Y \a\t g:i A') . "</span></div>
                     </div>
                     <div class='password-note'><i class='fas fa-exclamation-circle'></i> <p>For security reasons, please reset your password after your first login, or use the password reset link provided below.</p></div>
                     <div class='cta-section'>
@@ -78,7 +87,7 @@ function resetMailTemplate($toMail, $resetLink, $tokenExpire, $fullname, $userna
                     </div>
                 </div>
                 <div class='footer'>
-                    <div class='copyright'>© " . date('Y') . " Your Online Exam Platform. All rights reserved.<br>This is an automated email, please do not reply.</div>
+                    <div class='copyright'>© " . config('app.copyright') . "<br>This is an automated email, please do not reply.</div>
                 </div>
             </div>
         </body>

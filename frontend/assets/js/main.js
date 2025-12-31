@@ -71,6 +71,12 @@ function getIdFromUrl(indexFromEnd = 1, url) {
     return isNaN(id) ? null : id;
 }
 
+function getParameterFromUrl(indexFromEnd = 1, url) {
+    const fullUrl = url || window.location.href;
+    const pathParts = new URL(fullUrl).pathname.split('/').filter(Boolean);
+    const para = pathParts[pathParts.length - indexFromEnd];
+    return para;
+}
 
 function getPathAfterBase() {
     const baseUrl = window.baseUrl
@@ -80,6 +86,7 @@ function getPathAfterBase() {
 
 window.getParameterByName = getParameterByName;
 window.getIdFromUrl = getIdFromUrl;
+window.getParameterFromUrl = getParameterFromUrl;
 window.getPath = getPathAfterBase;
 //Initialize Select2 Elements
 $('.select2').select2()

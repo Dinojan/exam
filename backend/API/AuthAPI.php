@@ -1,9 +1,18 @@
 <?php
+
 use Backend\Modal\Auth;
 
+require_once './vendor/autoload.php'; // PHPMailer autoload
+require_once './backend/templates/email-templates.php'; // Your resetMailTemplate function file
+require_once './backend/helpers/mailer.php'; // Your sendMail() function file
 class AuthAPI
 {
 
+    private $db;
+    public function __construct()
+    {
+        $this->db = db();
+    }
     public function showLogin()
     {
         if (Auth::isLoggedIn()) {
@@ -69,7 +78,6 @@ class AuthAPI
                     'email' => $email
                 ]
             ]);
-
         } catch (Exception $e) {
             return json_encode([
                 'status' => 'error',
@@ -160,8 +168,135 @@ class AuthAPI
             ]
         ]);
     }
-    public function registerStudentsForExam()
+
+    public function getResetInfos($token)
     {
-        return true;
+        try {
+            if (!$token) {
+                throw new Exception('Token not provided');
+            }
+
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE reset_token = ?');
+            $stmt->execute([$token]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                throw new Exception('Invalid token');
+            }
+
+            $infos = null;
+            $tokenExpire = $user['token_expire'] ? $user['token_expire'] : 0;
+            if (time() > $tokenExpire) {
+                $infos['tokenExpired'] = true;
+                $infos['timeLeft'] = 0;
+            } else {
+                $infos['tokenExpired'] = false;
+                $tokenExpireTimestamp = strtotime($tokenExpire); // convert to Unix timestamp
+                $infos['timeLeft'] = $tokenExpireTimestamp - time();
+            }
+            $infos['tokenExpire'] = str_replace(' ', 'T', $tokenExpire);
+            $infos['email'] = $user['email'];
+
+            return json_encode([
+                'status' => 'success',
+                'infos' => $infos
+            ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function updateResetInfos($token)
+    {
+        try {
+            if (!$token) {
+                throw new Exception('Invalid token');
+            }
+
+            $data = json_decode(file_get_contents("php://input"), true);
+
+            $password = $data['newPassword'] ?? null;
+            $email = $data['email'] ?? null;
+
+            if (!$email || !$password) {
+                throw new Exception('Missing email or password');
+            }
+
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE email = ? AND reset_token = ?');
+            $stmt->execute([$email, $token]);
+            $user = $stmt->fetch();
+
+            if (!$user) {
+                throw new Exception('Invalid token or email. Please try again.');
+            }
+            $hashedPwd = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $this->db->prepare('UPDATE users SET password = ?, reset_token = NULL, token_expire = NULL WHERE email = ?');
+            $stmt->execute([$hashedPwd, $email]);
+
+            $this->logout();
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Password updated successfully'
+            ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function resendResetLink($token)
+    {
+        try {
+            $incomingToken = $token;
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE reset_token = ?');
+            $stmt->execute([$incomingToken]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+
+            if (!$user) {
+                return json_encode([
+                    'status' => 'error',
+                    'msg' => "Can't find the token, maybe it expired"
+                ]);
+            }
+
+            $toMail = $user['email'];
+            $fullname = $user['name'];
+            $username = $user['username'];
+            $newToken = bin2hex(random_bytes(32));
+            $resetLink = BASE_URL . '/reset-password/' . $newToken;
+            $tokenExpire = new DateTime('now', new DateTimeZone('Asia/Colombo'));
+            $tokenExpire->modify('+5 minutes');
+            $tokenExpire = $tokenExpire->format('Y-m-d H:i:s');
+
+            $stmt = $this->db->prepare('UPDATE users SET reset_token = ?, token_expire = ? WHERE email = ?');
+            $stmt->execute([$newToken, $tokenExpire, $toMail]);
+
+            // Generate email HTML using your template
+            $message = resetMailTemplate($toMail, $resetLink, $tokenExpire, $fullname, $username);
+
+            // Send the email
+            $result = sendMail($toMail, 'Reset Your Password', $message, $fullname);
+            if ($result === false) {
+                return json_encode([
+                    'status' => 'warn',
+                    'msg' => 'Failed to sent reset password link. Please try again later.'
+                ]);
+            }
+            return json_encode([
+                'status' => 'success',
+                'msg' => 'Reset password link sent to your email. Please check your email.'
+            ]);
+        } catch (Exception $e) {
+            return json_encode([
+                'status' => 'error',
+                'msg' => 'Failed to send email: ' . $e->getMessage()
+            ]);
+        }
     }
 }
