@@ -24,22 +24,31 @@ app.controller('AuthController', [
                 const formData = $('#login-form').serialize();
                 $http({
                     method: 'POST',
-                    url: 'API/login',
+                    url: window.baseUrl + '/API/login',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: formData
                 }).then(function (response) {
                     const data = response.data;
                     if (data.status === 'success') {
-                        Toast({
+                        Toast.fire({
                             type: 'success',
                             title: 'Success!',
                             msg: data.msg || 'Login successful'
                         });
+                        // const params = new URLSearchParams(window.location.search);
+                        // const redirect = params.get('redirect');
+
+                        const redirect = getParameterByName('redirect');
+
                         setTimeout(() => {
-                            window.location.href = 'dashboard';
+                            if (redirect) {
+                                window.location.href = decodeURIComponent(redirect);
+                            } else {
+                                window.location.href = window.baseUrl + '/dashboard';
+                            }
                         }, 1000);
                     } else if (data.status === 'error') {
-                        Toast({
+                        Toast.fire({
                             type: 'error',
                             title: 'Error!',
                             msg: data.msg || 'Login failed'
@@ -48,7 +57,7 @@ app.controller('AuthController', [
                         button.prop('disabled', false);
                     }
                 }, function (error) {
-                    Toast({
+                    Toast.fire({
                         type: 'error',
                         title: 'Error!',
                         msg: 'Login failed'

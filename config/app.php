@@ -9,9 +9,15 @@ return [
     'timezone' => 'UTC',
     'locale' => 'en',
     'collapse' => true,
-    'logo' => 'assets/img/logo.png',
+    'logo' => "assets/img/logo.png",
+    'user_icon' => "assets/img/1.png",
     'powered-url' => 'https://northernithub.com/',
-    'powered-text' => 'Powered by: NorthernHub',
-    'copyright' => 'Copyright ' . $y . ' NorthernHub. All rights reserved.',
+    'powered-text' => 'Powered by: NorthernITHub',
+    'copyright' => 'Copyright ' . $y . ' NorthernITHub. All rights reserved.',
+    'platform-email' => 'devkeyithan@gmail.com',
+    'email-app-password' => 'dmxq groe zjba kzdr',
+    'email-username' => 'Online Examination System',
+    'email-host' => 'smtp.gmail.com',
+    'email-port' => 587
 ];
 ?>

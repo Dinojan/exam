@@ -14,9 +14,75 @@
   display: none;
 }
 
+#user-email::-webkit-scrollbar {
+  display: none;
+}
+
+body::-webkit-scrollbar {
+  border-radius: 0 !important;
+}
+
+body::-webkit-scrollbar-track {
+  border-radius: 0 !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: transparent;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000d;
+  border-radius: 4px;
+  margin-left: 8px;
+
+}
+
+::-webkit-scrollbar-thumb {
+  background: #fff1;
+  border-radius: 5px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"],
+input[type="time"],
+input[type="file"],
+/* input[type="checkbox"], */
+/* input[type="radio"], */
+input[type="range"],
+input[type="color"],
+input[type="submit"],
+input[type="reset"],
+/* input[type="button"], */
+input[type="image"],
+textarea,
+select {
+  @apply transition-all duration-200 outline-none focus:shadow-[0_0_0_2px] focus:shadow-[#fff3] border border-[#fff2] rounded-md px-3 py-2 text-gray-200 placeholder:text-gray-400;
+}
+
+.input-with-eye {
+  padding-right: 2rem !important;
+}
+
 /* Navbar */
 .navbar {
   position: fixed;
+}
+
+.first-letter-uppercase::first-letter {
+  text-transform: uppercase;
 }
 
 /* Animated background elements */
@@ -167,14 +233,61 @@
   }
 }
 
+[ng-if] {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .opacity-50 {
-    opacity: 0.5;
+  opacity: 0.5;
 }
 
 .animate-spin {
   animation: spin 1s linear infinite;
 }
 
+.form-group {
+  @apply mb-4;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-300 mb-2;
+}
+
+.form-input {
+  @apply w-full bg-[#0004] border border-gray-600 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-500 focus:outline-none;
+}
+
+.form-input:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.error-message {
+  @apply text-red-400 text-xs mt-1;
+}
+
+.success-message {
+  @apply text-green-400 text-sm mt-2;
+}
+
+.user_list_btn.active {
+  @apply bg-[#0ff3] text-white font-bold border-[#0ff3];
+}
+
+.user_list_btn.active:hover {
+  @apply bg-[#0ff6] border-[#0ff6];
+}
 
 .toast-card {
   @apply fixed flex items-center px-4 py-2 rounded-md shadow-md transition-all duration-300 z-[10000000] min-w-[20rem] max-w-[36rem];
@@ -369,4 +482,136 @@
 
 .toast-light .toast-progress-bar {
   @apply bg-gray-300;
+}
+
+.popover-overlay {
+  @apply fixed top-0 left-0 w-screen h-screen bg-black/50 backdrop-blur-sm z-[9999999] opacity-0 transition-opacity duration-300 ease-in-out;
+}
+
+.popover-overlay.show {
+  @apply opacity-100;
+}
+
+.popover-content {
+  @apply fixed border border-[#fff2] rounded-lg shadow-xl min-w-[300px] overflow-auto scale-90 opacity-0 transition-all duration-300 ease-in-out z-[10000000];
+}
+
+/* Center position (default for all popovers except content type) */
+.popover-content.center {
+  @apply top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-90;
+}
+
+.popover-content.center.show {
+  @apply -translate-x-1/2 -translate-y-1/2 scale-100 opacity-100;
+}
+
+/* Top-center position (for content popovers only) */
+.popover-content.top-center {
+  @apply top-[10%] left-1/2 -translate-x-1/2 -translate-y-[10%] scale-90;
+}
+
+.popover-content.top-center.show {
+  @apply -translate-x-1/2 -translate-y-[10%] scale-100 opacity-100;
+}
+
+.popover-header {
+  @apply px-6 py-4 border-b border-[#fff2] flex justify-between items-center cursor-move select-none;
+}
+
+.popover-title {
+  @apply text-xl font-semibold m-0;
+}
+
+.popover-close {
+  @apply bg-transparent border-none text-xl cursor-pointer transition-all duration-300;
+}
+
+.popover-close:hover {
+  @apply rotate-90 text-red-400;
+}
+
+.popover-body {
+  @apply p-6 max-h-[80vh] overflow-y-auto;
+}
+
+.popover-footer {
+  @apply px-6 py-4 flex justify-end gap-2;
+}
+
+.popover-button {
+  @apply relative overflow-hidden px-4 py-2 rounded-md font-medium cursor-pointer transition-all duration-200 border-none;
+}
+
+.popover-button::after {
+  content: "";
+  @apply absolute inset-0 bg-black/20 opacity-0 transition-opacity duration-200;
+}
+
+.popover-button:hover::after {
+  @apply opacity-100;
+}
+
+/* Dragging state */
+.popover-content.dragging {
+  @apply cursor-move shadow-2xl;
+}
+
+/* Loading state */
+.popover-loading {
+  @apply flex justify-center items-center py-8 flex-col;
+}
+
+.loading-spinner {
+  @apply w-10 h-10 border-4 border-[#fff3] border-t-cyan-500 rounded-full animate-spin;
+}
+
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+
+
+
+/* Add these styles to your existing CSS */
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prose {
+  color: #374151;
+}
+
+.prose h3 {
+  color: #1f2937;
+}
+
+/* Print styles for exam */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
 }

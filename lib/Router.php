@@ -14,6 +14,7 @@ class Route
     public function __construct($uri, $methods, $action, $name = null, $middleware = [])
     {
         $this->originalUri = $uri;
+
         $this->uri = $this->compileUri($uri);
         $this->methods = (array) $methods;
         $this->action = $action;
@@ -98,6 +99,12 @@ class Router
     {
         self::add('PUT', $uri, $action, $name, $middleware);
     }
+
+    public static function patch($uri, $action, $name = null, $middleware = [])
+    {
+        self::add('PATCH', $uri, $action, $name, $middleware);
+    }
+
 
     public static function delete($uri, $action, $name = null, $middleware = [])
     {
@@ -237,8 +244,7 @@ class Router
     private function handleNotFound($path = '', $method = '')
     {
         http_response_code(404);
-        echo "<h1>404 - Route not found</h1>";
-        echo "<pre>PATH: {$path}\nMETHOD: {$method}</pre>";
+        header('Location: ' . BASE_URL . '/404?path=' . urlencode($path) . '&method=' . urlencode($method));
         exit;
     }
 
@@ -246,23 +252,32 @@ class Router
     private function getPath()
     {
         $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-
-        // Normalize slashes
         $path = str_replace('\\', '/', $path);
+        $path = trim($path, '/');
 
-        // Remove "/public" and app folder prefix like "/web_app_1"
-        $scriptName = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME']));
-        if ($scriptName !== '/' && $scriptName !== '\\') {
-            $path = preg_replace('#^' . preg_quote($scriptName, '#') . '#', '', $path);
+        $basePath = parse_url(BASE_URL, PHP_URL_PATH);
+        $basePath = trim($basePath, '/');
+
+        if ($basePath && strpos($path, $basePath) === 0) {
+            $path = substr($path, strlen($basePath));
+            $path = trim($path, '/');
         }
 
-        // Remove app folder name if still present
-        $appFolder = basename(dirname(__DIR__)); // e.g. "web_app_1"
-        $path = preg_replace('#^/?' . preg_quote($appFolder, '#') . '/#', '', $path);
+        if ($path === '')
+            return '/';
+        $parts = explode('/', $path);
 
-        $path = trim($path, '/');
+        $firstSegment = array_shift($parts);
+
+        if (in_array($firstSegment, $parts)) {
+            return $path ?: '/';
+        }
+
+        // $path = implode('/', $parts);
         return $path ?: '/';
     }
+
+
 
     public function redirect($path)
     {

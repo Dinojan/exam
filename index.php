@@ -15,7 +15,7 @@ require_once 'autoload.php';
 // Create router instance (Singleton)
 $router = Router::getInstance();
 $router->loadRoutes('web');
-$router->route();
+// $router->route();
 $response = $router->dispatch('web');
 
 if (is_string($response)) {

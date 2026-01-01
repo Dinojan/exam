@@ -8,18 +8,26 @@
     <!-- STYLESHEET -->
     <link rel="stylesheet" href="<?= asset('assets/css/theme.min.css') ?>">
     <!-- FONT AWESOME 7.0.1 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
-        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="<?php echo asset('assets/plugins/fontawesome-free-7.1.0-web/css/all.min.css') ?>">
+    <link rel="stylesheet" href="<?php echo asset('assets/plugins/select2/select2.css') ?>">
     <!-- load dynamic css  -->
     <?= $this->stack('css') ?>
     <!-- set wanted script -->
-    <script type="module">
-        var baseUrl = '<?php echo BASE_URL ?>';
-    </script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="<?= asset('assets/js/angular.min.js') ?>"></script>
     <script src="<?= asset('assets/js/angularApp.js') ?>"></script>
+    <script src="<?php echo asset('assets/js/modalController.js') ?>"></script>
+    <script src="<?php echo asset('assets/js/notification.server.js') ?>"></script>
     <script type="module" src="<?= asset('assets/js/main.js') ?>"></script>
+    <script src="<?= asset('assets/plugins/select2/select2.js') ?>"></script>
+    <script>
+        var baseUrl = '<?php echo BASE_URL ?>';
+        var user = '<?php echo user_id() ?>';
+    </script>
+    <style>
+        [ng-cloak] {
+            display: none !important;
+        }
+    </style>
     <!-- end head -->
 </head>

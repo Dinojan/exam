@@ -1,6 +1,8 @@
 <?php
+
 use Lib\View;
 use Lib\Database;
+
 if (!function_exists('route')) {
     function route($name, $parameters = [])
     {
@@ -8,14 +10,25 @@ if (!function_exists('route')) {
         return $router->url($name, $parameters);
     }
 }
+
 if (!function_exists('redirect')) {
-    function redirect($name, $parameters = [])
+    function redirect($name, $params = [], $query = [])
     {
         $router = Router::getInstance();
-        header('Location: ' . $router->url($name, $parameters));
-        exit();
+
+        // Base route (without query)
+        $url = $router->url($name, $params);
+
+        // Add query manually
+        if (!empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+
+        header("Location: " . $url);
+        exit;
     }
 }
+
 if (!function_exists('config')) {
     function config($key = null, $default = null)
     {
@@ -89,6 +102,16 @@ if (!function_exists('asset')) {
     }
 }
 
+if (!function_exists('getModelFile')) {
+    function getModalFile($file_name)
+    {
+
+        $path = 'frontend/modals/' . str_replace('.', '/', $file_name) . '.php';
+        return file_exists($path) ? $path : false;
+    }
+}
+
+
 // db()
 if (!function_exists('db')) {
     function db()
@@ -118,10 +141,15 @@ if (!function_exists('dbTable')) {
     }
 }
 
-function currentNav()
+function currentNav($index = null)
 {
     $current = strtok($_SERVER['REQUEST_URI'], '?');
     $current = str_replace('/NIT/exam/', '', $current);
+
+    if ($index !== null) {
+        $parts = explode('/', trim($current, '/'));
+        $current = $parts[(int)$index - 1] ?? '';
+    }
     return $current;
 }
 
@@ -142,7 +170,14 @@ function hasAccess($item)
     return $roleMatch || $permissionMatch;
 }
 
+function hasPermission($permission)
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
 
+    return in_array($permission, $_SESSION['permissions'] ?? []);
+}
 
 function isActiveMenuItem($item, $current)
 {
@@ -173,7 +208,7 @@ function isCollapse()
 function renderMenuOptions($menu, $collapse, $level = 0)
 {
     $current = currentNav();
-    ?>
+?>
     <ul class="space-y-1 <?php echo ($level == 0) ? 'mb-32' : '' ?>">
         <?php foreach ($menu as $item): ?>
             <?php if (!hasAccess($item))
@@ -198,7 +233,7 @@ function renderMenuOptions($menu, $collapse, $level = 0)
                                 class="menu-label font-medium transition-all duration-300 group-hover:opacity-100 group-hover:mx-0 group-hover:leading-none <?php echo $collapse ? 'md:opacity-0 md:mx-2 md:leading-3 ' : 'leading-none'; ?>"><?= $item['title'] ?></span>
                         </div>
                         <i
-                            class="fa-solid fa-chevron-right text-white transition-transform duration-300 peer-checked:rotate-90"></i>
+                            class="fa-solid fa-chevron-down text-white transition-transform duration-300 peer-checked:rotate-180"></i>
                     </label>
 
                     <div class="overflow-hidden ml-2 border-l border-gray-700 transition-all duration-500 ease-in-out
@@ -208,7 +243,7 @@ function renderMenuOptions($menu, $collapse, $level = 0)
                     </div>
 
                 <?php else: ?>
-                    <a href="<?= $item['url'] ?>"
+                    <a href="<?= BASE_URL . '/' . $item['url'] ?>"
                         class="flex items-center gap-3 p-2 <?= $activeClass ?> transition-all duration-200">
                         <span
                             class="list-icon text-lg text-white <?php echo $collapse ? 'md:ml-2 group-hover:ml-0' : ''; ?>"><?= $item['icon'] ?></span>
@@ -219,5 +254,289 @@ function renderMenuOptions($menu, $collapse, $level = 0)
             </li>
         <?php endforeach; ?>
     </ul>
-    <?php
+<?php
+}
+
+function format_nic($number)
+{
+    // Remove spaces and make uppercase
+    $number = strtoupper(trim($number));
+
+    // Old NIC (9 digits + V/X)
+    if (preg_match('/^\d{9}[VX]$/', $number)) {
+        return substr($number, 0, 3) . ' ' . substr($number, 3, 3) . ' ' . substr($number, 6, 3) . ' ' . substr($number, 9);
+    }
+    // New NIC (12 digits)
+    elseif (preg_match('/^\d{12}$/', $number)) {
+        return substr($number, 0, 4) . ' ' . substr($number, 4, 4) . ' ' . substr($number, 8, 4);
+    }
+    // Invalid
+    else {
+        return $number;
+    }
+}
+
+function format_mobile($number)
+{
+    // Remove non-digit characters
+    $number = preg_replace('/\D/', '', $number);
+
+    // Remove first 0 if exists
+    if (substr($number, 0, 1) == '0') {
+        $number = substr($number, 1);
+    }
+
+
+    // Remove country code if exists
+    if (substr($number, 0, 2) == '94') {
+        $number = substr($number, 2);
+    }
+
+
+    // Format: XX-XXX-XXXX
+    if (strlen($number) == 9) {
+        return '+94 ' . substr($number, 0, 2) . ' ' . substr($number, 2, 3) . ' ' . substr($number, 5);
+    } else {
+        return $number;
+    }
+}
+
+function uploadImg($folderName, $file, $allowed)
+{
+    $currentYear = date('Y');
+    $currentMonth = date('m');
+
+    // storage/uploads/{year}/{month}/{folderName}/
+    $uploadDirectory = '../storage/uploads/' . $currentYear . '/' . $currentMonth . '/' . $folderName . '/';
+
+    if (!is_dir($uploadDirectory)) {
+        mkdir($uploadDirectory, 0755, true);
+    }
+
+    // file details
+    $imageName = $file['name'];
+    $tmpPath = $file['tmp_name'];
+    $size = $file['size'];
+    $extension = strtolower(pathinfo($imageName, PATHINFO_EXTENSION));
+
+    // print_r($file);
+    if (!in_array($extension, $allowed)) {
+        // print_r($allowed);
+        throw new Exception('Invalid file format.');
+    }
+
+    $newImageName = uniqid() . '.' . $extension;
+    $imagePath = $uploadDirectory . $newImageName;
+    // upload
+    if (!move_uploaded_file($tmpPath, $imagePath)) {
+        throw new Exception('Failed to upload image.');
+    }
+
+    return $imagePath; // return single file path
+}
+
+
+function currency_format($value)
+{
+    if (is_numeric($value)) {
+        $place = 2; //get_decimal_place();
+        if ($place > 0) {
+            return number_format($value, $place);
+        }
+        return round($value);
+    }
+    return $value;
+}
+
+function unique_transaction_ref_no($type = 'deposit')
+{
+    if ($type == 'deposit') {
+        $prefix = 'D';
+    } elseif ($type == 'withdraw') {
+        $prefix = 'W';
+    } else {
+        $prefix = 'OT';
+    }
+
+    $statement = db()->prepare("SELECT `info_id` as `total` FROM `bank_transaction_info`");
+    $statement->execute(array());
+    $inc = (int) $statement->rowCount() + 1;
+    return $prefix . $inc;
+}
+
+function user_id()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return $_SESSION['user'] ?? null;
+}
+
+function user_role()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return $_SESSION['role'] ?? null;
+}
+
+function user_role_name()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return $_SESSION['role_name'] ?? null;
+}
+
+function user_name()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return $_SESSION['user_name'] ?? null;
+}
+
+function getUserRoleID($id)
+{
+    $sql = "SELECT user_group FROM users WHERE id = ?";
+    $statement = db()->prepare($sql);
+    $statement->execute([$id]);
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
+    return $row ? $row['user_group'] : null;
+}
+
+function getLoggedUserRoleName()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    return $_SESSION['role_name'] ?? null;
+}
+
+function getLoggedUserRoleID()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    return $_SESSION['role'] ?? null;
+}
+
+function getLoggedUserPermissions()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    return $_SESSION['permissions'] ?? [];
+}
+
+function getUserGroupName($id)
+{
+    $sql = "SELECT user_group FROM users WHERE id = ?";
+    $statement = db()->prepare($sql);
+    $statement->execute([$id]);
+    $role = $statement->fetch(PDO::FETCH_ASSOC)['user_group'];
+
+    $sql = "SELECT name FROM user_group WHERE id = ?";
+    $statement = db()->prepare($sql);
+    $statement->execute([$role]);
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
+    return $row ? $row['name'] : null;
+}
+
+function getUserName($id)
+{
+    $sql = "SELECT name FROM users WHERE id = ?";
+    $statement = db()->prepare($sql);
+    $statement->execute([$id]);
+    $row = $statement->fetch(PDO::FETCH_ASSOC);
+    return $row ? $row['name']  : null;
+}
+
+function getUserStatusText($status)
+{
+    switch ($status) {
+        case 0:
+            return 'Active';
+        case 1:
+            return 'Inactive';
+        case 2:
+            return 'Suspended';
+        default:
+            return 'Unknown';
+    }
+}
+
+
+
+
+/**
+ * Dynamic File Upload
+ * @param array $fileData - $_FILES['fieldname'] data
+ * @param string $targetFolder - destination folder
+ * @param string|null $customName - optional custom filename
+ * @return string|null - saved file path or null if no file
+ * @throws Exception on failure
+ */
+function uploadFile($fileData, $targetFolder = 'uploads/questions', $customName = null)
+{
+    if (isset($fileData) && $fileData['error'] === 0) {
+        // Generate file name
+        $filename = $customName ? $customName : generateRandomString(10);
+        $targetPath = 'storage/' . rtrim($targetFolder, '/') . '/' . $filename;
+
+        // Create folder if not exists
+        if (!is_dir($targetFolder))
+            mkdir($targetFolder, 0755, true);
+
+        // Move file
+        if (move_uploaded_file($fileData['tmp_name'], $targetPath)) {
+            return $targetPath;
+        } else {
+            throw new Exception("Failed to upload file: " . $fileData['name']);
+        }
+    }
+    return null; // no file uploaded
+}
+
+
+function generateRandomString($length = 6)
+{
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
+
+function getPath()
+{
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $path = str_replace('\\', '/', $path);
+    $path = trim($path, '/');
+
+    $basePath = parse_url(BASE_URL, PHP_URL_PATH);
+    $basePath = trim($basePath, '/');
+
+    if ($basePath && strpos($path, $basePath) === 0) {
+        $path = substr($path, strlen($basePath));
+        $path = trim($path, '/');
+    }
+
+    if ($path === '')
+        return '/';
+    $parts = explode('/', $path);
+
+    $firstSegment = array_shift($parts);
+
+    if (in_array($firstSegment, $parts)) {
+        return $path ?: '/';
+    }
+
+    // $path = implode('/', $parts);
+    return $path ?: '/';
 }
