@@ -14,8 +14,8 @@ return [
     'powered-url' => 'https://northernithub.com/',
     'powered-text' => 'Powered by: NorthernITHub',
     'copyright' => 'Copyright ' . $y . ' NorthernITHub. All rights reserved.',
-    'platform-email' => 'devkeyithan@gmail.com',
-    'email-app-password' => 'dmxq groe zjba kzdr',
+    'platform-email' => 'example@email.com',
+    'email-app-password' => 'xxxx xxxx xxxx xxxx',
     'email-username' => 'Online Examination System',
     'email-host' => 'smtp.gmail.com',
     'email-port' => 587

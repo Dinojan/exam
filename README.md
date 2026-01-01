@@ -49,6 +49,11 @@ NEED_SEEDS = true
 'powered-url' => 'https://northernithub.com/',
 'powered-text' => 'Powered by: NorthernITHub',
 'copyright' => 'Copyright ' . $y . ' NorthernITHub. All rights reserved.',
+'platform-email' => 'example@email.com',
+'email-app-password' => 'xxxx xxxx xxxx xxxx',
+'email-username' => 'Online Examination System',
+'email-host' => 'smtp.gmail.com',
+'email-port' => 587
 ```
 
 ### 4. `root/config/config.php` file
@@ -72,7 +77,6 @@ if (!defined('NAME')) define('NAME', 'Online Exam');
 if (!defined('SKIP_ROOT')) define('SKIP_ROOT', false);
 ```
 
-
 ### 5. Install `dompdf`
 
 > Make sure **Composer** and **PHP zip extension** are enabled.
@@ -80,14 +84,17 @@ if (!defined('SKIP_ROOT')) define('SKIP_ROOT', false);
 ```powershell
 cd C:xampp\htdocs
 ```
+
 ```powershell
 composer -v
 ```
+
 ```powershell
 composer require dompdf/dompdf
 ```
 
 ✅ Verification
+
 ```powershell
 dir vendor\dompdf
 ```
